@@ -2282,6 +2282,8 @@
           this.initPwaPrompt();
           this.initSyncStatus();
           this.checkForUrlSync();
+          // Allinea subito in background con Google Firebase all'avvio
+          this.downloadFromCloud(true);
         },
 
         initWeather() {
@@ -2418,7 +2420,8 @@
             t.role = this.travelerModal.role.trim() || t.role;
             t.avatarEmoji = this.travelerModal.avatarEmoji || t.avatarEmoji;
             this.saveTravelers();
-            this.showToast('Profilo di ' + t.name + ' salvato!');
+            this.uploadToCloud(true); // Sincronizza subito su Firebase
+            this.showToast('Profilo di ' + t.name + ' salvato e sincronizzato!');
           }
           this.travelerModal.show = false;
           this.refreshIcons();
@@ -2698,8 +2701,8 @@
               try {
                 if (!e.data) return;
                 const parsed = JSON.parse(e.data);
-                const cloudData = (parsed.data && parsed.data.itinerary) ? parsed.data : ((parsed.path === '/' && parsed.data) ? parsed.data : null);
-                if (!cloudData || !cloudData.itinerary) return;
+                const cloudData = (parsed.data && (parsed.data.itinerary || parsed.data.travelers || parsed.data.hotels)) ? parsed.data : ((parsed.path === '/' && parsed.data) ? parsed.data : null);
+                if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels)) return;
 
                 const cloudTs = cloudData.updatedAtISO || '';
                 const cloudAuthor = cloudData.updatedBy || 'Un amico';
@@ -2749,8 +2752,8 @@
             const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (!res.ok) return;
             const json = await res.json();
-            const cloudData = (json && json.itinerary) ? json : (json && json.data ? json.data : null);
-            if (!cloudData || !cloudData.itinerary) return;
+            const cloudData = (json && (json.itinerary || json.travelers || json.hotels)) ? json : (json && json.data ? json.data : null);
+            if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels)) return;
             const cloudTs = cloudData.updatedAtISO || '';
             const cloudAuthor = cloudData.updatedBy || 'Un amico';
             if (cloudTs && cloudTs !== this.lastCloudTimestamp) {
@@ -2775,6 +2778,10 @@
             this.hotels = data.hotels;
             this.saveHotels();
           }
+          if (data.travelers && Array.isArray(data.travelers) && data.travelers.length > 0) {
+            this.travelers = data.travelers;
+            this.saveTravelers();
+          }
           this.lastCloudTimestamp = data.updatedAtISO || '';
           this.lastSyncTime = data.updatedAt || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
           localStorage.setItem('thailand_last_cloud_ts', this.lastCloudTimestamp);
@@ -2782,7 +2789,7 @@
           this.syncStatus = 'synced';
           this.autoSyncPending = false;
           this._pendingCloudData = null;
-          this.showToast('\uD83C\uDF0D Itinerario aggiornato da ' + this.autoSyncAuthor + '!');
+          this.showToast('⚡ Dati e partecipanti aggiornati da ' + this.autoSyncAuthor + '!');
           this.refreshIcons();
         },
 
@@ -2808,7 +2815,6 @@
           const nowHuman = new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
           
           // Calcola solo le voci effettivamente modificate rispetto ai default (Delta Sync)
-          // Questo riduce il link da 36.000 caratteri a meno di 500 caratteri, evitando che WhatsApp lo tronchi
           const modifiedDays = (this.itinerary || []).filter(d => {
             const def = (this.defaultItinerary || []).find(x => x.id === d.id);
             return !def || JSON.stringify(d) !== JSON.stringify(def);
@@ -2819,13 +2825,20 @@
             return !def || JSON.stringify(h) !== JSON.stringify(def);
           });
 
+          const modifiedTravelers = (this.travelers || []).filter(t => {
+            const def = (this.defaultTravelers || []).find(x => x.id === t.id);
+            return !def || JSON.stringify(t) !== JSON.stringify(def);
+          });
+
           const payload = {
             v: 3,
             updatedBy: author,
             updatedAt: nowHuman,
             modifiedDays: modifiedDays.length > 0 ? modifiedDays : undefined,
             modifiedHotels: modifiedHotels.length > 0 ? modifiedHotels : undefined,
-            allSynced: (modifiedDays.length === 0 && modifiedHotels.length === 0)
+            modifiedTravelers: modifiedTravelers.length > 0 ? modifiedTravelers : undefined,
+            travelers: modifiedTravelers.length > 0 ? this.travelers : undefined,
+            allSynced: (modifiedDays.length === 0 && modifiedHotels.length === 0 && modifiedTravelers.length === 0)
           };
 
           const jsonStr = JSON.stringify(payload);
@@ -2871,7 +2884,7 @@
             const decodedB64 = decodeURIComponent(syncParam);
             const jsonStr = decodeURIComponent(Array.prototype.map.call(atob(decodedB64), (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             const data = JSON.parse(jsonStr);
-            if (data && (data.itinerary || data.hotels || data.modifiedDays || data.modifiedHotels || data.allSynced)) {
+            if (data && (data.itinerary || data.hotels || data.travelers || data.modifiedDays || data.modifiedHotels || data.modifiedTravelers || data.allSynced)) {
               this.incomingSyncModal = {
                 show: true,
                 author: data.updatedBy || 'Un amico del gruppo',
@@ -2922,11 +2935,27 @@
             this.saveHotels();
           }
 
+          // Gestione Partecipanti (Travelers)
+          if (p.modifiedTravelers && Array.isArray(p.modifiedTravelers) && p.modifiedTravelers.length > 0) {
+            p.modifiedTravelers.forEach(modT => {
+              const idx = this.travelers.findIndex(t => t.id === modT.id);
+              if (idx !== -1) {
+                this.travelers[idx] = modT;
+              } else {
+                this.travelers.push(modT);
+              }
+            });
+            this.saveTravelers();
+          } else if (p.travelers && Array.isArray(p.travelers) && p.travelers.length > 0) {
+            this.travelers = p.travelers;
+            this.saveTravelers();
+          }
+
           this.incomingSyncModal.show = false;
           if (window.history && window.history.replaceState) {
             window.history.replaceState(null, '', window.location.pathname);
           }
-          this.showToast('Itinerario sincronizzato con successo da ' + (p.updatedBy || 'Gruppo') + '!');
+          this.showToast('Itinerario e partecipanti sincronizzati con successo!');
           this.refreshIcons();
         },
 
@@ -2949,6 +2978,7 @@
               updatedBy: author,
               updatedAt: nowHuman,
               updatedAtISO: nowISO,
+              travelers: this.travelers,
               itinerary: this.itinerary,
               hotels: this.hotels
             };
@@ -2964,7 +2994,7 @@
               localStorage.setItem('thailand_last_sync_time', this.lastSyncTime);
               localStorage.setItem('thailand_last_cloud_ts', this.lastCloudTimestamp);
               if (!silent) {
-                this.showToast('☁️ Sincronizzato su Firebase! I 4 telefoni si aggiornano in tempo reale.');
+                this.showToast('☁️ Sincronizzato su Firebase! Dati, partecipanti e hotel aggiornati.');
               }
             } else {
               throw new Error('Status: ' + res.status);
@@ -2989,14 +3019,20 @@
             const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (res.ok) {
               const json = await res.json();
-              const cloudData = (json && json.itinerary) ? json : (json && json.data ? json.data : null);
-              if (cloudData && cloudData.itinerary && Array.isArray(cloudData.itinerary) && cloudData.itinerary.length > 0) {
+              const cloudData = (json && (json.itinerary || json.travelers || json.hotels)) ? json : (json && json.data ? json.data : null);
+              if (cloudData && (cloudData.itinerary || cloudData.travelers || cloudData.hotels)) {
                 const cloudTs = cloudData.updatedAtISO || '';
-                this.itinerary = cloudData.itinerary;
-                this.saveItinerary();
+                if (cloudData.itinerary && Array.isArray(cloudData.itinerary) && cloudData.itinerary.length > 0) {
+                  this.itinerary = cloudData.itinerary;
+                  this.saveItinerary();
+                }
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
                   this.hotels = cloudData.hotels;
                   this.saveHotels();
+                }
+                if (cloudData.travelers && Array.isArray(cloudData.travelers) && cloudData.travelers.length > 0) {
+                  this.travelers = cloudData.travelers;
+                  this.saveTravelers();
                 }
                 this.syncStatus = 'synced';
                 if (cloudTs) {
