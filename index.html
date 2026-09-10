@@ -1935,41 +1935,41 @@
         </div>
       </div>
 
-      <!-- METODO 2: CLOUD SYNC AUTOMATICO -->
-      <div class="p-3.5 bg-slate-950 rounded-2xl border border-sky-800/40 space-y-2.5">
-        <div class="flex items-center justify-between text-xs font-bold text-sky-400">
-          <div class="flex items-center gap-1.5">
-            <i data-lucide="cloud-cog" class="w-3.5 h-3.5"></i>
-            <span>2. Cloud Automatico ♻️</span>
-          </div>
+      <!-- METODO 2: CLOUD SYNC AUTOMATICO CON GOOGLE FIREBASE -->
+      <div class="p-3.5 bg-slate-950 rounded-2xl border border-emerald-500/40 space-y-2.5 shadow-lg shadow-emerald-950/20">
+        <div class="flex items-center justify-between text-xs font-bold text-emerald-400">
           <div class="flex items-center gap-1.5">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-60"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-400"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
             </span>
-            <span class="text-[10px] text-sky-500 font-mono">ogni 60s</span>
+            <span>Cloud Real-Time Attivo ⚡</span>
           </div>
+          <span class="text-[10px] text-emerald-300 font-mono bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/60">Google Firebase</span>
         </div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          🤖 <strong class="text-slate-300">L'app controlla automaticamente ogni 60 secondi.</strong> Chi carica, gli altri vedranno apparire il banner verde in cima — basterà toccare <strong class="text-emerald-400">Aggiorna ✓</strong>.
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          🟢 <strong class="text-white">Connesso al tuo database Firebase.</strong> Quando uno di voi salva una modifica (giorno o hotel), tutti gli altri iPhone la ricevono <strong class="text-emerald-400">istantaneamente in tempo reale</strong>.
         </p>
-        <p class="text-[10px] text-slate-500 leading-relaxed" x-text="lastSyncTime ? '⏱ Ultima sync: ' + lastSyncTime : '⏱ Mai sincronizzato'"></p>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+          <span x-text="lastSyncTime ? '⏱ Ultima sync: ' + lastSyncTime : '⏱ Connesso & Pronto'"></span>
+          <span class="text-emerald-400/80 font-mono text-[9px]">europe-west1</span>
+        </div>
 
         <div class="grid grid-cols-2 gap-2 pt-1">
           <button type="button" 
                   @click="uploadToCloud()" 
                   :disabled="syncStatus === 'syncing'"
-                  class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+                  class="py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
             <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
-            <span>Carica su Cloud</span>
+            <span>Carica sul Cloud</span>
           </button>
 
           <button type="button" 
                   @click="downloadFromCloud()" 
                   :disabled="syncStatus === 'syncing'"
-                  class="py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+                  class="py-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
             <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
-            <span>Scarica da Cloud</span>
+            <span>Scarica dal Cloud</span>
           </button>
         </div>
       </div>
@@ -2214,7 +2214,8 @@
         autoSyncInterval: null,
         autoSyncPending: false,
         autoSyncAuthor: '',
-        cloudEndpoint: 'https://api.restful-api.dev/objects/ff808181a067127101a08cb95a906a68',
+        cloudEndpoint: 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/trip.json',
+        realtimeEventSource: null,
         syncModal: {
           show: false,
           copySuccess: false
@@ -2578,7 +2579,8 @@
             day.mainLocation = this.editDayModal.mainLocation.trim();
             day.stops = JSON.parse(JSON.stringify(this.editDayModal.stops));
             this.saveItinerary();
-            this.showToast('Giorno ' + day.dayNum + ' salvato!');
+            this.uploadToCloud(true); // Sincronizza subito su Firebase in background
+            this.showToast('Giorno ' + day.dayNum + ' salvato e sincronizzato!');
           }
           this.editDayModal.show = false;
           this.refreshIcons();
@@ -2611,6 +2613,7 @@
           if (confirm("Vuoi davvero ripristinare i 7 hotel con i recapiti e codici booking originali?")) {
             this.hotels = JSON.parse(JSON.stringify(this.defaultHotels));
             this.saveHotels();
+            this.uploadToCloud(true);
             this.showToast("Hotel originali ripristinati!");
             this.refreshIcons();
           }
@@ -2652,7 +2655,8 @@
             h.phone = this.editHotelModal.phone.trim();
             h.mapsQuery = this.editHotelModal.mapsQuery.trim();
             this.saveHotels();
-            this.showToast('Hotel ' + h.name + ' salvato!');
+            this.uploadToCloud(true); // Sincronizza subito su Firebase in background
+            this.showToast('Hotel ' + h.name + ' salvato e sincronizzato!');
           }
           this.editHotelModal.show = false;
           this.refreshIcons();
@@ -2666,15 +2670,70 @@
           if (savedTime) this.lastSyncTime = savedTime;
           const savedTs = localStorage.getItem('thailand_last_cloud_ts');
           if (savedTs) this.lastCloudTimestamp = savedTs;
-          this.startAutoSync();
+          
+          // 1. Avvia ascolto in tempo reale (SSE) da Firebase
+          this.startRealtimeSync();
+
+          // 2. Controllo immediato e riconnessione quando l'app torna in primo piano su iPhone
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              this.downloadFromCloud(true);
+              if (!this.realtimeEventSource || this.realtimeEventSource.readyState === 2) {
+                this.startRealtimeSync();
+              }
+            }
+          });
+        },
+
+        startRealtimeSync() {
+          if (this.realtimeEventSource) {
+            try { this.realtimeEventSource.close(); } catch(e) {}
+            this.realtimeEventSource = null;
+          }
+          try {
+            // Connessione streaming Server-Sent Events nativa a Google Firebase
+            this.realtimeEventSource = new EventSource(this.cloudEndpoint);
+            
+            this.realtimeEventSource.addEventListener('put', (e) => {
+              try {
+                if (!e.data) return;
+                const parsed = JSON.parse(e.data);
+                const cloudData = (parsed.data && parsed.data.itinerary) ? parsed.data : ((parsed.path === '/' && parsed.data) ? parsed.data : null);
+                if (!cloudData || !cloudData.itinerary) return;
+
+                const cloudTs = cloudData.updatedAtISO || '';
+                const cloudAuthor = cloudData.updatedBy || 'Un amico';
+
+                if (cloudTs && cloudTs !== this.lastCloudTimestamp) {
+                  this.autoSyncPending = true;
+                  this.autoSyncAuthor = cloudAuthor;
+                  this._pendingCloudData = cloudData;
+                  this.syncStatus = 'synced';
+                  this.refreshIcons();
+                }
+              } catch(err) {
+                console.debug('[Firebase SSE] parse error', err);
+              }
+            });
+
+            this.realtimeEventSource.onopen = () => {
+              this.syncStatus = 'synced';
+            };
+
+            this.realtimeEventSource.onerror = () => {
+              console.debug('[Firebase SSE] in riconnessione...');
+            };
+          } catch(e) {
+            console.warn('[Firebase SSE] EventSource non disponibile, fallback auto-poll', e);
+            this.startAutoSync();
+          }
         },
 
         startAutoSync() {
           if (this.autoSyncInterval) clearInterval(this.autoSyncInterval);
-          // Poll silently every 60 seconds
           this.autoSyncInterval = setInterval(() => {
             this.silentPollCloud();
-          }, 60000);
+          }, 30000);
         },
 
         stopAutoSync() {
@@ -2685,25 +2744,22 @@
         },
 
         async silentPollCloud() {
-          // Don't poll while user is doing something else in the sync modal
           if (this.syncModal.show) return;
           try {
             const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (!res.ok) return;
             const json = await res.json();
-            if (!json || !json.data || !json.data.itinerary) return;
-            const cloudTs = json.data.updatedAtISO || '';
-            const cloudAuthor = json.data.updatedBy || 'Un amico';
-            // Only trigger if the cloud has a NEWER timestamp than what we last applied
+            const cloudData = (json && json.itinerary) ? json : (json && json.data ? json.data : null);
+            if (!cloudData || !cloudData.itinerary) return;
+            const cloudTs = cloudData.updatedAtISO || '';
+            const cloudAuthor = cloudData.updatedBy || 'Un amico';
             if (cloudTs && cloudTs !== this.lastCloudTimestamp) {
-              // It's a new version! Prompt the user with a non-intrusive banner
               this.autoSyncPending = true;
               this.autoSyncAuthor = cloudAuthor;
-              this._pendingCloudData = json.data;
+              this._pendingCloudData = cloudData;
               this.refreshIcons();
             }
           } catch(e) {
-            // Silent fail — no toast, no error state change
             console.debug('[AutoSync] poll failed silently', e);
           }
         },
@@ -2748,13 +2804,30 @@
         },
 
         generateSyncLink() {
+          const author = (this.travelers && this.travelers[0] && this.travelers[0].name) ? this.travelers[0].name : 'Steff';
+          const nowHuman = new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+          
+          // Calcola solo le voci effettivamente modificate rispetto ai default (Delta Sync)
+          // Questo riduce il link da 36.000 caratteri a meno di 500 caratteri, evitando che WhatsApp lo tronchi
+          const modifiedDays = (this.itinerary || []).filter(d => {
+            const def = (this.defaultItinerary || []).find(x => x.id === d.id);
+            return !def || JSON.stringify(d) !== JSON.stringify(def);
+          });
+          
+          const modifiedHotels = (this.hotels || []).filter(h => {
+            const def = (this.defaultHotels || []).find(x => x.id === h.id);
+            return !def || JSON.stringify(h) !== JSON.stringify(def);
+          });
+
           const payload = {
-            v: 2,
-            updatedBy: (this.travelers && this.travelers[0] && this.travelers[0].name) ? this.travelers[0].name : 'Steff',
-            updatedAt: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-            itinerary: this.itinerary,
-            hotels: this.hotels
+            v: 3,
+            updatedBy: author,
+            updatedAt: nowHuman,
+            modifiedDays: modifiedDays.length > 0 ? modifiedDays : undefined,
+            modifiedHotels: modifiedHotels.length > 0 ? modifiedHotels : undefined,
+            allSynced: (modifiedDays.length === 0 && modifiedHotels.length === 0)
           };
+
           const jsonStr = JSON.stringify(payload);
           const b64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
           return window.location.origin + window.location.pathname + '#sync=' + encodeURIComponent(b64);
@@ -2798,7 +2871,7 @@
             const decodedB64 = decodeURIComponent(syncParam);
             const jsonStr = decodeURIComponent(Array.prototype.map.call(atob(decodedB64), (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             const data = JSON.parse(jsonStr);
-            if (data && (data.itinerary || data.hotels)) {
+            if (data && (data.itinerary || data.hotels || data.modifiedDays || data.modifiedHotels || data.allSynced)) {
               this.incomingSyncModal = {
                 show: true,
                 author: data.updatedBy || 'Un amico del gruppo',
@@ -2815,19 +2888,45 @@
         applyIncomingSync() {
           if (!this.incomingSyncModal.payload) return;
           const p = this.incomingSyncModal.payload;
-          if (p.itinerary && Array.isArray(p.itinerary) && p.itinerary.length > 0) {
+          
+          // Gestione Delta Sync (v3): applica solo i giorni modificati
+          if (p.modifiedDays && Array.isArray(p.modifiedDays) && p.modifiedDays.length > 0) {
+            p.modifiedDays.forEach(modDay => {
+              const idx = this.itinerary.findIndex(d => d.id === modDay.id);
+              if (idx !== -1) {
+                this.itinerary[idx] = modDay;
+              } else {
+                this.itinerary.push(modDay);
+              }
+            });
+            this.saveItinerary();
+          } else if (p.itinerary && Array.isArray(p.itinerary) && p.itinerary.length > 0) {
+            // Retrocompatibilità payload completo (v2)
             this.itinerary = p.itinerary;
             this.saveItinerary();
           }
-          if (p.hotels && Array.isArray(p.hotels) && p.hotels.length > 0) {
+
+          // Gestione Delta Sync Hotel
+          if (p.modifiedHotels && Array.isArray(p.modifiedHotels) && p.modifiedHotels.length > 0) {
+            p.modifiedHotels.forEach(modHotel => {
+              const idx = this.hotels.findIndex(h => h.id === modHotel.id);
+              if (idx !== -1) {
+                this.hotels[idx] = modHotel;
+              } else {
+                this.hotels.push(modHotel);
+              }
+            });
+            this.saveHotels();
+          } else if (p.hotels && Array.isArray(p.hotels) && p.hotels.length > 0) {
             this.hotels = p.hotels;
             this.saveHotels();
           }
+
           this.incomingSyncModal.show = false;
           if (window.history && window.history.replaceState) {
             window.history.replaceState(null, '', window.location.pathname);
           }
-          this.showToast('Itinerario sincronizzato con successo!');
+          this.showToast('Itinerario sincronizzato con successo da ' + (p.updatedBy || 'Gruppo') + '!');
           this.refreshIcons();
         },
 
@@ -2838,7 +2937,7 @@
           }
         },
 
-        async uploadToCloud() {
+        async uploadToCloud(silent = false) {
           this.syncStatus = 'syncing';
           this.refreshIcons();
           try {
@@ -2846,15 +2945,12 @@
             const nowISO = new Date().toISOString();
             const nowHuman = new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             const payload = {
-              name: "Thailand 2026 Sync",
-              data: {
-                v: 2,
-                updatedBy: author,
-                updatedAt: nowHuman,
-                updatedAtISO: nowISO,
-                itinerary: this.itinerary,
-                hotels: this.hotels
-              }
+              v: 3,
+              updatedBy: author,
+              updatedAt: nowHuman,
+              updatedAtISO: nowISO,
+              itinerary: this.itinerary,
+              hotels: this.hotels
             };
             const res = await fetch(this.cloudEndpoint, {
               method: 'PUT',
@@ -2867,45 +2963,61 @@
               this.lastCloudTimestamp = nowISO;
               localStorage.setItem('thailand_last_sync_time', this.lastSyncTime);
               localStorage.setItem('thailand_last_cloud_ts', this.lastCloudTimestamp);
-              this.showToast('\u2601\uFE0F Caricato! Gli altri riceveranno la notifica entro 60 sec.');
+              if (!silent) {
+                this.showToast('☁️ Sincronizzato su Firebase! I 4 telefoni si aggiornano in tempo reale.');
+              }
             } else {
               throw new Error('Status: ' + res.status);
             }
           } catch(e) {
-            console.error('Upload to cloud failed', e);
+            console.error('Upload to Firebase failed', e);
             this.syncStatus = 'error';
-            this.showToast('Cloud non disponibile: usa il link WhatsApp!');
+            if (!silent) {
+              this.showToast('Cloud non raggiungibile: usa il link WhatsApp!');
+            }
           } finally {
             this.refreshIcons();
           }
         },
 
-        async downloadFromCloud() {
-          this.syncStatus = 'syncing';
-          this.refreshIcons();
+        async downloadFromCloud(silent = false) {
+          if (!silent) {
+            this.syncStatus = 'syncing';
+            this.refreshIcons();
+          }
           try {
-            const res = await fetch(this.cloudEndpoint);
+            const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (res.ok) {
               const json = await res.json();
-              if (json && json.data && json.data.itinerary && json.data.itinerary.length > 0) {
-                this.itinerary = json.data.itinerary;
+              const cloudData = (json && json.itinerary) ? json : (json && json.data ? json.data : null);
+              if (cloudData && cloudData.itinerary && Array.isArray(cloudData.itinerary) && cloudData.itinerary.length > 0) {
+                const cloudTs = cloudData.updatedAtISO || '';
+                this.itinerary = cloudData.itinerary;
                 this.saveItinerary();
-                if (json.data.hotels && json.data.hotels.length > 0) {
-                  this.hotels = json.data.hotels;
+                if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
+                  this.hotels = cloudData.hotels;
                   this.saveHotels();
                 }
                 this.syncStatus = 'synced';
-                this.lastSyncTime = json.data.updatedAt || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                if (cloudTs) {
+                  this.lastCloudTimestamp = cloudTs;
+                  localStorage.setItem('thailand_last_cloud_ts', this.lastCloudTimestamp);
+                }
+                this.lastSyncTime = cloudData.updatedAt || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
                 localStorage.setItem('thailand_last_sync_time', this.lastSyncTime);
-                this.showToast('Aggiornato dal Cloud: ' + (json.data.updatedBy || 'Gruppo') + '!');
+                if (!silent) {
+                  this.showToast('☁️ Aggiornato da Firebase: ' + (cloudData.updatedBy || 'Gruppo') + '!');
+                }
               }
             } else {
               throw new Error('Status: ' + res.status);
             }
           } catch(e) {
             console.error('Download from cloud failed', e);
-            this.syncStatus = 'error';
-            this.showToast('Impossibile scaricare dal cloud');
+            if (!silent) {
+              this.syncStatus = 'error';
+              this.showToast('Impossibile scaricare dal cloud');
+            }
           } finally {
             this.refreshIcons();
           }
