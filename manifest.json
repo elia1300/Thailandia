@@ -1,0 +1,37 @@
+{
+  "name": "Thailandia 2026 • Itinerario & Viaggio di Gruppo",
+  "short_name": "ThaiTrip",
+  "description": "App mobile-first per l'itinerario e l'organizzazione del viaggio di gruppo in Thailandia.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "cover.jpg",
+      "sizes": "1024x571",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
