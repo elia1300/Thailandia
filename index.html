@@ -218,16 +218,15 @@
       <section class="space-y-3">
         <!-- Card Immagine di Copertina con Lightbox -->
         <div class="relative rounded-3xl overflow-hidden border border-amber-500/40 shadow-2xl shadow-amber-950/30 group">
-          <div class="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-900 cursor-pointer overflow-hidden"
+          <div class="relative aspect-[16/9] w-full bg-slate-900 cursor-pointer overflow-hidden"
                @click="openLightbox('cover.jpg')">
             <img src="cover.jpg" 
                  alt="Thailandia 2026 - I 4 Amici" 
-                 class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                 class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                  loading="eager">
             
-            <!-- Dark Gradient Overlays per contrasto e leggibilità -->
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-            <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent"></div>
+            <!-- Soft Bottom Gradient: protegge il contrasto dei testi in basso lasciando i volti luminosi e nitidi -->
+            <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none"></div>
 
             <!-- Top Badges -->
             <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -1319,13 +1318,13 @@
       </button>
     </div>
 
-    <!-- Immagine Protagonista — rendering massima qualità, no blur -->
-    <div class="w-full max-w-lg rounded-2xl overflow-hidden border border-amber-500/40 shadow-2xl bg-slate-950">
+    <!-- Immagine Protagonista — massima nitidezza in alta definizione -->
+    <div class="w-full max-w-2xl rounded-2xl overflow-hidden border border-amber-500/40 shadow-2xl bg-slate-950">
       <img :src="lightboxModal.src" 
            alt="Thailandia 2026 - I 4 Amici" 
-           class="w-full h-auto block"
-           style="object-fit: contain; max-height: 75vh; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
-      <div class="p-3 bg-slate-900/90 border-t border-slate-800 text-center space-y-1">
+           class="w-full h-auto block rounded-t-2xl shadow-inner"
+           style="object-fit: contain; max-height: 80vh;">
+      <div class="p-3 bg-slate-900/95 border-t border-slate-800 text-center space-y-1">
         <h4 class="font-display font-extrabold text-sm text-white">Bangkok Yaowarat • Viaggio di Gruppo 2026</h4>
         <p class="text-xs text-slate-400">Ricordo ufficiale della squadra dei 4 amici</p>
       </div>
