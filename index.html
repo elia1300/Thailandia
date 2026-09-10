@@ -14,8 +14,20 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="description" content="App mobile-first per l'itinerario e l'organizzazione del viaggio di gruppo in Thailandia: tappe, hotel, voli, cambio valuta e checklist.">
 
-  <!-- Apple Touch Icon (SVG Data URI con Elefante/Palma Tropicale su sfondo dark) -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981'/%3E%3Cstop offset='50%25' stop-color='%230f766e'/%3E%3Cstop offset='100%25' stop-color='%23090d16'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='128' fill='url(%23bg)'/%3E%3Cpath d='M256 120c-55 0-98 35-104 82-4 32 10 63 36 82v108h36v-64h64v64h36V284c26-19 40-50 36-82-6-47-49-82-104-82zm-28 64a16 16 0 1 1 0 32 16 16 0 0 1 0-32zm56 0a16 16 0 1 1 0 32 16 16 0 0 1 0-32z' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='256' cy='360' r='12' fill='%23fbbf24'/%3E%3C/svg%3E">
+  <!-- Web App Manifest (PWA per Android & iOS) -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Apple iOS Touch Icons (Foto cover ufficiale sulla home screen di iPhone/iPad) -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-startup-image" href="cover.jpg">
+
+  <!-- Favicon standard e alta risoluzione -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
   <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2074,7 +2086,7 @@
               style="touch-action: manipulation;"
               :class="activeTab === 'logistics' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'">
         <i data-lucide="plane" class="w-5 h-5 transition-transform group-active:scale-90" :class="activeTab === 'logistics' ? 'stroke-[2.5]' : ''"></i>
-        <span class="text-[10px] font-bold tracking-tight">Hotel & Trasporti</span>
+        <span class="text-[10px] font-bold tracking-tight">Trasporti</span>
         <span x-show="activeTab === 'logistics'" class="w-1 h-1 rounded-full bg-emerald-400 absolute -bottom-0.5"></span>
       </button>
 
