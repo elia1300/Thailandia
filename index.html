@@ -146,49 +146,60 @@
   <div class="w-full max-w-md min-h-screen flex flex-col relative pb-28">
 
     <!-- Top Header Bar (iOS Style) -->
-    <header class="sticky top-0 z-40 w-full glass-nav border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
+    <header class="sticky top-0 z-40 w-full glass-nav border-b border-slate-800/80">
+      <!-- Row 1: Logo + Titolo + Azioni -->
+      <div class="px-4 pt-3 pb-2 flex items-center justify-between gap-2">
+        <!-- Logo + Titolo -->
         <button type="button" 
                 @click="openLightbox('cover.jpg')"
                 title="Visualizza foto di copertina"
-                class="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-950/50 relative active:scale-90 transition-transform">
+                class="w-10 h-10 rounded-xl overflow-hidden border-2 border-amber-500/50 flex-shrink-0 shadow-lg shadow-amber-950/40 active:scale-90 transition-transform">
           <img src="cover.jpg" alt="Thailandia 2026" class="w-full h-full object-cover">
         </button>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="font-display font-bold text-base tracking-tight text-white leading-none">THAI TRIP 2026-27</h1>
-            <span class="px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">4 Amici</span>
-          </div>
-          <p class="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">Bangkok • Chiang Mai • Khao Sok • Krabi • Phuket</p>
+
+        <div class="flex-1 min-w-0">
+          <h1 class="font-display font-black text-base tracking-tight text-white leading-none">THAI TRIP 2026–27</h1>
+          <p class="text-[10px] text-slate-400 font-medium leading-tight mt-0.5 truncate">Bangkok · Chiang Mai · Khao Sok · Krabi · Phuket</p>
+        </div>
+
+        <!-- Azioni Header -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- Sync -->
+          <button @click="openSyncModal()" 
+                  class="h-8 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all flex items-center gap-1.5"
+                  title="Sincronizza con gli amici">
+            <i :data-lucide="syncStatus === 'syncing' ? 'refresh-cw' : 'cloud'" 
+               class="w-3.5 h-3.5" 
+               :class="syncStatus === 'syncing' ? 'animate-spin text-amber-400' : 'text-emerald-400'"></i>
+            <span class="text-[10px] font-bold">Sync</span>
+          </button>
+
+          <!-- Install PWA (solo se non già installata) -->
+          <template x-if="!isStandalone()">
+            <button @click="openPwaGuide()" 
+                    class="h-8 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 active:scale-95 transition-all flex items-center gap-1.5"
+                    title="Aggiungi alla Schermata Home">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              <span class="text-[10px] font-bold">Installa</span>
+            </button>
+          </template>
+
+          <!-- Oggi -->
+          <button @click="jumpToToday()" 
+                  class="h-8 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition-all border border-slate-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block flex-shrink-0" :class="{'animate-ping': !allExpanded}"></span>
+            <span class="text-[10px] font-bold text-emerald-400">Giorno <span x-text="currentDayIndex"></span></span>
+          </button>
         </div>
       </div>
 
-      <!-- Quick Action: Sync, PWA Install Indicator & Switch Giornata 'Oggi' -->
-      <div class="flex items-center gap-1.5">
-        <!-- Bottone Sincronizza Gruppo -->
-        <button @click="openSyncModal()" 
-                class="px-2 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all flex items-center gap-1"
-                title="Sincronizza modifiche con i 3 amici">
-          <i :data-lucide="syncStatus === 'syncing' ? 'refresh-cw' : 'cloud'" 
-             class="w-3.5 h-3.5" 
-             :class="syncStatus === 'syncing' ? 'animate-spin text-amber-400' : 'text-emerald-400'"></i>
-          <span class="text-[10px] font-bold">Sync</span>
-        </button>
-
-        <template x-if="!isStandalone()">
-          <button @click="openPwaGuide()" 
-                  class="px-2 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 active:scale-95 transition-all flex items-center gap-1"
-                  title="Aggiungi alla Schermata Home di iPhone">
-            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-            <span class="text-[10px] font-bold">Installa</span>
-          </button>
-        </template>
-
-        <button @click="jumpToToday()" 
-                class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition-all text-[11px] font-semibold text-emerald-400 border border-slate-700 flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping"></span>
-          <span>Giorno <span x-text="currentDayIndex"></span></span>
-        </button>
+      <!-- Row 2: Badge gruppo + 4 amici -->
+      <div class="px-4 pb-2.5 flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+          <span>🇹🇭</span><span>4 Amici</span>
+        </span>
+        <span class="text-[10px] text-slate-500">25 Dic 2026 → 8 Gen 2027</span>
+        <span class="ml-auto text-[10px]" :class="syncStatus === 'synced' ? 'text-emerald-500' : 'text-slate-600'" x-text="syncStatus === 'synced' ? '● Sincronizzato' : '○ In locale'"></span>
       </div>
     </header>
 
@@ -396,9 +407,9 @@
                class="glass-card rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg"
                :class="day.isToday ? 'border-emerald-500/80 shadow-emerald-950/40 ring-1 ring-emerald-500/50' : 'border-slate-800/80 hover:border-slate-700'">
             
-            <!-- Intestazione Giorno Cliccabile -->
-            <button @click="day.expanded = !day.expanded; refreshIcons()"
-                    class="w-full text-left p-3.5 flex items-start justify-between gap-3 active:bg-slate-800/40 transition-colors">
+            <!-- Intestazione Giorno Cliccabile (div per evitare button annidati) -->
+            <div @click="day.expanded = !day.expanded; refreshIcons()"
+                 class="w-full text-left p-3.5 flex items-start justify-between gap-3 active:bg-slate-800/40 transition-colors cursor-pointer select-none">
               <div class="flex items-start gap-3">
                 
                 <!-- Badge Numero Giorno con colore della città -->
@@ -428,21 +439,32 @@
                 </div>
               </div>
 
-              <!-- Quick Edit & Chevron Toggle -->
-              <div class="pt-1 flex items-center gap-1">
-                <button type="button"
-                        @click.stop="openEditDayModal(day)"
-                        class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80 active:scale-90 transition-all"
-                        title="Modifica questo giorno">
-                  <i data-lucide="pencil" class="w-4 h-4"></i>
-                </button>
-                <div class="text-slate-400 p-1">
-                  <i data-lucide="chevron-down" 
-                     class="w-5 h-5 transition-transform duration-200"
-                     :class="day.expanded ? 'rotate-180 text-emerald-400' : ''"></i>
-                </div>
+              <!-- Freccia stato accordeon -->
+              <div class="pt-1 flex-shrink-0">
+                <i data-lucide="chevron-down" 
+                   class="w-5 h-5 text-slate-400 transition-transform duration-200"
+                   :class="day.expanded ? 'rotate-180 text-emerald-400' : ''"></i>
               </div>
-            </button>
+            </div>
+
+            <!-- Barra Azioni Full-Width -->
+            <div class="px-3 pb-3 grid grid-cols-2 gap-2">
+              <!-- Vedi dettaglio -->
+              <button type="button"
+                      @click="day.expanded = !day.expanded; refreshIcons()"
+                      class="py-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                      :class="day.expanded ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-700/40 border-slate-700/60 text-slate-300 hover:bg-slate-700'">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" :class="day.expanded ? 'rotate-180' : ''"></i>
+                <span x-text="day.expanded ? 'Chiudi dettagli' : 'Vedi dettaglio'"></span>
+              </button>
+              <!-- Modifica giornata -->
+              <button type="button"
+                      @click="openEditDayModal(day)"
+                      class="py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-400 text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                <span>Modifica giornata</span>
+              </button>
+            </div>
 
             <!-- Contenuto Dettagliato (Accordion Collapse/Expand) -->
             <div x-show="day.expanded" 
@@ -1281,7 +1303,7 @@
        x-transition:leave="transition ease-in duration-200"
        x-transition:leave-start="opacity-100"
        x-transition:leave-end="opacity-0"
-       class="fixed inset-0 z-[130] bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center p-3"
+       class="fixed inset-0 z-[130] bg-black/95 flex flex-col items-center justify-center p-3"
        @click.self="lightboxModal.show = false"
        x-cloak>
     
@@ -1297,11 +1319,12 @@
       </button>
     </div>
 
-    <!-- Immagine Protagonista -->
+    <!-- Immagine Protagonista — rendering massima qualità, no blur -->
     <div class="w-full max-w-lg rounded-2xl overflow-hidden border border-amber-500/40 shadow-2xl bg-slate-950">
       <img :src="lightboxModal.src" 
            alt="Thailandia 2026 - I 4 Amici" 
-           class="w-full h-auto object-contain max-h-[75vh]">
+           class="w-full h-auto block"
+           style="object-fit: contain; max-height: 75vh; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
       <div class="p-3 bg-slate-900/90 border-t border-slate-800 text-center space-y-1">
         <h4 class="font-display font-extrabold text-sm text-white">Bangkok Yaowarat • Viaggio di Gruppo 2026</h4>
         <p class="text-xs text-slate-400">Ricordo ufficiale della squadra dei 4 amici</p>
@@ -2051,8 +2074,8 @@
               class="flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all relative group cursor-pointer"
               style="touch-action: manipulation;"
               :class="activeTab === 'logistics' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'">
-        <i data-lucide="hotel" class="w-5 h-5 transition-transform group-active:scale-90" :class="activeTab === 'logistics' ? 'stroke-[2.5]' : ''"></i>
-        <span class="text-[10px] font-bold tracking-tight">Logistica</span>
+        <i data-lucide="plane" class="w-5 h-5 transition-transform group-active:scale-90" :class="activeTab === 'logistics' ? 'stroke-[2.5]' : ''"></i>
+        <span class="text-[10px] font-bold tracking-tight">Trasporti</span>
         <span x-show="activeTab === 'logistics'" class="w-1 h-1 rounded-full bg-emerald-400 absolute -bottom-0.5"></span>
       </button>
 
@@ -3267,18 +3290,18 @@
           {
             id: 't1',
             type: 'flight',
-            carrier: 'Volo Andata Internazionale',
-            flightNumber: 'Volo Italia ➔ Bangkok • Boeing 787 / A350',
+            carrier: 'Air India · PNR: BJRZOF',
+            flightNumber: 'FCO → DEL · AI122 (8h 50m) + DEL → BKK · AI2304 (4h 25m)',
             date: '25 - 26 Dic 2026',
-            depCode: 'ITA',
-            depCity: 'Italia (MXP / FCO)',
-            depTime: '18:00',
+            depCode: 'FCO',
+            depCity: 'Roma Fiumicino · 25 Dic 21:00',
+            depTime: '21:00',
             arrCode: 'BKK',
-            arrCity: 'Bangkok Suvarnabhumi',
-            arrTime: '16:30 (+1)',
-            duration: '11h 30m',
-            pnr: 'ITA-BKK-2026',
-            baggage: 'Bagaglio da stiva 23kg + cabina'
+            arrCity: 'Bangkok Suvarnabhumi · 26 Dic 21:15',
+            arrTime: '21:15 (+1)',
+            duration: '18h 15m (1 scalo DEL · 5h)',
+            pnr: 'BJRZOF',
+            baggage: 'Economy · Posti: 27C 27D 28C 28D (FCO→DEL) · 29F 29E 29D 29C (DEL→BKK)'
           },
           {
             id: 't2',
@@ -3300,7 +3323,7 @@
             id: 't3',
             type: 'flight',
             carrier: 'AirAsia / Thai Lion Air',
-            flightNumber: 'FD 3031 • Volo Interno Diretto',
+            flightNumber: 'FD 3031 · Volo Interno Diretto',
             date: '1 Gen 2027',
             depCode: 'CNX',
             depCity: 'Chiang Mai Airport',
@@ -3411,18 +3434,18 @@
           {
             id: 't10',
             type: 'flight',
-            carrier: 'Volo Ritorno Internazionale',
-            flightNumber: 'Volo Bangkok ➔ Italia (Milano/Roma)',
+            carrier: 'Air India · PNR: BJRZOF',
+            flightNumber: 'BKK → DEL · AI2333 (4h 45m) + DEL → FCO · AI123 (10h 10m)',
             date: '8 Gen 2027',
             depCode: 'BKK',
-            depCity: 'Bangkok Suvarnabhumi',
-            depTime: '10:45',
-            arrCode: 'ITA',
-            arrCity: 'Italia (MXP / FCO)',
-            arrTime: '18:15',
-            duration: '12h 30m',
-            pnr: 'RTN-ITA-2027',
-            baggage: 'Bagagli carichi di souvenir & ricordi indimenticabili!'
+            depCity: 'Bangkok Suvarnabhumi · 8 Gen 08:05',
+            depTime: '08:05',
+            arrCode: 'FCO',
+            arrCity: 'Roma Fiumicino · 8 Gen 18:55',
+            arrTime: '18:55',
+            duration: '16h 50m (1 scalo DEL · 1h 55m)',
+            pnr: 'BJRZOF',
+            baggage: 'Economy · Posti: 28A 28B 28D 27E (BKK→DEL) · 38C 38D 39D 40D (DEL→FCO)'
           }
         ],
 
