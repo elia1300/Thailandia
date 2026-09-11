@@ -445,6 +445,15 @@
                         Oggi
                       </span>
                     </template>
+
+                    <!-- Mini Pill Meteo Previsto per questo Giorno -->
+                    <button type="button"
+                            @click.stop="openWeatherForCity(day.cityGroup || day.city)"
+                            class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-500/40 text-sky-300 hover:bg-sky-900/60 hover:text-white active:scale-95 transition-all shadow-sm"
+                            title="Tocca per vedere il meteo dettagliato nei giorni in cui siamo qui">
+                      <span x-text="getDayWeatherBadge(day.dayNum).icon"></span>
+                      <span x-text="getDayWeatherBadge(day.dayNum).temp"></span>
+                    </button>
                   </div>
                   <h3 class="font-display font-bold text-sm text-slate-100 leading-snug" x-text="day.title"></h3>
                 </div>
@@ -822,9 +831,9 @@
         </p>
       </div>
 
-      <!-- 0. METEO & CLIMA LIVE NELLE TAPPE                         -->
+      <!-- 0. METEO & CLIMA NELLE TAPPE                         -->
       <!-- ========================================================== -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
+      <div id="weather-section" class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
@@ -832,7 +841,7 @@
             </div>
             <div>
               <h3 class="font-display font-bold text-sm text-white">Meteo & Clima nelle Tappe</h3>
-              <span class="text-[10px] text-slate-400">Previsioni live & clima di stagione</span>
+              <span class="text-[10px] text-slate-400">Previsioni nei giorni del viaggio & live</span>
             </div>
           </div>
 
@@ -842,24 +851,141 @@
                   class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs active:scale-95 transition-all flex items-center gap-1"
                   title="Ricarica meteo in tempo reale">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">Aggiorna</span>
+            <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">Aggiorna Live</span>
           </button>
         </div>
 
-        <!-- Selettore Orizzontale Regione / Città -->
+        <!-- Selettore Orizzontale Regione / Città con Date del Soggiorno -->
         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <template x-for="reg in weatherRegions" :key="reg.id">
             <button @click="selectWeatherRegion(reg.id)"
                     :class="selectedWeatherId === reg.id ? 'bg-sky-500 text-slate-950 font-bold shadow-md shadow-sky-950/50' : 'bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white'"
-                    class="px-2.5 py-1 rounded-full text-xs whitespace-nowrap transition-all duration-200 flex items-center gap-1">
+                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 flex items-center gap-1.5">
               <span x-text="reg.icon"></span>
               <span x-text="reg.name"></span>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-md"
+                    :class="selectedWeatherId === reg.id ? 'bg-black/20 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'"
+                    x-text="reg.badgeDates"></span>
             </button>
           </template>
         </div>
 
-        <!-- Scheda Dettaglio Meteo Regione Attiva -->
-        <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+        <!-- Header Info Periodo Tappa Selezionata -->
+        <div class="p-3 rounded-xl bg-gradient-to-r from-sky-950/70 via-slate-900 to-slate-950 border border-sky-500/30 space-y-1.5">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base" x-text="currentRegion.icon"></span>
+              <span class="font-display font-black text-sm text-white" x-text="currentRegion.name"></span>
+            </div>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm"
+                  x-text="currentRegion.stayPeriod"></span>
+          </div>
+          <p class="text-[11px] text-sky-200/90 leading-relaxed" x-text="currentRegion.climateSummary"></p>
+        </div>
+
+        <!-- Switcher Modalità: [🗓️ Nei Giorni del Nostro Viaggio] vs [⚡ Live Adesso] -->
+        <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
+          <button type="button"
+                  @click="weatherViewMode = 'tripDays'; refreshIcons()"
+                  :class="weatherViewMode === 'tripDays' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+            <span>🗓️</span>
+            <span>Nei Giorni del Viaggio</span>
+          </button>
+          <button type="button"
+                  @click="weatherViewMode = 'liveToday'; refreshWeather(); refreshIcons()"
+                  :class="weatherViewMode === 'liveToday' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+            <span>⚡</span>
+            <span>Oggi in Diretta (Live)</span>
+          </button>
+        </div>
+
+        <!-- VISTA 1: METEO NEI GIORNI PRECISI DEL VIAGGIO (RICHIESTA UTENTE) -->
+        <div x-show="weatherViewMode === 'tripDays'" class="space-y-3">
+          <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+            <span class="font-medium text-slate-300">Previsioni e clima dettagliati giorno per giorno:</span>
+            <span class="font-mono text-emerald-400 font-bold" x-text="(currentRegion.tripDays || []).length + ' Giorni di Tappa'"></span>
+          </div>
+
+          <div class="space-y-3">
+            <template x-for="dayWeather in (currentRegion.tripDays || [])" :key="dayWeather.dayNum">
+              <div class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/90 hover:border-slate-700/80 transition-all space-y-2.5 shadow-md">
+                
+                <!-- Riga Superiore: Badge Giorno, Tag, Titolo -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-display bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                        <span x-text="'Giorno ' + dayWeather.dayNum"></span> • <span x-text="dayWeather.date"></span>
+                      </span>
+                      <template x-if="dayWeather.tag">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              x-text="dayWeather.tag"></span>
+                      </template>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-200 font-display pt-0.5" x-text="dayWeather.title"></h4>
+                  </div>
+
+                  <!-- Icona & Temperatura -->
+                  <div class="text-right flex-shrink-0">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <span class="text-2xl filter drop-shadow" x-text="dayWeather.weatherIcon"></span>
+                      <span class="font-mono text-xl font-black text-white" x-text="dayWeather.maxTemp + '°'"></span>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-400 block" x-text="'Min ' + dayWeather.minTemp + '°C'"></span>
+                  </div>
+                </div>
+
+                <!-- Condizione Sintetica & Metriche Rapide -->
+                <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between text-[11px]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-amber-400 font-bold" x-text="dayWeather.condition"></span>
+                  </div>
+                  <div class="flex items-center gap-3 font-mono text-[10px] text-slate-400">
+                    <span title="Probabilità di Pioggia" class="flex items-center gap-1">
+                      <span>🌧️</span>
+                      <span class="text-sky-300 font-bold" x-text="dayWeather.rainChance"></span>
+                    </span>
+                    <span title="Umidità Relativa" class="flex items-center gap-1">
+                      <span>💧</span>
+                      <span class="text-emerald-400 font-bold" x-text="dayWeather.humidity"></span>
+                    </span>
+                    <span title="Vento" class="flex items-center gap-1">
+                      <span>🍃</span>
+                      <span class="text-teal-300 font-bold" x-text="dayWeather.wind"></span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Consiglio Operativo Clima & Valigia del Giorno -->
+                <div class="text-[11px] text-slate-300 bg-sky-950/30 border border-sky-500/20 rounded-lg p-2.5 flex items-start gap-2">
+                  <i data-lucide="info" class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5"></i>
+                  <div class="leading-relaxed space-y-1">
+                    <p x-text="dayWeather.dayAdvice"></p>
+                    <p class="text-sky-300 text-[10px] font-semibold flex items-center gap-1">
+                      <span>👕 Outfit:</span>
+                      <span x-text="dayWeather.outfitTip"></span>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Tasto Rapido: Apri Giorno nell'Itinerario -->
+                <button type="button"
+                        @click="goToItineraryDay(dayWeather.dayNum)"
+                        class="w-full py-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-[11px] font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>Vedi programma completo Giorno <span x-text="dayWeather.dayNum"></span></span>
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500"></i>
+                </button>
+
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- VISTA 2: METEO IN TEMPO REALE OGGI (LIVE OPEN-METEO) -->
+        <div x-show="weatherViewMode === 'liveToday'" class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
           <!-- Riga Principale: Temp, Icona, Condizione -->
           <div class="flex items-center justify-between">
             <div>
@@ -899,7 +1025,7 @@
           <div class="rounded-xl p-2.5 bg-sky-500/10 border border-sky-500/20 text-sky-200 flex items-start gap-2">
             <i data-lucide="shirt" class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5"></i>
             <div class="text-[11px] leading-relaxed">
-              <span class="font-bold text-sky-300">Cosa indossare & Clima:</span>
+              <span class="font-bold text-sky-300">Cosa indossare oggi:</span>
               <span x-text="currentWeather.packingTip"></span>
             </div>
           </div>
@@ -2240,61 +2366,323 @@
 
         // Meteo State
         selectedWeatherId: 'bangkok',
+        weatherViewMode: 'tripDays', // 'tripDays' (i giorni in cui siamo lì) oppure 'liveToday' (in diretta oggi)
         weatherLoading: false,
         weatherRegions: [
-          { id: 'bangkok', name: 'Bangkok', icon: '🏙️', lat: 13.7563, lon: 100.5018,
+          {
+            id: 'bangkok',
+            name: 'Bangkok',
+            icon: '🏙️',
+            lat: 13.7563,
+            lon: 100.5018,
+            badgeDates: '26-28 Dic & 8 Gen',
+            stayPeriod: '26–28 Dic 2026 & 8 Gen 2027 • Giorni 1, 2, 3 e 14',
+            climateSummary: 'Stagione secca ideale (Cool Season): caldo asciutto di giorno (32°C), serate arieggiate piacevoli (22-23°C), piogge quasi nulle (<5%).',
             defaultData: {
               temp: 31, feelsLike: 34, minTemp: 22, maxTemp: 32, condition: 'Soleggiato & Caldo secco',
               weatherIcon: '☀️', humidity: 62, wind: 12, extraMetricLabel: 'Indice UV', extraMetricVal: 'Alto (8/10)',
               packingTip: 'Cotone leggero, lino, occhiali da sole e pantaloni lunghi leggeri per entrare nei templi.'
-            }
+            },
+            tripDays: [
+              {
+                dayNum: 1,
+                date: '26 Dic',
+                title: 'Arrivo a Bangkok & Prima Serata a Chinatown',
+                tag: '🏮 Arrivo & Street Food Yaowarat',
+                condition: 'Soleggiato & Serata Piacevole',
+                weatherIcon: '☀️',
+                minTemp: 23,
+                maxTemp: 32,
+                feelsLike: 34,
+                humidity: '58%',
+                rainChance: '5%',
+                wind: '12 km/h',
+                dayAdvice: 'Atterraggio alle 16:30. Serata a 26°C tra i vicoli illuminati dai neon di Yaowarat Road: clima ottimo per mangiare noodles e spiedini all\'aperto senza afa.',
+                outfitTip: 'T-shirt traspirante di cotone o lino, scarpe comode per camminare tra i banchi di street food.'
+              },
+              {
+                dayNum: 2,
+                date: '27 Dic',
+                title: 'Tour 10h: Mercato Galleggiante Damnoen Saduak & Treno di Maeklong',
+                tag: '🛶 Mercati Storici & Canali',
+                condition: 'Sole Pieno & Caldo Secco',
+                weatherIcon: '☀️',
+                minTemp: 22,
+                maxTemp: 33,
+                feelsLike: 35,
+                humidity: '55%',
+                rainChance: '5%',
+                wind: '10 km/h',
+                dayAdvice: 'Partenza ore 07:00 con aria fresca mattutina. Nelle ore centrali sui canali in barca il sole scalda forte fino a 33°C.',
+                outfitTip: 'Cappello, occhiali da sole, crema solare alta protezione e borsa protettiva per gli spruzzi della barca.'
+              },
+              {
+                dayNum: 3,
+                date: '28 Dic',
+                title: 'Grandi Templi Reali & Partenza col Treno Notturno per Chiang Mai',
+                tag: '👑 Grand Palace & Cuccette',
+                condition: 'Soleggiato & Serata Ventilata',
+                weatherIcon: '☀️',
+                minTemp: 23,
+                maxTemp: 32,
+                feelsLike: 34,
+                humidity: '56%',
+                rainChance: '0%',
+                wind: '11 km/h',
+                dayAdvice: 'Grand Palace e Wat Pho richiedono abbigliamento consono. Alle 18:40 si sale sul treno notturno con aria condizionata polare!',
+                outfitTip: 'Pantaloni lunghi leggeri in viscosa/lino e calzini per entrare scalzi nei templi; felpa calda indispensabile per dormire in cuccetta nel treno.'
+              },
+              {
+                dayNum: 14,
+                date: '08 Gen',
+                title: 'Arrivederci Thailandia! Ultimo Shopping & Volo di Rientro in Italia',
+                tag: '✈️ Shopping & Volo di Rientro',
+                condition: 'Soleggiato & Caldo Moderato',
+                weatherIcon: '☀️',
+                minTemp: 22,
+                maxTemp: 33,
+                feelsLike: 34,
+                humidity: '54%',
+                rainChance: '0%',
+                wind: '10 km/h',
+                dayAdvice: 'Ultima giornata a Bangkok per regali e souvenir al fresco dei centri commerciali prima del transfer a Suvarnabhumi per il volo intercontinentale.',
+                outfitTip: 'Vestiti comodi a strati per affrontare il lungo volo aereo verso l\'Italia.'
+              }
+            ]
           },
-          { id: 'chiangmai', name: 'Chiang Mai & Rai', icon: '🐘', lat: 18.7883, lon: 98.9853,
+          {
+            id: 'chiangmai',
+            name: 'Chiang Mai & Rai',
+            icon: '🐘',
+            lat: 18.7883,
+            lon: 98.9853,
+            badgeDates: '29-31 Dic (Capodanno)',
+            stayPeriod: '29–31 Dicembre 2026 • Giorni 4, 5 e 6 (Capodanno)',
+            climateSummary: 'Stagione fresca del Nord montano: giornate assolate senza afa (28-29°C), notti e albe fresche a 14-16°C. Zero pioggia (0%), cielo terso e stellato per Capodanno!',
             defaultData: {
               temp: 28, feelsLike: 27, minTemp: 15, maxTemp: 29, condition: 'Sole di giorno, serate fresche',
               weatherIcon: '⛅', humidity: 55, wind: 8, extraMetricLabel: 'Escursione', extraMetricVal: '15° Notte / 29° Di',
               packingTip: 'Caldo e soleggiato di giorno; INDISPENSABILE una felpa o giacca leggera per le serate, Capodanno e alba a Doi Suthep!'
-            }
+            },
+            tripDays: [
+              {
+                dayNum: 4,
+                date: '29 Dic',
+                title: 'Arrivo a Chiang Mai in Treno, Antica Città Murata & Night Bazaar',
+                tag: '🏰 Old City & Mercati Serale',
+                condition: 'Sereno & Brezza di Montagna',
+                weatherIcon: '⛅',
+                minTemp: 16,
+                maxTemp: 29,
+                feelsLike: 28,
+                humidity: '52%',
+                rainChance: '0%',
+                wind: '8 km/h',
+                dayAdvice: 'Arrivo alle 08:30 con aria frizzante e limpida. Pomeriggio perfetto tra i vicoli del centro storico. Dopo il tramonto la temperatura scende a 18°C.',
+                outfitTip: 'T-shirt di giorno; felpa leggera o camicia a maniche lunghe pronta nello zaino per la sera al Night Bazaar.'
+              },
+              {
+                dayNum: 5,
+                date: '30 Dic',
+                title: 'Escursione Full-Day a Chiang Rai: Tempio Bianco & Triangolo d\'Oro',
+                tag: '🛕 Tempio Bianco & Montagne',
+                condition: 'Limpido Montano & Sole Brillante',
+                weatherIcon: '☀️',
+                minTemp: 14,
+                maxTemp: 28,
+                feelsLike: 27,
+                humidity: '50%',
+                rainChance: '0%',
+                wind: '9 km/h',
+                dayAdvice: 'Partenza di buon mattino verso il confine con Laos e Myanmar. Visibilità perfetta sul fiume Mekong e sulle guglie specchiate del Wat Rong Khun.',
+                outfitTip: 'Occhiali da sole per il riflesso abbagliante dei vetri del Tempio Bianco; giacchetta leggera per i tratti in barca sul Mekong.'
+              },
+              {
+                dayNum: 6,
+                date: '31 Dic',
+                title: 'Santuario Elefanti, Zipline nella Giungla & CAPODANNO DELLE LANTERNE',
+                tag: '🎉 NOTTE DI CAPODANNO • Lanterne',
+                condition: 'Sole diurno • Notte Stellata a 15°C',
+                weatherIcon: '✨',
+                minTemp: 15,
+                maxTemp: 29,
+                feelsLike: 28,
+                humidity: '55%',
+                rainChance: '0%',
+                wind: '6 km/h (Brezza lieve)',
+                dayAdvice: 'Di giorno caldo tra gli elefanti e il bagno nel fiume (costume da bagno e cambio asciutto). A mezzanotte all\'aperto per il countdown e le lanterne la temperatura scende a 15°C: sensazione di fresco vivace!',
+                outfitTip: 'Costume e infradito per il bagno con gli elefanti; per la festa di Capodanno la sera: FELPA O GIACCA obbligatoria!'
+              }
+            ]
           },
-          { id: 'khaosok', name: 'Khao Sok Lake', icon: '🏞️', lat: 8.9774, lon: 98.8142,
+          {
+            id: 'khaosok',
+            name: 'Khao Sok Lake',
+            icon: '🏞️',
+            lat: 8.9774,
+            lon: 98.8142,
+            badgeDates: '1-2 Gen',
+            stayPeriod: '1–2 Gennaio 2027 • Giorni 7 e 8',
+            climateSummary: 'Microclima incontaminato della foresta pluviale e del Lago Cheow Lan. Acqua del lago calda (28°C), zero mare mosso, cielo azzurro con banchi di nebbia fiabeschi all\'alba.',
             defaultData: {
               temp: 30, feelsLike: 33, minTemp: 22, maxTemp: 31, condition: 'Microclima lago tropicale',
               weatherIcon: '🌤️', humidity: 75, wind: 6, extraMetricLabel: 'Acqua Lago', extraMetricVal: '28°C Calda',
               packingTip: 'Costume già indossato, dry-bag stagna per kayak e barca longtail, spray insetti e crema solare.'
-            }
+            },
+            tripDays: [
+              {
+                dayNum: 7,
+                date: '01 Gen',
+                title: 'Volo a Surat Thani & Avventura sul Lago nelle Case Galleggianti',
+                tag: '🛶 Lago Cheow Lan & Tuffi',
+                condition: 'Sole Tropicale & Microclima Lago',
+                weatherIcon: '🌤️',
+                minTemp: 22,
+                maxTemp: 31,
+                feelsLike: 33,
+                humidity: '75%',
+                rainChance: '15%',
+                wind: '5 km/h (Acqua Piatta)',
+                dayAdvice: 'Arrivo all\'imbarcadero e navigazione su longtail boat tra i faraglioni calcarei. Acqua calda e limpida: ci si tuffa direttamente dal patio della camera galleggiante!',
+                outfitTip: 'Costume già indossato, dry-bag impermeabile per proteggere smartphone e passaporti in barca, spray antizanzare naturale per la sera.'
+              },
+              {
+                dayNum: 8,
+                date: '02 Gen',
+                title: 'Safari Mattutino in Kayak all\'Alba & Minivan Panoramico per Krabi',
+                tag: '🌅 Alba nella Giungla & Kayak',
+                condition: 'Foschia Mistica all\'Alba poi Sole',
+                weatherIcon: '🌄',
+                minTemp: 21,
+                maxTemp: 30,
+                feelsLike: 32,
+                humidity: '78%',
+                rainChance: '10%',
+                wind: '6 km/h',
+                dayAdvice: 'Alle 06:30 l\'aria è freschissima e il lago è avvolto da un velo di nebbia scenografica. Mentre si pagaia si sentono i richiami della giungla, poi il sole scalda la roccia.',
+                outfitTip: 'Maglietta comoda per pagaiare e scarpe da ginnastica o sandali da trekking per il percorso nelle grotte.'
+              }
+            ]
           },
-          { id: 'krabi', name: 'Krabi (Railay)', icon: '🏖️', lat: 8.0863, lon: 98.9063,
+          {
+            id: 'krabi',
+            name: 'Krabi (Railay)',
+            icon: '🏖️',
+            lat: 8.0863,
+            lon: 98.9063,
+            badgeDates: '3-4 Gen',
+            stayPeriod: '3–4 Gennaio 2027 • Giorni 9 e 10',
+            climateSummary: 'Clima balneare da cartolina sul Mare delle Andamane: 32°C, mare a 29°C con onde quasi nulle (<0.3m). Sole brillante e brezza marina rinfrescante.',
             defaultData: {
               temp: 32, feelsLike: 35, minTemp: 24, maxTemp: 32, condition: 'Cielo limpido & mare calmo',
               weatherIcon: '☀️', humidity: 68, wind: 14, extraMetricLabel: 'Mare Andamane', extraMetricVal: '29°C Perfetto',
               packingTip: 'Infradito (si sbarca nell\'acqua a Railay), crema reef-safe per i coralli e scarpette da scoglio.'
-            }
+            },
+            tripDays: [
+              {
+                dayNum: 9,
+                date: '03 Gen',
+                title: 'La Magia di Railay Beach: Falesie, Phra Nang Cave & Tramonto',
+                tag: '🧗‍♂️ Falesie & Spiaggia di Railay',
+                condition: 'Cielo Limpido & Mare Piatto',
+                weatherIcon: '☀️',
+                minTemp: 24,
+                maxTemp: 32,
+                feelsLike: 35,
+                humidity: '68%',
+                rainChance: '5%',
+                wind: '12 km/h (Brezza Marina)',
+                dayAdvice: 'A Railay non ci sono strade, solo spiagge e scogliere monumentali. Sbarco a piedi con l\'acqua alle ginocchia. Tramonto infuocato a Phra Nang Beach.',
+                outfitTip: 'Infradito facili da togliere, costume, crema solare reef-safe eco-compatibile per proteggere i coralli.'
+              },
+              {
+                dayNum: 10,
+                date: '04 Gen',
+                title: 'Mattinata al Mare a Krabi & Catamarano Veloce per Phuket',
+                tag: '🛥️ Catamarano Panoramico',
+                condition: 'Sole Pieno & Navigazione Tranquilla',
+                weatherIcon: '☀️',
+                minTemp: 24,
+                maxTemp: 33,
+                feelsLike: 35,
+                humidity: '66%',
+                rainChance: '5%',
+                wind: '14 km/h',
+                dayAdvice: 'Ultime ore di mare al mattino prima di imbarcarsi sul traghetto/catamarano per Phuket. Condizioni marittime ottime con zero rischio mal di mare.',
+                outfitTip: 'Abbigliamento leggero da mare; una camicia aperta per proteggersi dal sole sul ponte panoramico della nave.'
+              }
+            ]
           },
-          { id: 'phuket', name: 'Phuket & Phi Phi', icon: '🏝️', lat: 7.8804, lon: 98.3923,
+          {
+            id: 'phuket',
+            name: 'Phuket & Phi Phi',
+            icon: '🏝️',
+            lat: 7.8804,
+            lon: 98.3923,
+            badgeDates: '5-7 Gen',
+            stayPeriod: '5–7 Gennaio 2027 • Giorni 11, 12 e 13',
+            climateSummary: 'Stagione d\'oro per navigazione, barche veloci e moto d\'acqua. Cielo blu cobalto, visibilità sottomarina di oltre 20 metri e mare caldissimo (29°C).',
             defaultData: {
               temp: 31, feelsLike: 34, minTemp: 24, maxTemp: 32, condition: 'Stagione perfetta per barche',
               weatherIcon: '🌊', humidity: 66, wind: 15, extraMetricLabel: 'Onde / Vento', extraMetricVal: 'Calmo (0.5m)',
               packingTip: 'Ideale per il tour di 6h in moto d\'acqua e motoscafo alle Phi Phi. Telo mare, occhiali con laccio e custodia waterproof.'
-            }
+            },
+            tripDays: [
+              {
+                dayNum: 11,
+                date: '05 Gen',
+                title: 'Tour Isole Phi Phi in Giornata: Maya Bay, Pi Leh Lagoon & Snorkeling',
+                tag: '🏝️ Maya Bay & Laguna Segreta',
+                condition: 'Sole Tropicale & Mare Turchese',
+                weatherIcon: '🏝️',
+                minTemp: 25,
+                maxTemp: 32,
+                feelsLike: 35,
+                humidity: '66%',
+                rainChance: '5%',
+                wind: '12 km/h',
+                dayAdvice: 'Giornata intera in motoscafo veloce. Mare cristallino tra le scogliere verticali di Maya Bay e nuotata tra i pesci pagliaccio e coralli.',
+                outfitTip: 'Costume, scarpette da scoglio, laccetto anticaduta per occhiali da sole sullo speedboat e cover impermeabile per foto subacquee.'
+              },
+              {
+                dayNum: 12,
+                date: '06 Gen',
+                title: 'Phuket: Architettura di Old Town, Spiaggia Kata Noi & Big Buddha',
+                tag: '🏛️ Old Town & Spiagge Dorate',
+                condition: 'Soleggiato & Pomeriggio Balneare',
+                weatherIcon: '☀️',
+                minTemp: 24,
+                maxTemp: 32,
+                feelsLike: 34,
+                humidity: '65%',
+                rainChance: '5%',
+                wind: '13 km/h',
+                dayAdvice: 'Mattinata culturale tra gli edifici coloniali color pastello della Old Town. Pomeriggio di relax in spiaggia a Kata Noi con onde dolci e sabbia soffice.',
+                outfitTip: 'Outfit casual estivo; telo mare e crema protettiva.'
+              },
+              {
+                dayNum: 13,
+                date: '07 Gen',
+                title: 'Tour Adrenalinico di 6 Ore in Moto d\'Acqua tra 5 Isole & Volo per Bangkok',
+                tag: '🛵 SAFARI MOTO D\'ACQUA 6 ORE',
+                condition: 'Sole Pieno & Mare Ideale',
+                weatherIcon: '🌊',
+                minTemp: 25,
+                maxTemp: 33,
+                feelsLike: 36,
+                humidity: '64%',
+                rainChance: '5%',
+                wind: '11 km/h (Onde basse)',
+                dayAdvice: 'Il safari guidato di 6 ore in moto d\'acqua richiede mare calmo e assenza di vento forte: inizio gennaio è il periodo statisticamente più stabile dell\'anno!',
+                outfitTip: 'Costume resistente o lycra da surf per proteggere le braccia dal sole mentre si sfreccia sull\'acqua; occhiali da sole polarizzati con laccio galleggiante.'
+              }
+            ]
           }
         ],
         weatherData: {},
 
-        // Inizializzazione
-        initApp() {
-          this.loadChecklist();
-          this.loadTravelers();
-          this.loadHotels();
-          this.loadItinerary();
-          this.initCountdown();
-          this.initWeather();
-          this.refreshIcons();
-          this.convertFromThb();
-          this.initPwaPrompt();
-          this.initSyncStatus();
-          this.checkForUrlSync();
-          // Allinea subito in background con Google Firebase all'avvio
-          this.downloadFromCloud(true);
+        get currentRegion() {
+          return this.weatherRegions.find(r => r.id === this.selectedWeatherId) || this.weatherRegions[0];
         },
 
         initWeather() {
@@ -2306,11 +2694,66 @@
 
         selectWeatherRegion(id) {
           this.selectedWeatherId = id;
-          this.fetchLiveWeather(id);
+          if (this.weatherViewMode === 'liveToday') {
+            this.fetchLiveWeather(id);
+          }
+          this.refreshIcons();
         },
 
         get currentWeather() {
           return this.weatherData[this.selectedWeatherId] || this.weatherRegions[0].defaultData;
+        },
+
+        goToItineraryDay(dayNum) {
+          this.activeTab = 'itinerary';
+          this.itinerary.forEach(d => {
+            if (d.dayNum === dayNum) d.expanded = true;
+          });
+          this.$nextTick(() => {
+            const el = document.getElementById('day-card-' + dayNum);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          });
+          this.refreshIcons();
+        },
+
+        openWeatherForCity(regionOrCity) {
+          let targetId = 'bangkok';
+          const c = (regionOrCity || '').toLowerCase();
+          if (c.includes('chiang')) targetId = 'chiangmai';
+          else if (c.includes('khao') || c.includes('sok')) targetId = 'khaosok';
+          else if (c.includes('krabi') || c.includes('railay')) targetId = 'krabi';
+          else if (c.includes('phuket') || c.includes('phi')) targetId = 'phuket';
+          else targetId = 'bangkok';
+
+          this.selectedWeatherId = targetId;
+          this.weatherViewMode = 'tripDays';
+          this.activeTab = 'toolbox';
+          this.$nextTick(() => {
+            const el = document.getElementById('weather-section');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          });
+          this.refreshIcons();
+        },
+
+        getDayWeatherBadge(dayNum) {
+          for (const reg of this.weatherRegions) {
+            if (reg.tripDays) {
+              const d = reg.tripDays.find(t => t.dayNum === dayNum);
+              if (d) {
+                return {
+                  temp: `${d.minTemp}°-${d.maxTemp}°`,
+                  icon: d.weatherIcon,
+                  condition: d.condition,
+                  regionId: reg.id
+                };
+              }
+            }
+          }
+          return { temp: '32°C', icon: '☀️', condition: 'Soleggiato', regionId: 'bangkok' };
         },
 
         async fetchLiveWeather(regionId) {
@@ -2358,7 +2801,7 @@
 
         refreshWeather() {
           this.fetchLiveWeather(this.selectedWeatherId);
-          this.showToast('Meteo aggiornato in tempo reale!');
+          this.showToast('Meteo live aggiornato in tempo reale!');
         },
 
         // Countdown Logic
