@@ -517,15 +517,15 @@
                           <h4 class="text-xs font-bold text-slate-100" x-text="stop.name"></h4>
                         </div>
                         
-                        <!-- Bottone Maps Rapido -->
+                        <!-- Bottone Maps Rapido con Scelta Google / Apple -->
                         <template x-if="stop.mapsQuery">
-                          <a :href="'https://maps.google.com/?q=' + encodeURIComponent(stop.mapsQuery)" 
-                             target="_blank" 
-                             rel="noopener"
-                             class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 text-[10px] font-semibold active:scale-95 transition-all">
+                          <button type="button"
+                                  @click="openMapChooser(stop.name, stop.mapsQuery)" 
+                                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 text-[10px] font-semibold active:scale-95 transition-all"
+                                  title="Apri posizione in Mappe (Google o Apple)">
                             <i data-lucide="map-pin" class="w-3 h-3"></i>
-                            <span>Maps</span>
-                          </a>
+                            <span>Mappa</span>
+                          </button>
                         </template>
                       </div>
 
@@ -608,15 +608,33 @@
 
       <!-- SOTTO-SEZIONE: HOTEL & ALLOGGI -->
       <div x-show="logisticsSubTab === 'hotels'" class="space-y-4">
-        <div class="flex items-center justify-between px-1">
-          <span class="text-[11px] text-slate-400">Tutti i 7 alloggi sono modificabili</span>
-          <button @click="resetHotels()" 
-                  class="text-[10px] text-slate-400 hover:text-amber-400 flex items-center gap-1 py-1 px-2 rounded-lg bg-slate-900 border border-slate-800 active:scale-95 transition-all"
-                  title="Ripristina i dati e recapiti originali">
-            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-            <span>Ripristina Hotel</span>
-          </button>
+        <div class="flex items-center justify-between px-1 gap-2 flex-wrap">
+          <span class="text-[11px] text-slate-400"><span x-text="hotels.length"></span> alloggi configurati</span>
+          <div class="flex items-center gap-1.5">
+            <button @click="openAddHotelModal()" 
+                    class="text-[11px] text-slate-950 font-extrabold flex items-center gap-1 py-1.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all shadow-md shadow-amber-950/40">
+              <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i>
+              <span>Aggiungi Alloggio</span>
+            </button>
+            <button @click="resetHotels()" 
+                    class="text-[10px] text-slate-400 hover:text-amber-400 flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-slate-800 active:scale-95 transition-all"
+                    title="Ripristina i dati e recapiti originali">
+              <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+              <span>Ripristina</span>
+            </button>
+          </div>
         </div>
+
+        <template x-if="hotels.length === 0">
+          <div class="p-8 text-center glass-card rounded-2xl border border-slate-800 space-y-2">
+            <i data-lucide="hotel" class="w-8 h-8 text-slate-500 mx-auto"></i>
+            <p class="text-sm font-bold text-slate-300">Nessun hotel registrato</p>
+            <p class="text-xs text-slate-400">Aggiungi gli alloggi e le strutture del tuo soggiorno in Thailandia</p>
+            <button @click="openAddHotelModal()" class="mt-2 py-2 px-4 rounded-xl bg-amber-400 text-slate-950 font-bold text-xs">
+              + Aggiungi il primo hotel
+            </button>
+          </div>
+        </template>
         <template x-for="hotel in hotels" :key="hotel.id">
           <div class="glass-card rounded-2xl border border-slate-800/90 overflow-hidden shadow-lg p-4 space-y-3.5">
             
@@ -660,7 +678,7 @@
               <p class="text-xs text-slate-300" x-text="hotel.addressEn"></p>
             </div>
 
-            <!-- Pulsanti Hotel: Mostra al Tassista, Maps, Modifica Dati -->
+            <!-- Pulsanti Hotel: Mostra al Tassista, Mappa (Google/Apple), Modifica, Elimina -->
             <div class="pt-1 flex items-center gap-2">
               <button @click="openTaxiModal(hotel)" 
                       class="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/40 transition-all">
@@ -668,19 +686,25 @@
                 <span>Mostra al Tassista (in Thai)</span>
               </button>
 
-              <a :href="'https://maps.google.com/?q=' + encodeURIComponent(hotel.mapsQuery)" 
-                 target="_blank" 
-                 class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-bold text-xs flex items-center justify-center gap-1 border border-slate-700 transition-all"
-                 title="Apri posizione in Maps">
-                <i data-lucide="navigation" class="w-3.5 h-3.5 text-emerald-400"></i>
-                <span class="hidden sm:inline">Maps</span>
-              </a>
+              <button type="button"
+                      @click="openMapChooser(hotel.name, hotel.mapsQuery, hotel.addressEn)" 
+                      class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-bold text-xs flex items-center justify-center gap-1 border border-slate-700 transition-all"
+                      title="Apri posizione in Mappe (Google o Apple)">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span class="hidden sm:inline">Mappa</span>
+              </button>
 
               <button @click="openEditHotelModal(hotel)" 
                       class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold text-xs flex items-center justify-center gap-1 border border-amber-500/30 transition-all"
                       title="Modifica recapiti, codice booking e info hotel">
                 <i data-lucide="pencil" class="w-3.5 h-3.5 text-amber-400"></i>
                 <span>Modifica</span>
+              </button>
+
+              <button @click="deleteHotel(hotel.id)" 
+                      class="py-2.5 px-2.5 rounded-xl bg-slate-800 hover:bg-red-500/20 active:scale-95 text-slate-400 hover:text-red-400 font-bold text-xs flex items-center justify-center border border-slate-700 hover:border-red-500/40 transition-all"
+                      title="Elimina alloggio">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
 
@@ -699,6 +723,35 @@
 
       <!-- SOTTO-SEZIONE: VOLI & TRAGHETTI -->
       <div x-show="logisticsSubTab === 'transports'" class="space-y-3.5">
+        
+        <div class="flex items-center justify-between px-1 gap-2 flex-wrap">
+          <span class="text-[11px] text-slate-400"><span x-text="transports.length"></span> trasferimenti e voli</span>
+          <div class="flex items-center gap-1.5">
+            <button @click="openAddTransportModal()" 
+                    class="text-[11px] text-slate-950 font-extrabold flex items-center gap-1 py-1.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 active:scale-95 transition-all shadow-md shadow-sky-950/40">
+              <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i>
+              <span>Aggiungi Trasporto</span>
+            </button>
+            <button @click="resetTransports()" 
+                    class="text-[10px] text-slate-400 hover:text-sky-400 flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-slate-800 active:scale-95 transition-all"
+                    title="Ripristina i voli e trasporti originali">
+              <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+              <span>Ripristina</span>
+            </button>
+          </div>
+        </div>
+
+        <template x-if="transports.length === 0">
+          <div class="p-8 text-center glass-card rounded-2xl border border-slate-800 space-y-2">
+            <i data-lucide="plane" class="w-8 h-8 text-slate-500 mx-auto"></i>
+            <p class="text-sm font-bold text-slate-300">Nessun trasporto registrato</p>
+            <p class="text-xs text-slate-400">Aggiungi i voli o i trasferimenti reali del tuo viaggio</p>
+            <button @click="openAddTransportModal()" class="mt-2 py-2 px-4 rounded-xl bg-sky-400 text-slate-950 font-bold text-xs">
+              + Aggiungi il primo trasporto
+            </button>
+          </div>
+        </template>
+
         <template x-for="item in transports" :key="item.id">
           <div class="glass-card rounded-2xl border border-slate-800/90 p-4 space-y-3 shadow-lg">
             
@@ -706,8 +759,8 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center"
-                     :class="item.type === 'flight' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30'">
-                  <i :data-lucide="item.type === 'flight' ? 'plane' : 'ship'" class="w-4 h-4"></i>
+                     :class="getTransportBadgeClass(item.type)">
+                  <i :data-lucide="getTransportIcon(item.type)" class="w-4 h-4"></i>
                 </div>
                 <div>
                   <span class="text-xs font-extrabold uppercase text-white tracking-wide" x-text="item.carrier"></span>
@@ -720,7 +773,7 @@
             <!-- Grafica Partenza -> Arrivo -->
             <div class="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-950/70 border border-slate-800">
               <div>
-                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.depCode"></span>
+                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.depCode || 'DEP'"></span>
                 <span class="text-[11px] font-bold text-emerald-400 mt-0.5 block" x-text="item.depTime"></span>
                 <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.depCity"></span>
               </div>
@@ -730,14 +783,14 @@
                 <span class="text-[10px] font-mono text-slate-400 mb-1" x-text="item.duration"></span>
                 <div class="w-20 sm:w-24 h-0.5 bg-gradient-to-r from-emerald-500/40 via-teal-400 to-emerald-500/40 relative">
                   <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-slate-300">
-                    <i :data-lucide="item.type === 'flight' ? 'plane' : 'ship'" class="w-3.5 h-3.5"></i>
+                    <i :data-lucide="getTransportIcon(item.type)" class="w-3.5 h-3.5"></i>
                   </div>
                 </div>
                 <span class="text-[9px] text-slate-500 uppercase mt-1">Diretto</span>
               </div>
 
               <div class="text-right">
-                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.arrCode"></span>
+                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.arrCode || 'ARR'"></span>
                 <span class="text-[11px] font-bold text-emerald-400 mt-0.5 block" x-text="item.arrTime"></span>
                 <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.arrCity"></span>
               </div>
@@ -748,16 +801,32 @@
               <div>
                 <span class="text-[10px] text-slate-500 uppercase block font-bold">PNR / Biglietto:</span>
                 <div class="flex items-center gap-1.5">
-                  <span class="font-mono font-bold text-amber-400 text-xs" x-text="item.pnr"></span>
-                  <button @click="copyText(item.pnr, 'Codice PNR copiato!')" class="text-slate-400 hover:text-white">
-                    <i data-lucide="copy" class="w-3 h-3"></i>
-                  </button>
+                  <span class="font-mono font-bold text-amber-400 text-xs" x-text="item.pnr || 'Da confermare'"></span>
+                  <template x-if="item.pnr">
+                    <button @click="copyText(item.pnr, 'Codice PNR copiato!')" class="text-slate-400 hover:text-white">
+                      <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>
+                  </template>
                 </div>
               </div>
               <div class="text-right">
                 <span class="text-[10px] text-slate-500 uppercase block font-bold">Bagaglio / Note:</span>
-                <span class="text-[11px] text-slate-300 font-medium" x-text="item.baggage"></span>
+                <span class="text-[11px] text-slate-300 font-medium" x-text="item.baggage || 'Standard'"></span>
               </div>
+            </div>
+
+            <!-- Azioni Trasporto: Modifica & Elimina -->
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60">
+              <button @click="openEditTransportModal(item)" 
+                      class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 font-bold text-xs flex items-center gap-1.5 border border-sky-500/30 transition-all">
+                <i data-lucide="pencil" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Modifica</span>
+              </button>
+              <button @click="deleteTransport(item.id)" 
+                      class="py-1.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-400 font-bold text-xs flex items-center gap-1.5 border border-red-500/30 transition-all">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Elimina</span>
+              </button>
             </div>
 
           </div>
@@ -1751,8 +1820,8 @@
           <i data-lucide="building-2" class="w-5 h-5"></i>
         </div>
         <div>
-          <h3 class="font-display font-bold text-base text-white">Modifica Dati Hotel</h3>
-          <p class="text-[11px] text-slate-400">Personalizza recapiti, codice booking e testo Thai per tassista</p>
+          <h3 class="font-display font-bold text-base text-white" x-text="editHotelModal.isNew ? 'Aggiungi Nuovo Hotel' : 'Modifica Dati Hotel'"></h3>
+          <p class="text-[11px] text-slate-400" x-text="editHotelModal.isNew ? 'Inserisci i recapiti, codice booking e dettagli del nuovo alloggio' : 'Personalizza recapiti, codice booking e testo Thai per tassista'"></p>
         </div>
       </div>
 
@@ -1852,6 +1921,14 @@
 
       <!-- Action Buttons -->
       <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-shrink-0">
+        <template x-if="!editHotelModal.isNew">
+          <button type="button" 
+                  @click="deleteHotel(editHotelModal.id)" 
+                  class="py-2.5 px-3 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 font-bold text-xs flex items-center gap-1 active:scale-95 transition-all">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>Elimina</span>
+          </button>
+        </template>
         <button type="button" 
                 @click="editHotelModal.show = false" 
                 class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs">
@@ -1861,9 +1938,305 @@
                 @click="saveEditHotel()" 
                 class="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-extrabold text-xs hover:bg-amber-400 shadow-lg shadow-amber-950/50 flex items-center justify-center gap-1.5 active:scale-95">
           <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Salva Hotel</span>
+          <span x-text="editHotelModal.isNew ? 'Aggiungi Hotel' : 'Salva Hotel'"></span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AGGIUNGI / MODIFICA TRASPORTO (VOLI, TRENI, VAN, BARCHE)           -->
+  <!-- ========================================================================= -->
+  <div x-show="editTransportModal.show" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-[128] bg-black/90 backdrop-blur-md p-3 sm:p-4 flex flex-col items-center justify-center overflow-y-auto"
+       x-cloak>
+    
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl relative my-auto max-h-[92vh] flex flex-col">
+      <!-- Close Button -->
+      <button @click="editTransportModal.show = false" 
+              class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-90 z-10">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Header Modal -->
+      <div class="flex items-center gap-3 pr-8 flex-shrink-0">
+        <div class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30 flex-shrink-0">
+          <i :data-lucide="getTransportIcon(editTransportModal.type)" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-display font-bold text-base text-white" x-text="editTransportModal.isNew ? 'Aggiungi Nuovo Trasporto' : 'Modifica Dati Trasporto'"></h3>
+          <p class="text-[11px] text-slate-400">Voli aerei, treni cuccette, traghetti, speedboat o van privati</p>
+        </div>
+      </div>
+
+      <!-- Scrollable Form Body -->
+      <div class="space-y-3 overflow-y-auto pr-1 flex-1 no-scrollbar text-xs">
+        
+        <!-- Tipologia Mezzo -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">Tipologia Mezzo</label>
+          <div class="grid grid-cols-5 gap-1.5">
+            <button type="button" 
+                    @click="editTransportModal.type = 'flight'; refreshIcons()" 
+                    :class="editTransportModal.type === 'flight' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'bg-slate-950 text-slate-400 border border-slate-800'"
+                    class="py-2 rounded-xl text-[11px] flex flex-col items-center gap-1 transition-all">
+              <i data-lucide="plane" class="w-4 h-4"></i>
+              <span>Volo</span>
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.type = 'ferry'; refreshIcons()" 
+                    :class="editTransportModal.type === 'ferry' ? 'bg-teal-500 text-slate-950 font-bold shadow' : 'bg-slate-950 text-slate-400 border border-slate-800'"
+                    class="py-2 rounded-xl text-[11px] flex flex-col items-center gap-1 transition-all">
+              <i data-lucide="ship" class="w-4 h-4"></i>
+              <span>Barca</span>
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.type = 'train'; refreshIcons()" 
+                    :class="editTransportModal.type === 'train' ? 'bg-emerald-500 text-slate-950 font-bold shadow' : 'bg-slate-950 text-slate-400 border border-slate-800'"
+                    class="py-2 rounded-xl text-[11px] flex flex-col items-center gap-1 transition-all">
+              <i data-lucide="train" class="w-4 h-4"></i>
+              <span>Treno</span>
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.type = 'van'; refreshIcons()" 
+                    :class="editTransportModal.type === 'van' ? 'bg-amber-500 text-slate-950 font-bold shadow' : 'bg-slate-950 text-slate-400 border border-slate-800'"
+                    class="py-2 rounded-xl text-[11px] flex flex-col items-center gap-1 transition-all">
+              <i data-lucide="bus" class="w-4 h-4"></i>
+              <span>Van</span>
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.type = 'car'; refreshIcons()" 
+                    :class="editTransportModal.type === 'car' ? 'bg-violet-500 text-slate-950 font-bold shadow' : 'bg-slate-950 text-slate-400 border border-slate-800'"
+                    class="py-2 rounded-xl text-[11px] flex flex-col items-center gap-1 transition-all">
+              <i data-lucide="car" class="w-4 h-4"></i>
+              <span>Auto</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Compagnia / Operatore</label>
+            <input type="text" 
+                   x-model="editTransportModal.carrier" 
+                   placeholder="Es. Air India, AirAsia, Van VIP"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Numero / Nome Tratta</label>
+            <input type="text" 
+                   x-model="editTransportModal.flightNumber" 
+                   placeholder="Es. AI122, FD3031, Traghetto"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Spostamento</label>
+            <input type="text" 
+                   x-model="editTransportModal.date" 
+                   placeholder="Es. 25 - 26 Dic 2026"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Durata / Scali</label>
+            <input type="text" 
+                   x-model="editTransportModal.duration" 
+                   placeholder="Es. 1h 55m Diretto, 18h (1 scalo)"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Box Partenza -->
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">Partenza</span>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Codice (IATA)</label>
+              <input type="text" 
+                     x-model="editTransportModal.depCode" 
+                     placeholder="FCO" 
+                     maxlength="6"
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white font-mono font-bold uppercase focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Orario</label>
+              <input type="text" 
+                     x-model="editTransportModal.depTime" 
+                     placeholder="21:00" 
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Città / Terminal</label>
+              <input type="text" 
+                     x-model="editTransportModal.depCity" 
+                     placeholder="Roma Fiumicino T3" 
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Box Arrivo -->
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block">Arrivo</span>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Codice (IATA)</label>
+              <input type="text" 
+                     x-model="editTransportModal.arrCode" 
+                     placeholder="BKK" 
+                     maxlength="6"
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white font-mono font-bold uppercase focus:outline-none focus:border-teal-500">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Orario</label>
+              <input type="text" 
+                     x-model="editTransportModal.arrTime" 
+                     placeholder="21:15 (+1)" 
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-teal-500">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Città / Aeroporto</label>
+              <input type="text" 
+                     x-model="editTransportModal.arrCity" 
+                     placeholder="Bangkok Suvarnabhumi" 
+                     class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-teal-500">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1">Codice PNR / Biglietto</label>
+          <input type="text" 
+                 x-model="editTransportModal.pnr" 
+                 placeholder="Es. BJRZOF, AA-39482"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Note Bagaglio, Posti & Indicazioni</label>
+          <textarea x-model="editTransportModal.baggage" 
+                    rows="2"
+                    placeholder="Es. Bagaglio 20kg in stiva + zaino cabina. Posti 27C, 27D, 28C, 28D."
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-sky-500"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-shrink-0">
+        <template x-if="!editTransportModal.isNew">
+          <button type="button" 
+                  @click="deleteTransport(editTransportModal.id)" 
+                  class="py-2.5 px-3 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 font-bold text-xs flex items-center gap-1 active:scale-95 transition-all">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>Elimina</span>
+          </button>
+        </template>
+
+        <button type="button" 
+                @click="editTransportModal.show = false" 
+                class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs">
+          Annulla
+        </button>
+        <button type="button" 
+                @click="saveEditTransport()" 
+                class="flex-1 py-2.5 rounded-xl bg-sky-500 text-slate-950 font-extrabold text-xs hover:bg-sky-400 shadow-lg shadow-sky-950/50 flex items-center justify-center gap-1.5 active:scale-95">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span x-text="editTransportModal.isNew ? 'Aggiungi Trasporto' : 'Salva Modifiche'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SELEZIONE MAPPE (GOOGLE MAPS vs MAPPE APPLE iPHONE)                -->
+  <!-- ========================================================================= -->
+  <div x-show="mapChooserModal.show" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-[140] bg-black/85 backdrop-blur-md p-4 flex flex-col items-center justify-end sm:justify-center"
+       @click.self="mapChooserModal.show = false"
+       x-cloak>
+    
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700/90 rounded-3xl p-5 space-y-4 shadow-2xl relative my-auto animate-in fade-in zoom-in-95">
+      
+      <!-- Close Button -->
+      <button @click="mapChooserModal.show = false" 
+              class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-90 z-10">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 pr-8">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-display font-bold text-base text-white">Apri Posizione Mappe</h3>
+          <p class="text-[11px] text-slate-400 truncate max-w-[200px]" x-text="mapChooserModal.title"></p>
+        </div>
+      </div>
+
+      <!-- Scelta tra Google Maps e Apple Maps -->
+      <div class="space-y-2 pt-1">
+        <!-- Opzione 1: Google Maps -->
+        <button @click="openGoogleMaps()" 
+                class="w-full p-3.5 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 flex items-center justify-between group active:scale-[0.98] transition-all">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30 group-hover:scale-110 transition-transform">
+              <i data-lucide="map" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-xs font-bold text-white block">Google Maps</span>
+              <span class="text-[10px] text-slate-400">Navigatore Google & Foto 360°</span>
+            </div>
+          </div>
+          <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors"></i>
+        </button>
+
+        <!-- Opzione 2: Mappe di Apple (iPhone / iPad / Mac) -->
+        <button @click="openAppleMaps()" 
+                class="w-full p-3.5 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 flex items-center justify-between group active:scale-[0.98] transition-all">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 group-hover:scale-110 transition-transform">
+              <i data-lucide="compass" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-xs font-bold text-white block">Mappe di Apple (iPhone)</span>
+              <span class="text-[10px] text-slate-400">App nativa Apple iOS & CarPlay</span>
+            </div>
+          </div>
+          <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors"></i>
+        </button>
+      </div>
+
+      <!-- Bottone Copia Indirizzo -->
+      <div class="pt-1">
+        <button @click="copyMapQuery()" 
+                class="w-full py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copia indirizzo per Grab / Taxi</span>
+        </button>
+      </div>
+
+      <!-- Bottone Annulla -->
+      <button @click="mapChooserModal.show = false" 
+              class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs">
+        Annulla
+      </button>
+
     </div>
   </div>
 
@@ -2334,6 +2707,7 @@
 
         editHotelModal: {
           show: false,
+          isNew: false,
           id: '',
           name: '',
           nameThai: '',
@@ -2347,6 +2721,31 @@
           bookingRef: '',
           phone: '',
           mapsQuery: ''
+        },
+
+        editTransportModal: {
+          show: false,
+          isNew: false,
+          id: '',
+          type: 'flight',
+          carrier: '',
+          flightNumber: '',
+          date: '',
+          depCode: '',
+          depCity: '',
+          depTime: '',
+          arrCode: '',
+          arrCity: '',
+          arrTime: '',
+          duration: '',
+          pnr: '',
+          baggage: ''
+        },
+
+        mapChooserModal: {
+          show: false,
+          title: '',
+          query: ''
         },
 
         showPwaPrompt: false,
@@ -2693,6 +3092,7 @@
           this.loadChecklist();
           this.loadTravelers();
           this.loadHotels();
+          this.loadTransports();
           this.loadItinerary();
           this.initCountdown();
           this.initWeather();
@@ -3070,7 +3470,7 @@
         },
 
         // ==========================================
-        // MODIFICA & PERSISTENZA HOTEL
+        // GESTIONE HOTEL (CRUD COMPLETO)
         // ==========================================
         loadHotels() {
           const saved = localStorage.getItem('thailand_hotels_v2');
@@ -3102,13 +3502,35 @@
           }
         },
 
+        openAddHotelModal() {
+          this.editHotelModal = {
+            show: true,
+            isNew: true,
+            id: 'hotel_' + Date.now(),
+            name: '',
+            nameThai: '',
+            city: 'Bangkok',
+            addressEn: '',
+            addressThai: '',
+            dates: '',
+            nights: 1,
+            checkIn: '14:00',
+            checkOut: '11:00',
+            bookingRef: '',
+            phone: '',
+            mapsQuery: ''
+          };
+          this.refreshIcons();
+        },
+
         openEditHotelModal(hotel) {
           this.editHotelModal = {
             show: true,
+            isNew: false,
             id: hotel.id,
             name: hotel.name,
             nameThai: hotel.nameThai || '',
-            city: hotel.city,
+            city: hotel.city || 'Bangkok',
             addressEn: hotel.addressEn || '',
             addressThai: hotel.addressThai || '',
             dates: hotel.dates || '',
@@ -3123,26 +3545,265 @@
         },
 
         saveEditHotel() {
-          const h = this.hotels.find(x => x.id === this.editHotelModal.id);
-          if (h) {
-            h.name = this.editHotelModal.name.trim() || h.name;
-            h.nameThai = this.editHotelModal.nameThai.trim();
-            h.city = this.editHotelModal.city.trim() || h.city;
-            h.addressEn = this.editHotelModal.addressEn.trim();
-            h.addressThai = this.editHotelModal.addressThai.trim();
-            h.dates = this.editHotelModal.dates.trim();
-            h.nights = parseInt(this.editHotelModal.nights) || 1;
-            h.checkIn = this.editHotelModal.checkIn.trim();
-            h.checkOut = this.editHotelModal.checkOut.trim();
-            h.bookingRef = this.editHotelModal.bookingRef.trim();
-            h.phone = this.editHotelModal.phone.trim();
-            h.mapsQuery = this.editHotelModal.mapsQuery.trim();
-            this.saveHotels();
-            this.uploadToCloud(true); // Sincronizza subito su Firebase in background
-            this.showToast('Hotel ' + h.name + ' salvato e sincronizzato!');
+          const name = (this.editHotelModal.name || '').trim();
+          if (!name) {
+            this.showToast('Inserisci il nome dell\'hotel');
+            return;
           }
+
+          if (this.editHotelModal.isNew) {
+            const newHotel = {
+              id: this.editHotelModal.id || ('hotel_' + Date.now()),
+              name: name,
+              nameThai: (this.editHotelModal.nameThai || '').trim(),
+              city: (this.editHotelModal.city || 'Thailandia').trim(),
+              addressEn: (this.editHotelModal.addressEn || '').trim(),
+              addressThai: (this.editHotelModal.addressThai || '').trim(),
+              dates: (this.editHotelModal.dates || '').trim(),
+              nights: parseInt(this.editHotelModal.nights) || 1,
+              checkIn: (this.editHotelModal.checkIn || '14:00').trim(),
+              checkOut: (this.editHotelModal.checkOut || '11:00').trim(),
+              bookingRef: (this.editHotelModal.bookingRef || '').trim(),
+              phone: (this.editHotelModal.phone || '').trim(),
+              mapsQuery: (this.editHotelModal.mapsQuery || name).trim()
+            };
+            this.hotels.push(newHotel);
+            this.showToast('Nuovo hotel aggiunto!');
+          } else {
+            const h = this.hotels.find(x => x.id === this.editHotelModal.id);
+            if (h) {
+              h.name = name;
+              h.nameThai = (this.editHotelModal.nameThai || '').trim();
+              h.city = (this.editHotelModal.city || h.city).trim();
+              h.addressEn = (this.editHotelModal.addressEn || '').trim();
+              h.addressThai = (this.editHotelModal.addressThai || '').trim();
+              h.dates = (this.editHotelModal.dates || '').trim();
+              h.nights = parseInt(this.editHotelModal.nights) || 1;
+              h.checkIn = (this.editHotelModal.checkIn || h.checkIn).trim();
+              h.checkOut = (this.editHotelModal.checkOut || h.checkOut).trim();
+              h.bookingRef = (this.editHotelModal.bookingRef || '').trim();
+              h.phone = (this.editHotelModal.phone || '').trim();
+              h.mapsQuery = (this.editHotelModal.mapsQuery || name).trim();
+              this.showToast('Hotel ' + h.name + ' salvato!');
+            }
+          }
+          this.saveHotels();
+          this.uploadToCloud(true);
           this.editHotelModal.show = false;
           this.refreshIcons();
+        },
+
+        deleteHotel(hotelId) {
+          const h = this.hotels.find(x => x.id === hotelId);
+          const name = h ? h.name : 'questo alloggio';
+          if (confirm('Sei sicuro di voler eliminare ' + name + '?')) {
+            this.hotels = this.hotels.filter(x => x.id !== hotelId);
+            this.saveHotels();
+            this.uploadToCloud(true);
+            if (this.editHotelModal.show && this.editHotelModal.id === hotelId) {
+              this.editHotelModal.show = false;
+            }
+            this.showToast('Alloggio eliminato');
+            this.refreshIcons();
+          }
+        },
+
+        // ==========================================
+        // GESTIONE TRASPORTI & VOLI (CRUD COMPLETO)
+        // ==========================================
+        loadTransports() {
+          const saved = localStorage.getItem('thailand_transports_v2');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                this.transports = parsed;
+                return;
+              }
+            } catch (e) {
+              console.error('Error loading saved transports', e);
+            }
+          }
+          this.transports = JSON.parse(JSON.stringify(this.defaultTransports));
+        },
+
+        saveTransports() {
+          localStorage.setItem('thailand_transports_v2', JSON.stringify(this.transports));
+        },
+
+        resetTransports() {
+          if (confirm("Vuoi davvero ripristinare i voli e trasferimenti originali?")) {
+            this.transports = JSON.parse(JSON.stringify(this.defaultTransports));
+            this.saveTransports();
+            this.uploadToCloud(true);
+            this.showToast("Trasporti originali ripristinati!");
+            this.refreshIcons();
+          }
+        },
+
+        openAddTransportModal() {
+          this.editTransportModal = {
+            show: true,
+            isNew: true,
+            id: 'transport_' + Date.now(),
+            type: 'flight',
+            carrier: '',
+            flightNumber: '',
+            date: '',
+            depCode: '',
+            depCity: '',
+            depTime: '',
+            arrCode: '',
+            arrCity: '',
+            arrTime: '',
+            duration: '',
+            pnr: '',
+            baggage: ''
+          };
+          this.refreshIcons();
+        },
+
+        openEditTransportModal(item) {
+          this.editTransportModal = {
+            show: true,
+            isNew: false,
+            id: item.id,
+            type: item.type || 'flight',
+            carrier: item.carrier || '',
+            flightNumber: item.flightNumber || '',
+            date: item.date || '',
+            depCode: item.depCode || '',
+            depCity: item.depCity || '',
+            depTime: item.depTime || '',
+            arrCode: item.arrCode || '',
+            arrCity: item.arrCity || '',
+            arrTime: item.arrTime || '',
+            duration: item.duration || '',
+            pnr: item.pnr || '',
+            baggage: item.baggage || ''
+          };
+          this.refreshIcons();
+        },
+
+        saveEditTransport() {
+          const carrier = (this.editTransportModal.carrier || '').trim();
+          const flightNum = (this.editTransportModal.flightNumber || '').trim();
+          if (!carrier && !flightNum) {
+            this.showToast('Inserisci la compagnia o il numero/titolo del trasporto');
+            return;
+          }
+
+          if (this.editTransportModal.isNew) {
+            const newT = {
+              id: this.editTransportModal.id || ('transport_' + Date.now()),
+              type: this.editTransportModal.type || 'flight',
+              carrier: carrier || 'Trasporto',
+              flightNumber: flightNum,
+              date: (this.editTransportModal.date || '').trim(),
+              depCode: (this.editTransportModal.depCode || 'DEP').toUpperCase().trim(),
+              depCity: (this.editTransportModal.depCity || '').trim(),
+              depTime: (this.editTransportModal.depTime || '').trim(),
+              arrCode: (this.editTransportModal.arrCode || 'ARR').toUpperCase().trim(),
+              arrCity: (this.editTransportModal.arrCity || '').trim(),
+              arrTime: (this.editTransportModal.arrTime || '').trim(),
+              duration: (this.editTransportModal.duration || '').trim(),
+              pnr: (this.editTransportModal.pnr || '').trim(),
+              baggage: (this.editTransportModal.baggage || '').trim()
+            };
+            this.transports.push(newT);
+            this.showToast('Nuovo trasporto aggiunto!');
+          } else {
+            const t = this.transports.find(x => x.id === this.editTransportModal.id);
+            if (t) {
+              t.type = this.editTransportModal.type;
+              t.carrier = carrier || t.carrier;
+              t.flightNumber = flightNum;
+              t.date = (this.editTransportModal.date || '').trim();
+              t.depCode = (this.editTransportModal.depCode || 'DEP').toUpperCase().trim();
+              t.depCity = (this.editTransportModal.depCity || '').trim();
+              t.depTime = (this.editTransportModal.depTime || '').trim();
+              t.arrCode = (this.editTransportModal.arrCode || 'ARR').toUpperCase().trim();
+              t.arrCity = (this.editTransportModal.arrCity || '').trim();
+              t.arrTime = (this.editTransportModal.arrTime || '').trim();
+              t.duration = (this.editTransportModal.duration || '').trim();
+              t.pnr = (this.editTransportModal.pnr || '').trim();
+              t.baggage = (this.editTransportModal.baggage || '').trim();
+              this.showToast('Trasporto ' + t.carrier + ' salvato!');
+            }
+          }
+          this.saveTransports();
+          this.uploadToCloud(true);
+          this.editTransportModal.show = false;
+          this.refreshIcons();
+        },
+
+        deleteTransport(transportId) {
+          const t = this.transports.find(x => x.id === transportId);
+          const name = t ? (t.carrier + ' ' + (t.flightNumber || '')) : 'questo trasporto';
+          if (confirm('Sei sicuro di voler eliminare ' + name + '?')) {
+            this.transports = this.transports.filter(x => x.id !== transportId);
+            this.saveTransports();
+            this.uploadToCloud(true);
+            if (this.editTransportModal.show && this.editTransportModal.id === transportId) {
+              this.editTransportModal.show = false;
+            }
+            this.showToast('Trasporto eliminato');
+            this.refreshIcons();
+          }
+        },
+
+        getTransportIcon(type) {
+          switch(type) {
+            case 'flight': return 'plane';
+            case 'ferry': return 'ship';
+            case 'train': return 'train';
+            case 'van':
+            case 'bus': return 'bus';
+            case 'car': return 'car';
+            default: return 'navigation';
+          }
+        },
+
+        getTransportBadgeClass(type) {
+          switch(type) {
+            case 'flight': return 'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+            case 'ferry': return 'bg-teal-500/20 text-teal-400 border border-teal-500/30';
+            case 'train': return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            case 'van':
+            case 'bus': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+            case 'car': return 'bg-violet-500/20 text-violet-400 border border-violet-500/30';
+            default: return 'bg-slate-700/50 text-slate-300 border border-slate-600/40';
+          }
+        },
+
+        // ==========================================
+        // MAP CHOOSER: GOOGLE MAPS vs MAPPE APPLE
+        // ==========================================
+        openMapChooser(title, query, address) {
+          this.mapChooserModal = {
+            show: true,
+            title: title || 'Posizione Hotel',
+            query: query || address || title || ''
+          };
+          this.refreshIcons();
+        },
+
+        openGoogleMaps() {
+          const q = encodeURIComponent(this.mapChooserModal.query);
+          window.open('https://maps.google.com/?q=' + q, '_blank');
+          this.mapChooserModal.show = false;
+        },
+
+        openAppleMaps() {
+          const q = encodeURIComponent(this.mapChooserModal.query);
+          // Link universale Apple Maps (apre l'app nativa su iPhone/iPad/Mac)
+          window.open('https://maps.apple.com/?q=' + q, '_blank');
+          this.mapChooserModal.show = false;
+        },
+
+        copyMapQuery() {
+          this.copyText(this.mapChooserModal.query, 'Indirizzo copiato negli appunti!');
+          this.mapChooserModal.show = false;
         },
 
         // ==========================================
@@ -3181,8 +3842,8 @@
               try {
                 if (!e.data) return;
                 const parsed = JSON.parse(e.data);
-                const cloudData = (parsed.data && (parsed.data.itinerary || parsed.data.travelers || parsed.data.hotels)) ? parsed.data : ((parsed.path === '/' && parsed.data) ? parsed.data : null);
-                if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels)) return;
+                const cloudData = (parsed.data && (parsed.data.itinerary || parsed.data.travelers || parsed.data.hotels || parsed.data.transports)) ? parsed.data : ((parsed.path === '/' && parsed.data) ? parsed.data : null);
+                if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels && !cloudData.transports)) return;
 
                 const cloudTs = cloudData.updatedAtISO || '';
                 const cloudAuthor = cloudData.updatedBy || 'Un amico';
@@ -3232,8 +3893,8 @@
             const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (!res.ok) return;
             const json = await res.json();
-            const cloudData = (json && (json.itinerary || json.travelers || json.hotels)) ? json : (json && json.data ? json.data : null);
-            if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels)) return;
+            const cloudData = (json && (json.itinerary || json.travelers || json.hotels || json.transports)) ? json : (json && json.data ? json.data : null);
+            if (!cloudData || (!cloudData.itinerary && !cloudData.travelers && !cloudData.hotels && !cloudData.transports)) return;
             const cloudTs = cloudData.updatedAtISO || '';
             const cloudAuthor = cloudData.updatedBy || 'Un amico';
             if (cloudTs && cloudTs !== this.lastCloudTimestamp) {
@@ -3257,6 +3918,10 @@
           if (data.hotels && data.hotels.length > 0) {
             this.hotels = data.hotels;
             this.saveHotels();
+          }
+          if (data.transports && Array.isArray(data.transports) && data.transports.length > 0) {
+            this.transports = data.transports;
+            this.saveTransports();
           }
           if (data.travelers && Array.isArray(data.travelers) && data.travelers.length > 0) {
             this.travelers = data.travelers;
@@ -3460,7 +4125,8 @@
               updatedAtISO: nowISO,
               travelers: this.travelers,
               itinerary: this.itinerary,
-              hotels: this.hotels
+              hotels: this.hotels,
+              transports: this.transports
             };
             const res = await fetch(this.cloudEndpoint, {
               method: 'PUT',
@@ -3499,8 +4165,8 @@
             const res = await fetch(this.cloudEndpoint, { cache: 'no-store' });
             if (res.ok) {
               const json = await res.json();
-              const cloudData = (json && (json.itinerary || json.travelers || json.hotels)) ? json : (json && json.data ? json.data : null);
-              if (cloudData && (cloudData.itinerary || cloudData.travelers || cloudData.hotels)) {
+              const cloudData = (json && (json.itinerary || json.travelers || json.hotels || json.transports)) ? json : (json && json.data ? json.data : null);
+              if (cloudData && (cloudData.itinerary || cloudData.travelers || cloudData.hotels || cloudData.transports)) {
                 const cloudTs = cloudData.updatedAtISO || '';
                 if (cloudData.itinerary && Array.isArray(cloudData.itinerary) && cloudData.itinerary.length > 0) {
                   this.itinerary = cloudData.itinerary;
@@ -3509,6 +4175,10 @@
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
                   this.hotels = cloudData.hotels;
                   this.saveHotels();
+                }
+                if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
+                  this.transports = cloudData.transports;
+                  this.saveTransports();
                 }
                 if (cloudData.travelers && Array.isArray(cloudData.travelers) && cloudData.travelers.length > 0) {
                   this.travelers = cloudData.travelers;
@@ -3545,6 +4215,7 @@
             travelers: this.travelers,
             itinerary: this.itinerary,
             hotels: this.hotels,
+            transports: this.transports,
             checklist: this.checklistItems
           };
           const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -3573,6 +4244,10 @@
               if (data.hotels && Array.isArray(data.hotels)) {
                 this.hotels = data.hotels;
                 this.saveHotels();
+              }
+              if (data.transports && Array.isArray(data.transports)) {
+                this.transports = data.transports;
+                this.saveTransports();
               }
               if (data.travelers && Array.isArray(data.travelers)) {
                 this.travelers = data.travelers;
@@ -3621,6 +4296,7 @@
         },
 
         getCityBadgeStyle(city) {
+          if (!city) return 'bg-slate-400/20 text-slate-300 border border-slate-400/30';
           if (city.includes('Bangkok') || city.includes('Treno')) return 'bg-amber-400/20 text-amber-300 border border-amber-400/30';
           if (city.includes('Chiang Mai') || city.includes('Chiang Rai')) return 'bg-teal-400/20 text-teal-300 border border-teal-400/30';
           if (city.includes('Khao Sok')) return 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30';
@@ -3914,7 +4590,8 @@
           }
         ],
 
-        transports: [
+        transports: [],
+        defaultTransports: [
           {
             id: 't1',
             type: 'flight',
