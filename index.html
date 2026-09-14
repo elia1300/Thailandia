@@ -298,7 +298,7 @@
               </div>
               <div>
                 <span class="font-display font-bold text-xs text-white">Countdown Partenza</span>
-                <span class="text-[10px] text-slate-400 block font-medium">25 Dic 2026 • 18:00 (Volo per Bangkok)</span>
+                <span class="text-[10px] text-slate-400 block font-medium" x-text="countdown.label || '25 Dic 2026 • 21:00 (Volo per Bangkok)'">25 Dic 2026 • 21:00 (Volo per Bangkok)</span>
               </div>
             </div>
 
@@ -3239,7 +3239,8 @@
           hours: '00',
           minutes: '00',
           seconds: '00',
-          isStarted: false
+          isStarted: false,
+          label: '25 Dic 2026 • 21:00 (Volo per Bangkok)'
         },
         countdownTimer: null,
 
@@ -4179,9 +4180,28 @@
           this.showToast('Meteo live aggiornato in tempo reale!');
         },
 
-        // Countdown Logic
+        // Countdown Logic (allineato dinamicamente alla partenza del volo alle 21:00)
         initCountdown() {
-          const departureDate = new Date('2026-12-25T18:00:00').getTime();
+          let targetDateStr = '2026-12-25T21:00:00';
+          let subtitle = '25 Dic 2026 • 21:00 (Volo per Bangkok)';
+
+          const firstFlight = (this.transports && this.transports.length > 0)
+            ? this.transports.find(t => t.type === 'flight' || t.id === 't1')
+            : null;
+
+          if (firstFlight && firstFlight.depTime) {
+            const time = firstFlight.depTime.trim();
+            const timeParts = time.split(':');
+            if (timeParts.length >= 2) {
+              const hh = timeParts[0].padStart(2, '0');
+              const mm = timeParts[1].padStart(2, '0');
+              targetDateStr = `2026-12-25T${hh}:${mm}:00`;
+              subtitle = `25 Dic 2026 • ${hh}:${mm} (${firstFlight.flightNumber ? (firstFlight.depCode || 'FCO') + ' ➔ ' + (firstFlight.arrCode || 'BKK') : 'Volo per Bangkok'})`;
+            }
+          }
+
+          this.countdown.label = subtitle;
+          const departureDate = new Date(targetDateStr).getTime();
           
           const update = () => {
             const now = new Date().getTime();
@@ -4662,6 +4682,7 @@
             if (old) localStorage.setItem('thailand_transports_undo', old);
           }
           localStorage.setItem('thailand_transports_v2', JSON.stringify(this.transports));
+          this.initCountdown();
         },
 
         undoTransports() {
