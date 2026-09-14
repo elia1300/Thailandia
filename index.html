@@ -1048,28 +1048,39 @@
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-display bg-sky-500/20 text-sky-300 border border-sky-500/30">
                         <span x-text="'Giorno ' + dayWeather.dayNum"></span> • <span x-text="dayWeather.date"></span>
                       </span>
-                      <template x-if="dayWeather.tag">
+                      <template x-if="getDynamicDayTag(dayWeather)">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                              x-text="dayWeather.tag"></span>
+                              x-text="getDynamicDayTag(dayWeather)"></span>
                       </template>
                     </div>
                     <h4 class="text-xs font-bold text-slate-200 font-display pt-0.5" x-text="dayWeather.title"></h4>
                   </div>
 
-                  <!-- Icona & Temperatura -->
+                  <!-- Icona & Temperatura Dinamica (Adattata alla fascia oraria di arrivo/tappa) -->
                   <div class="text-right flex-shrink-0">
                     <div class="flex items-center justify-end gap-1.5">
-                      <span class="text-2xl filter drop-shadow" x-text="dayWeather.weatherIcon"></span>
-                      <span class="font-mono text-xl font-black text-white" x-text="dayWeather.maxTemp + '°'"></span>
+                      <span class="text-2xl filter drop-shadow" x-text="getDynamicDayIcon(dayWeather)"></span>
+                      <span class="font-mono text-xl font-black text-white" x-text="getDynamicDayMaxTemp(dayWeather) + '°'"></span>
                     </div>
-                    <span class="text-[10px] font-mono text-slate-400 block" x-text="'Min ' + dayWeather.minTemp + '°C'"></span>
+                    <span class="text-[10px] font-mono text-slate-400 block" x-text="'Min ' + getDynamicDayMinTemp(dayWeather) + '°C'"></span>
                   </div>
                 </div>
+
+                <!-- Badge Orario Sincronizzato (Live Sync dal Volo/Trasporto/Itinerario) -->
+                <template x-if="getDynamicDayTimingBadge(dayWeather)">
+                  <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-[10.5px]">
+                    <div class="flex items-center gap-1.5 text-sky-300 font-medium">
+                      <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-400 flex-shrink-0"></i>
+                      <span x-text="getDynamicDayTimingBadge(dayWeather)"></span>
+                    </div>
+                    <span class="text-[9px] font-mono uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Live Sync</span>
+                  </div>
+                </template>
 
                 <!-- Condizione Sintetica & Metriche Rapide -->
                 <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between text-[11px]">
                   <div class="flex items-center gap-1.5">
-                    <span class="text-amber-400 font-bold" x-text="dayWeather.condition"></span>
+                    <span class="text-amber-400 font-bold" x-text="getDynamicDayCondition(dayWeather)"></span>
                   </div>
                   <div class="flex items-center gap-3 font-mono text-[10px] text-slate-400">
                     <span title="Probabilità di Pioggia" class="flex items-center gap-1">
@@ -1087,14 +1098,14 @@
                   </div>
                 </div>
 
-                <!-- Consiglio Operativo Clima & Valigia del Giorno -->
+                <!-- Consiglio Operativo Clima & Valigia Dinamico (Ricalcolato in tempo reale) -->
                 <div class="text-[11px] text-slate-300 bg-sky-950/30 border border-sky-500/20 rounded-lg p-2.5 flex items-start gap-2">
                   <i data-lucide="info" class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5"></i>
                   <div class="leading-relaxed space-y-1">
-                    <p x-text="dayWeather.dayAdvice"></p>
+                    <p x-text="getDynamicDayAdvice(dayWeather)"></p>
                     <p class="text-sky-300 text-[10px] font-semibold flex items-center gap-1">
                       <span>👕 Outfit:</span>
-                      <span x-text="dayWeather.outfitTip"></span>
+                      <span x-text="getDynamicOutfitTip(dayWeather)"></span>
                     </p>
                   </div>
                 </div>
@@ -3358,7 +3369,7 @@
                 humidity: '58%',
                 rainChance: '5%',
                 wind: '12 km/h',
-                dayAdvice: 'Atterraggio alle 16:30. Serata a 26°C tra i vicoli illuminati dai neon di Yaowarat Road: clima ottimo per mangiare noodles e spiedini all\'aperto senza afa.',
+                dayAdvice: 'Atterraggio a Suvarnabhumi alle 20:55. Serata a 25-26°C tra i vicoli illuminati dai neon di Yaowarat Road: clima ottimo per mangiare noodles e spiedini all\'aperto senza afa.',
                 outfitTip: 'T-shirt traspirante di cotone o lino, scarpe comode per camminare tra i banchi di street food.'
               },
               {
@@ -3649,6 +3660,7 @@
           this.loadHotels();
           this.loadTransports();
           this.loadItinerary();
+          this.syncTransportsToItinerary(false);
           this.initCountdown();
           this.initWeather();
           this.initDualClock();
@@ -3719,15 +3731,364 @@
           this.refreshIcons();
         },
 
+        // =========================================================================
+        // MOTORE REATTIVO CONSIGLI & METEO DINAMICO (TEMPO REALE)
+        // Ricalcola consigli, temperature e outfit quando cambiano orari e trasporti
+        // =========================================================================
+        parseTimeHour(timeStr) {
+          if (!timeStr || typeof timeStr !== 'string') return null;
+          const clean = timeStr.replace(/\s*\(\+\d+\)/i, '').trim();
+          const m = clean.match(/(\d{1,2})[:.hH](\d{2})/) || clean.match(/^(\d{1,2})$/);
+          if (m) {
+            const h = parseInt(m[1], 10);
+            const min = m[2] !== undefined ? parseInt(m[2], 10) : 0;
+            if (!isNaN(h) && !isNaN(min) && h >= 0 && h <= 23 && min >= 0 && min <= 59) {
+              return {
+                hour: h,
+                minute: min,
+                formatted: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
+                cleanTime: clean
+              };
+            }
+          }
+          return null;
+        },
+
+        getDayPrimaryTransport(dayNum) {
+          if (!this.transports || !Array.isArray(this.transports)) return null;
+          if (dayNum === 1) {
+            return this.transports.find(t => t.id === 't1') || 
+                   this.transports.find(t => t.type === 'flight' && (t.arrCode === 'BKK' || (t.arrCity && t.arrCity.toLowerCase().includes('bangkok')))) || 
+                   this.transports[0] || null;
+          }
+          if (dayNum === 3) {
+            return this.transports.find(t => t.id === 't2') || 
+                   this.transports.find(t => t.type === 'train' || (t.depCode === 'BKK' && t.arrCode === 'CNX'));
+          }
+          if (dayNum === 4) {
+            return this.transports.find(t => t.id === 't2') || 
+                   this.transports.find(t => t.arrCode === 'CNX');
+          }
+          if (dayNum === 7) {
+            return this.transports.find(t => t.id === 't3') || 
+                   this.transports.find(t => t.arrCode === 'URT');
+          }
+          if (dayNum === 9) {
+            return this.transports.find(t => t.id === 't5') || 
+                   this.transports.find(t => t.arrCode === 'KBV');
+          }
+          if (dayNum === 10 || dayNum === 11) {
+            return this.transports.find(t => t.id === 't6') || this.transports.find(t => t.id === 't7');
+          }
+          if (dayNum === 13) {
+            return this.transports.find(t => t.id === 't9') || 
+                   this.transports.find(t => t.depCode === 'HKT' && t.arrCode === 'BKK');
+          }
+          if (dayNum === 14) {
+            return this.transports.find(t => t.id === 't10') || 
+                   this.transports.find(t => t.arrCode === 'FCO' || t.arrCode === 'MXP');
+          }
+          return null;
+        },
+
+        getDynamicDayAdvice(dayWeather) {
+          if (!dayWeather) return '';
+          const num = dayWeather.dayNum;
+
+          // GIORNO 1: ARRIVO A BANGKOK (Adattato in tempo reale all'orario effettivo dell'atterraggio)
+          if (num === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : ((this.itinerary[0] && this.itinerary[0].stops && this.itinerary[0].stops[0]) ? this.itinerary[0].stops[0].time : '20:55');
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            const f = p ? p.formatted : arrStr;
+
+            if (h >= 20) {
+              return `Atterraggio a Suvarnabhumi aggiornato alle ${f}. A quest'ora della notte la temperatura è sui 25-26°C con piacevole brezza e zero afa opprimente. Disbrigo immigrazione serale rapido: taxi ufficiale o Airport Rail Link verso Yaowarat per il check-in notturno, prima doccia rinfrescante e delizioso spuntino con noodles caldi o spiedini tra i neon senza il caldo diurno!`;
+            } else if (h >= 18) {
+              return `Atterraggio a Suvarnabhumi programmato alle ${f}. Clima serale piacevole a circa 26-27°C con sole già tramontato. Trasferimento in hotel a Chinatown per il check-in, seguito da cena rilassata all'aperto tra le lanterne rosse con atmosfera vivace.`;
+            } else if (h >= 13) {
+              return `Atterraggio a Suvarnabhumi alle ${f}. Clima pomeridiano caldo (circa 31-32°C). Possibile traffico sostenuto nelle ore di punta verso il centro: doccia rigenerante in hotel e poi prima passeggiata serale tra lo street food e i rooftop di Yaowarat Road.`;
+            } else if (h >= 6) {
+              return `Atterraggio mattutino alle ${f}. Aria fresca a 24°C in aumento fino a 32°C durante le ore centrali. Poiché il check-in standard è alle 14:00, depositate comodamente gli zaini alla reception per iniziare subito a scoprire la città.`;
+            } else {
+              return `Atterraggio all'alba alle ${f}. Clima fresco a 23°C e città ancora quieta. Trasferimento verso l'hotel per deposito bagagli e prima colazione thai rilassante.`;
+            }
+          }
+
+          // GIORNO 2: MERCATO GALLEGGIANTE DAMNOEN SADUAK & MAEKLONG
+          if (num === 2) {
+            const d2Stop = (this.itinerary[1] && this.itinerary[1].stops && this.itinerary[1].stops[0]) ? this.itinerary[1].stops[0].time : '07:00';
+            return `Partenza programmata alle ${d2Stop} con aria fresca mattutina (22-23°C). Nelle ore centrali sui canali in barca il sole scalda forte fino a 33°C.`;
+          }
+
+          // GIORNO 3: GRAND PALACE & TRENO NOTTURNO
+          if (num === 3) {
+            const t2 = this.getDayPrimaryTransport(3);
+            const depStr = (t2 && t2.depTime) ? t2.depTime : '18:40';
+            return `Grand Palace e Wat Pho richiedono abbigliamento consono. Alle ${depStr} si sale sul treno notturno Special Express con aria condizionata polare: preparare la felpa!`;
+          }
+
+          // GIORNO 4: ARRIVO A CHIANG MAI
+          if (num === 4) {
+            const t2 = this.getDayPrimaryTransport(4);
+            const arrStr = (t2 && t2.arrTime) ? t2.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '07:15';
+            return `Arrivo alla stazione di Chiang Mai alle ${arrStr} tra l'aria frizzante e limpida del nord (18-20°C). Pomeriggio mite a 28°C tra i vicoli della Old City; dopo il tramonto al Night Bazaar la temperatura scende a 16-17°C.`;
+          }
+
+          // GIORNO 7: KHAO SOK LAKE
+          if (num === 7) {
+            const t3 = this.getDayPrimaryTransport(7);
+            const depStr = (t3 && t3.depTime) ? t3.depTime : '07:30';
+            return `Partenza volo alle ${depStr} verso Surat Thani. All'arrivo al Lago Cheow Lan clima tropicale incontaminato: acqua calda del lago a 28°C, zero onde e tuffi rigeneranti direttamente dal patio della casa galleggiante!`;
+          }
+
+          // GIORNO 9: KRABI RAILAY
+          if (num === 9) {
+            const t5 = this.getDayPrimaryTransport(9);
+            const arrStr = (t5 && t5.arrTime) ? t5.arrTime : '16:00';
+            return `Arrivo a Railay Beach previsto verso le ${arrStr}. Clima balneare superbo a 31°C e mare calmo a 29°C. Sbarco a piedi con l'acqua alle ginocchia sotto la luce dorata del tramonto.`;
+          }
+
+          // GIORNO 13: PHUKET ➔ BANGKOK
+          if (num === 13) {
+            const t9 = this.getDayPrimaryTransport(13);
+            const depStr = (t9 && t9.depTime) ? t9.depTime : '19:45';
+            const arrStr = (t9 && t9.arrTime) ? t9.arrTime : '21:15';
+            return `Safari in moto d'acqua con mare ideale di giorno. Alle ${depStr} decollo da Phuket con atterraggio serale a Bangkok alle ${arrStr} (26°C serali).`;
+          }
+
+          // GIORNO 14: VOLO RIENTRO ITALIA
+          if (num === 14) {
+            const t10 = this.getDayPrimaryTransport(14);
+            const depStr = (t10 && t10.depTime) ? t10.depTime : '08:05';
+            return `Volo intercontinentale di rientro in decollo alle ${depStr} da Suvarnabhumi: sveglia presto e transfer in aeroporto 3 ore prima. Vestiti comodi a strati per affrontare la climatizzazione a bordo.`;
+          }
+
+          return dayWeather.dayAdvice || '';
+        },
+
+        getDynamicOutfitTip(dayWeather) {
+          if (!dayWeather) return '';
+          if (dayWeather.dayNum === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+
+            if (h >= 19) {
+              return `Aria condizionata molto fredda (19°C) in aeroporto e nei taxi serali: tieni una felpa leggera nello zaino a mano; sotto t-shirt e scarpe comode per il giro serale a Yaowarat.`;
+            } else if (h >= 13) {
+              return `T-shirt traspirante di cotone o lino, occhiali da sole e scarpe comode per camminare tra i banchi di street food.`;
+            } else {
+              return `Abbigliamento leggero e traspirante, cappellino e occhiali da sole per affrontare le ore calde del primo giorno.`;
+            }
+          }
+          return dayWeather.outfitTip || '';
+        },
+
+        getDynamicDayCondition(dayWeather) {
+          if (!dayWeather) return 'Soleggiato';
+          if (dayWeather.dayNum === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            if (h >= 19) return 'Brezza Serale & Clima Notturno a 25°C';
+            if (h >= 13) return 'Soleggiato & Pomeriggio Caldo';
+            return 'Mattina Fresca in Aumento a 32°C';
+          }
+          return dayWeather.condition || 'Soleggiato';
+        },
+
+        getDynamicDayIcon(dayWeather) {
+          if (!dayWeather) return '☀️';
+          if (dayWeather.dayNum === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            if (h >= 19) return '🌙';
+          }
+          return dayWeather.weatherIcon || '☀️';
+        },
+
+        getDynamicDayMaxTemp(dayWeather) {
+          if (!dayWeather) return 32;
+          if (dayWeather.dayNum === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            if (h >= 20) return 26; // Temperatura notturna reale all'atterraggio
+            if (h >= 18) return 28; // Temperatura serale
+          }
+          return dayWeather.maxTemp || 32;
+        },
+
+        getDynamicDayMinTemp(dayWeather) {
+          if (!dayWeather) return 23;
+          return dayWeather.minTemp || 23;
+        },
+
+        getDynamicDayTag(dayWeather) {
+          if (!dayWeather) return '';
+          if (dayWeather.dayNum === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            if (h >= 19) return '🏮 Arrivo Serale & Street Food Notturno';
+            if (h < 12) return '🛬 Arrivo Mattutino & Prime Esplorazioni';
+          }
+          return dayWeather.tag || '';
+        },
+
+        getDynamicDayTimingBadge(dayWeather) {
+          if (!dayWeather) return null;
+          const num = dayWeather.dayNum;
+          if (num === 1) {
+            const t = this.getDayPrimaryTransport(1);
+            const arrStr = (t && t.arrTime) ? t.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '20:55';
+            const p = this.parseTimeHour(arrStr);
+            const h = p ? p.hour : 20;
+            const tempStr = h >= 19 ? '25°C serali' : '31°C diurni';
+            return `Volo andata: atterraggio ore ${arrStr} • ${tempStr}`;
+          }
+          if (num === 3) {
+            const t = this.getDayPrimaryTransport(3);
+            const depStr = (t && t.depTime) ? t.depTime.trim() : '18:40';
+            return `Treno notturno: partenza ore ${depStr} • Cuccetta climatizzata`;
+          }
+          if (num === 4) {
+            const t = this.getDayPrimaryTransport(4);
+            const arrStr = (t && t.arrTime) ? t.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '07:15';
+            return `Arrivo stazione Chiang Mai: ore ${arrStr} • Fresco a 18°C`;
+          }
+          if (num === 7) {
+            const t = this.getDayPrimaryTransport(7);
+            const depStr = (t && t.depTime) ? t.depTime.trim() : '07:30';
+            return `Volo Surat Thani: ore ${depStr} • Lago Cheow Lan a 28°C`;
+          }
+          if (num === 9) {
+            const t = this.getDayPrimaryTransport(9);
+            const arrStr = (t && t.arrTime) ? t.arrTime.trim() : '16:00';
+            return `Arrivo Railay Beach: ore ${arrStr} • Mare calmo a 29°C`;
+          }
+          if (num === 13) {
+            const t = this.getDayPrimaryTransport(13);
+            const depStr = (t && t.depTime) ? t.depTime.trim() : '19:45';
+            const arrStr = (t && t.arrTime) ? t.arrTime.trim() : '21:15';
+            return `Volo HKT ➔ BKK: decollo ${depStr} • atterraggio ${arrStr}`;
+          }
+          if (num === 14) {
+            const t = this.getDayPrimaryTransport(14);
+            const depStr = (t && t.depTime) ? t.depTime.trim() : '08:05';
+            return `Volo rientro FCO: decollo BKK ore ${depStr}`;
+          }
+          return null;
+        },
+
+        // Sincronizzazione Intelligente: Trasporti ➔ Tappe Itinerario
+        syncTransportsToItinerary(force = false) {
+          if (!this.transports || !Array.isArray(this.transports) || !this.itinerary || !Array.isArray(this.itinerary)) return;
+
+          // 1. Giorno 1 - Atterraggio a Bangkok
+          const t1 = this.transports.find(t => t.id === 't1') || this.transports[0];
+          if (t1 && t1.arrTime && this.itinerary[0]) {
+            const cleanArr = t1.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
+            const p = this.parseTimeHour(cleanArr);
+            const d1 = this.itinerary[0];
+
+            if (d1 && d1.stops && d1.stops.length > 0) {
+              const currentStopTime = d1.stops[0].time;
+              if (force || currentStopTime !== cleanArr) {
+                d1.stops[0].time = cleanArr;
+                d1.stops[0].name = `Atterraggio a BKK (${cleanArr}) & SIM`;
+
+                if (p && p.hour >= 19) {
+                  const h = p.hour;
+                  const m = p.minute;
+
+                  let checkInH = h + 1;
+                  let checkInM = m + 15;
+                  if (checkInM >= 60) { checkInH += 1; checkInM -= 60; }
+                  const checkInTime = `${String(checkInH).padStart(2, '0')}:${String(checkInM).padStart(2, '0')}`;
+
+                  let foodH = checkInH;
+                  let foodM = checkInM + 45;
+                  if (foodM >= 60) { foodH += 1; foodM -= 60; }
+                  const foodTime = `${String(foodH).padStart(2, '0')}:${String(foodM).padStart(2, '0')}`;
+
+                  let drinkH = foodH;
+                  let drinkM = foodM + 45;
+                  if (drinkM >= 60) { drinkH += 1; drinkM -= 60; }
+                  const drinkTime = `${String(drinkH).padStart(2, '0')}:${String(drinkM).padStart(2, '0')}`;
+
+                  if (d1.stops[1]) {
+                    d1.stops[1].time = checkInTime;
+                    d1.stops[1].name = 'Check-in Notturno Grand China Hotel';
+                    d1.stops[1].description = 'Raggiungimento hotel con taxi ufficiale o Airport Rail Link, check-in rapido e sistemazione in camera.';
+                  }
+                  if (d1.stops[2]) {
+                    d1.stops[2].time = foodTime;
+                    d1.stops[2].name = 'Street Food Notturno tra i Neon di Yaowarat';
+                    d1.stops[2].description = 'Spiedini satay, noodles fumanti da Nai Ek Roll Noodle e succo fresco senza l\'afa diurna.';
+                  }
+                  if (d1.stops[3]) {
+                    d1.stops[3].time = drinkTime;
+                    d1.stops[3].name = 'Primo Brindisi Notturno a Bangkok';
+                    d1.stops[3].description = 'Birra Chang o Singha ghiacciata nei vicoli storici di Talat Noi per brindare al viaggio.';
+                  }
+                }
+              }
+            }
+          }
+
+          // 2. Giorno 3 & 4 - Treno Notturno
+          const t2 = this.transports.find(t => t.id === 't2');
+          if (t2) {
+            const d3 = this.itinerary.find(d => d.dayNum === 3);
+            if (d3 && d3.stops && d3.stops.length > 0 && t2.depTime) {
+              const lastStop = d3.stops[d3.stops.length - 1];
+              if (lastStop && lastStop.name.toLowerCase().includes('treno')) {
+                lastStop.time = t2.depTime.trim();
+              }
+            }
+            const d4 = this.itinerary.find(d => d.dayNum === 4);
+            if (d4 && d4.stops && d4.stops.length > 0 && t2.arrTime) {
+              const firstStop = d4.stops[0];
+              const cleanArr = t2.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
+              if (firstStop && firstStop.name.toLowerCase().includes('arrivo')) {
+                firstStop.time = cleanArr;
+              }
+            }
+          }
+
+          // 3. Giorno 14 - Volo di Rientro
+          const t10 = this.transports.find(t => t.id === 't10');
+          if (t10 && t10.depTime) {
+            const d14 = this.itinerary.find(d => d.dayNum === 14);
+            if (d14 && d14.stops && d14.stops.length > 0) {
+              const lastStop = d14.stops[d14.stops.length - 1];
+              if (lastStop && (lastStop.name.toLowerCase().includes('volo') || lastStop.name.toLowerCase().includes('rientro') || lastStop.name.toLowerCase().includes('shopping'))) {
+                lastStop.time = t10.depTime.trim();
+              }
+            }
+          }
+
+          this.saveItinerary();
+        },
+
         getDayWeatherBadge(dayNum) {
           for (const reg of this.weatherRegions) {
             if (reg.tripDays) {
               const d = reg.tripDays.find(t => t.dayNum === dayNum);
               if (d) {
                 return {
-                  temp: `${d.minTemp}°-${d.maxTemp}°`,
-                  icon: d.weatherIcon,
-                  condition: d.condition,
+                  temp: `${this.getDynamicDayMinTemp(d)}°-${this.getDynamicDayMaxTemp(d)}°`,
+                  icon: this.getDynamicDayIcon(d),
+                  condition: this.getDynamicDayCondition(d),
                   regionId: reg.id
                 };
               }
@@ -4026,6 +4387,19 @@
             day.backpackNotes = this.editDayModal.backpackNotes.trim();
             day.mainLocation = this.editDayModal.mainLocation.trim();
             day.stops = JSON.parse(JSON.stringify(this.editDayModal.stops));
+            
+            // Sincronizzazione bidirezionale: se l'utente ha modificato l'orario della prima tappa del Giorno 1
+            if (day.dayNum === 1 && day.stops && day.stops[0] && day.stops[0].time) {
+              const t1 = this.transports.find(t => t.id === 't1');
+              if (t1) {
+                const cleanT = day.stops[0].time.trim();
+                if (cleanT && !t1.arrTime.includes(cleanT)) {
+                  t1.arrTime = cleanT;
+                  this.saveTransports();
+                }
+              }
+            }
+
             this.saveItinerary();
             this.uploadToCloud(true); // Sincronizza subito su Firebase in background
             this.showToast('Giorno ' + day.dayNum + ' salvato e sincronizzato!');
@@ -4328,6 +4702,7 @@
             }
           }
           this.saveTransports();
+          this.syncTransportsToItinerary(true);
           this.uploadToCloud(true);
           this.editTransportModal.show = false;
           this.refreshIcons();
@@ -4952,6 +5327,7 @@ Tel: ${h.phone || ''}`
                     return t;
                   });
                   this.saveTransports();
+                  this.syncTransportsToItinerary(false);
                 }
                 if (cloudData.travelers && Array.isArray(cloudData.travelers) && cloudData.travelers.length > 0) {
                   this.travelers = cloudData.travelers;
@@ -5375,8 +5751,8 @@ Tel: ${h.phone || ''}`
             depCity: 'Roma Fiumicino · 25 Dic 21:00',
             depTime: '21:00',
             arrCode: 'BKK',
-            arrCity: 'Bangkok Suvarnabhumi · 26 Dic 21:15',
-            arrTime: '21:15 (+1)',
+            arrCity: 'Bangkok Suvarnabhumi · 26 Dic 20:55',
+            arrTime: '20:55 (+1)',
             duration: '18h 15m',
             stops: 1,
             stopsInfo: 'DEL (Nuova Delhi • 5h attesa)',
@@ -5565,10 +5941,10 @@ Tel: ${h.phone || ''}`
             expanded: true,
             mainLocation: 'Yaowarat Road Chinatown Bangkok',
             stops: [
-              { time: '16:30', name: 'Atterraggio a BKK & SIM', description: 'Ritiro bagagli, SIM TrueMove/AIS al piano arrivi e prelievo/cambio cash ai SuperRich al piano sotterraneo treni.', mapsQuery: 'Suvarnabhumi Airport Bangkok', highlight: false },
-              { time: '18:30', name: 'Check-in Grand China Hotel', description: 'Doccia rinfrescante e sistemazione nelle camere nel cuore pulsante di Yaowarat Road (Chinatown).', mapsQuery: 'Grand China Hotel Bangkok', highlight: false },
-              { time: '20:30', name: 'Street Food tra i Neon di Chinatown', description: 'Primi assaggi tra spiedini satay, noodles fumanti da Nai Ek Roll Noodle e succo di melograno fresco.', mapsQuery: 'Nai Ek Roll Noodle Yaowarat', highlight: true, insiderTip: 'Prendere il tè freddo thai Cha Yen e dessert al mango!' },
-              { time: '22:30', name: 'Primo Brindisi a Bangkok', description: 'Birra Chang o Singha ghiacciata in un locale caratteristico tra i vicoli storici di Talat Noi.', mapsQuery: 'Talat Noi Bangkok', highlight: false }
+              { time: '20:55', name: 'Atterraggio a BKK & SIM', description: 'Ritiro bagagli, SIM TrueMove/AIS al piano arrivi e prelievo/cambio cash ai SuperRich al piano sotterraneo treni.', mapsQuery: 'Suvarnabhumi Airport Bangkok', highlight: false },
+              { time: '22:15', name: 'Check-in Notturno Grand China Hotel', description: 'Raggiungimento hotel con taxi ufficiale o Airport Rail Link, check-in rapido e sistemazione in camera.', mapsQuery: 'Grand China Hotel Bangkok', highlight: false },
+              { time: '23:00', name: 'Street Food Notturno tra i Neon di Chinatown', description: 'Primi assaggi tra spiedini satay, noodles fumanti da Nai Ek Roll Noodle e succo di melograno fresco senza l\'afa diurna.', mapsQuery: 'Nai Ek Roll Noodle Yaowarat', highlight: true, insiderTip: 'Prendere il tè freddo thai Cha Yen e dessert al mango!' },
+              { time: '23:45', name: 'Primo Brindisi Notturno a Bangkok', description: 'Birra Chang o Singha ghiacciata in un locale caratteristico tra i vicoli storici di Talat Noi per brindare al viaggio.', mapsQuery: 'Talat Noi Bangkok', highlight: false }
             ]
           },
           {
