@@ -778,15 +778,37 @@
                 <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.depCity"></span>
               </div>
 
-              <!-- Freccia / Durata -->
-              <div class="flex flex-col items-center px-2">
-                <span class="text-[10px] font-mono text-slate-400 mb-1" x-text="item.duration"></span>
-                <div class="w-20 sm:w-24 h-0.5 bg-gradient-to-r from-emerald-500/40 via-teal-400 to-emerald-500/40 relative">
-                  <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-slate-300">
-                    <i :data-lucide="getTransportIcon(item.type)" class="w-3.5 h-3.5"></i>
-                  </div>
+              <!-- Freccia / Durata / Scali -->
+              <div class="flex flex-col items-center px-2 flex-1 max-w-[175px] sm:max-w-[210px] mx-1">
+                <span class="text-[10px] font-mono text-slate-400 mb-1 truncate max-w-full" x-text="item.duration"></span>
+                <div class="w-full h-0.5 relative flex items-center justify-center"
+                     :class="(item.stops && item.stops > 0) ? 'bg-gradient-to-r from-emerald-500/40 via-amber-400/90 to-teal-400/40' : 'bg-gradient-to-r from-emerald-500/40 via-teal-400 to-emerald-500/40'">
+                  <!-- Se Diretto: icona del mezzo -->
+                  <template x-if="!item.stops || item.stops == 0">
+                    <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-slate-300">
+                      <i :data-lucide="getTransportIcon(item.type)" class="w-3.5 h-3.5"></i>
+                    </div>
+                  </template>
+                  <!-- Se con Scalo: nodo/punto di scalo -->
+                  <template x-if="item.stops && item.stops > 0">
+                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                      <div class="w-4 h-4 rounded-full bg-slate-900 border border-amber-400 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/30">
+                        <i data-lucide="git-commit" class="w-2.5 h-2.5"></i>
+                      </div>
+                    </div>
+                  </template>
                 </div>
-                <span class="text-[9px] text-slate-500 uppercase mt-1">Diretto</span>
+
+                <!-- Label: Diretto vs Scali con icona -->
+                <template x-if="!item.stops || item.stops == 0">
+                  <span class="text-[9px] text-slate-500 uppercase mt-1 font-semibold tracking-wider">Diretto</span>
+                </template>
+                <template x-if="item.stops && item.stops > 0">
+                  <div class="flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-sm">
+                    <i data-lucide="git-commit" class="w-2.5 h-2.5 text-amber-400 flex-shrink-0"></i>
+                    <span class="text-[9px] font-black uppercase tracking-tight" x-text="getTransportStopLabel(item)"></span>
+                  </div>
+                </template>
               </div>
 
               <div class="text-right">
@@ -795,6 +817,14 @@
                 <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.arrCity"></span>
               </div>
             </div>
+
+            <!-- Dettaglio Scalo Info se presente -->
+            <template x-if="item.stops && item.stops > 0 && item.stopsInfo">
+              <div class="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-950/30 border border-amber-500/20 text-[10px] text-amber-300 flex items-center gap-1.5">
+                <i data-lucide="map-pin" class="w-3 h-3 text-amber-400 flex-shrink-0"></i>
+                <span>Scalo: <strong class="text-amber-200" x-text="item.stopsInfo"></strong></span>
+              </div>
+            </template>
 
             <!-- Codice PNR / Terminal / Bagaglio -->
             <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
@@ -1102,7 +1132,195 @@
         </div>
       </div>
 
-      <!-- 1. CONVERTITORE DI VALUTA ISTANTANEO THB <-> EUR -->
+      <!-- ========================================================== -->
+      <!-- 1. OROLOGIO DOPPIO FUSO ITA ⇄ THA (SMART CALL WINDOW)     -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Doppio Fuso & Finestra Chiamate</h3>
+              <span class="text-[10px] text-slate-400">Differenza in inverno: <strong>+6 Ore</strong> a Bangkok rispetto a Roma</span>
+            </div>
+          </div>
+          <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+            UTC+7 ⇄ UTC+1
+          </span>
+        </div>
+
+        <!-- Riquadri Orologio Digitale Live -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <!-- Orologio THAILANDIA -->
+          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span>🇹🇭</span> <span>Thailandia</span>
+              </span>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">ICT (Ora locale)</span>
+            </div>
+            <div class="flex items-baseline gap-1 pt-0.5">
+              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeBangkok || '--:--:--'"></span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span x-text="dateBangkok || 'Oggi'"></span>
+              <span class="text-amber-400 font-semibold" x-text="(hourBangkok >= 6 && hourBangkok < 18) ? '☀️ Giorno' : '🌙 Notte'"></span>
+            </div>
+          </div>
+
+          <!-- Orologio ITALIA -->
+          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span>🇮🇹</span> <span>Italia</span>
+              </span>
+              <span class="text-[10px] text-emerald-400 font-mono font-bold">CET (A casa)</span>
+            </div>
+            <div class="flex items-baseline gap-1 pt-0.5">
+              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeRome || '--:--:--'"></span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span x-text="dateRome || 'Oggi'"></span>
+              <span class="text-emerald-400 font-semibold" x-text="(hourRome >= 7 && hourRome < 19) ? '☀️ Giorno' : '🌙 Notte'"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner Intelligente Finestra Chiamate Casa -->
+        <div class="p-3 rounded-xl border flex items-start gap-2.5 transition-colors"
+             :class="getCallStatus().badgeClass">
+          <div class="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 animate-pulse"
+               :class="getCallStatus().dotColor"></div>
+          <div class="space-y-0.5">
+            <span class="text-xs font-bold block" x-text="getCallStatus().title"></span>
+            <p class="text-[11px] opacity-90 leading-relaxed" x-text="getCallStatus().desc"></p>
+          </div>
+        </div>
+
+        <!-- Simulatore Rapido di Fuso Orario -->
+        <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="sliders" class="w-3 h-3 text-indigo-400"></i>
+              <span>Simula orario per organizzare videochiamate:</span>
+            </span>
+            <span class="font-mono font-bold text-indigo-300">Bangkok ➔ Roma (-6h)</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="range" min="0" max="23" x-model.number="simulatedHourBkk"
+                   class="flex-1 accent-indigo-500 cursor-pointer">
+            <div class="text-right flex-shrink-0 font-mono text-xs">
+              <span class="text-amber-400 font-bold" x-text="String(simulatedHourBkk).padStart(2, '0') + ':00 THA'"></span>
+              <span class="text-slate-500 px-1">➔</span>
+              <span class="text-emerald-400 font-bold" x-text="String(getSimulatedRomeHour(simulatedHourBkk)).padStart(2, '0') + ':00 ITA'"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- 2. CASSAFORTE DATI RAPIDI CHECK-IN & PASSAPORTI           -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/15">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Cassaforte Check-in & Passaporti</h3>
+              <span class="text-[10px] text-slate-400">Dati dei 4 amici per reception, voli interni & dogana</span>
+            </div>
+          </div>
+
+          <!-- Tasto Privacy Nascondi / Mostra -->
+          <button type="button" 
+                  @click="showPassportsPrivacy = !showPassportsPrivacy; refreshIcons()"
+                  class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs active:scale-95 transition-all flex items-center gap-1"
+                  :title="showPassportsPrivacy ? 'Nascondi numeri' : 'Mostra numeri'">
+            <i :data-lucide="showPassportsPrivacy ? 'eye-off' : 'eye'" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span class="text-[10px] font-semibold" x-text="showPassportsPrivacy ? 'Nascondi' : 'Mostra'"></span>
+          </button>
+        </div>
+
+        <!-- Box 4 Passaporti -->
+        <div class="space-y-2">
+          <template x-for="tr in travelers" :key="tr.id">
+            <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+                     :class="tr.avatarBg || 'bg-slate-800 text-white'">
+                  <span x-text="tr.avatarEmoji || '👤'"></span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-white truncate" x-text="tr.name"></span>
+                    <span class="text-[10px] text-slate-400 truncate" x-text="tr.fullName && tr.fullName !== tr.name ? '(' + tr.fullName + ')' : ''"></span>
+                  </div>
+                  <div class="flex items-center gap-2 text-[10px] font-mono mt-0.5">
+                    <span class="text-amber-400 font-bold"
+                          x-text="showPassportsPrivacy ? (tr.passportNo || 'N° Passaporto non inserito') : (tr.passportNo ? (tr.passportNo.substring(0,2) + '••••' + tr.passportNo.slice(-2)) : 'N° Passaporto non inserito')"></span>
+                    <template x-if="tr.passportExp">
+                      <span class="text-slate-500 font-sans" x-text="'Scad: ' + tr.passportExp"></span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Azioni Copia & Modifica -->
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <template x-if="tr.passportNo">
+                  <button type="button" 
+                          @click="copyText(tr.passportNo, 'Passaporto di ' + tr.name + ' copiato!')"
+                          class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-amber-400 active:scale-90 transition-all"
+                          title="Copia numero passaporto">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  </button>
+                </template>
+                <button type="button" 
+                        @click="openEditPassport(tr)"
+                        class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-sky-300 active:scale-90 transition-all"
+                        title="Modifica dati passaporto">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Tasti Rapidi: Copia Tutti e 4 i Passaporti + Dati Primo Hotel (TM6) -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" 
+                  @click="copyAllPassports()"
+                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copia Tutti e 4</span>
+          </button>
+          
+          <button type="button" 
+                  @click="copyFirstHotelInfo()"
+                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span>Dati Hotel Dogana TM6</span>
+          </button>
+        </div>
+
+        <!-- Box Informativo Dogana / Scheda Arrivo TM6 -->
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+          <div class="flex items-center justify-between text-slate-400 font-bold text-[10px]">
+            <span class="flex items-center gap-1 text-emerald-400">
+              <i data-lucide="info" class="w-3 h-3"></i>
+              <span>Primo Alloggio in Thailandia (per Dogana e Check-in):</span>
+            </span>
+          </div>
+          <p class="font-medium text-white">Amara Bangkok Hotel • 180/1 Surawong Road, Bangrak, Bangkok 10500</p>
+          <p class="text-[10px] text-slate-400">Tocca "Dati Hotel Dogana TM6" per copiare subito nome e indirizzo esatto richiesti al controllo passaporti all'arrivo a Bangkok.</p>
+        </div>
+      </div>
+
+      <!-- 3. CONVERTITORE DI VALUTA ISTANTANEO THB <-> EUR -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -1276,7 +1494,144 @@
         </div>
       </div>
 
-      <!-- 4. CASSA COMUNE RAPIDA 4 AMICI (BONUS TATTICO) -->
+      <!-- ========================================================== -->
+      <!-- 5. GUIDA GALATEO TEMPLI & NORMATIVE LOCALI                 -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+              <i data-lucide="landmark" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Galateo Templi & Normative Locali</h3>
+              <span class="text-[10px] text-slate-400">Regole buddhiste e leggi severe da rispettare in Thailandia</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Switcher: [🛕 Templi & Monaci] vs [⚠️ Leggi & Tolleranza Zero] -->
+        <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
+          <button type="button"
+                  @click="templeGuideTab = 'temples'; refreshIcons()"
+                  :class="templeGuideTab === 'temples' ? 'bg-teal-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+            <span>🛕</span>
+            <span>Galateo Templi</span>
+          </button>
+          <button type="button"
+                  @click="templeGuideTab = 'laws'; refreshIcons()"
+                  :class="templeGuideTab === 'laws' ? 'bg-rose-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+            <span>⚠️</span>
+            <span>Leggi & Tolleranza Zero</span>
+          </button>
+        </div>
+
+        <!-- VISTA 1: GALATEO NEI TEMPLI -->
+        <div x-show="templeGuideTab === 'temples'" class="space-y-2.5">
+          <!-- 1. Dress Code -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">👔</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Dress Code Obbligatorio</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">Spalle e ginocchia coperte sia per uomini sia per donne. Niente canottiere, scollature o pantaloncini corti. Metti un sarong leggero o pantaloni lunghi nello zaino prima di visitare i templi.</p>
+            </div>
+          </div>
+
+          <!-- 2. Togliersi le Scarpe -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">👟</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Togliersi Scarpe e Occhiali da Sole</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">Togliti sempre le scarpe e il cappello prima di entrare nella sala principale delle preghiere (Ubosot). Troverai scarpette o ripiani dedicati all'ingresso.</p>
+            </div>
+          </div>
+
+          <!-- 3. I Piedi -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🦶</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Regola Sacra dei Piedi (Vietato puntarli)</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">I piedi sono considerati la parte più impura del corpo: non puntare MAI la pianta dei piedi verso statue del Buddha, monaci o altre persone. Quando ti siedi, ripiega le gambe all'indietro o a sirena.</p>
+            </div>
+          </div>
+
+          <!-- 4. Donne e Monaci -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🧘‍♂️</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Interazione con i Monaci Buddhista</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">Le donne non possono toccare un monaco né consegnargli offerte mano nella mano (vanno posati su un tavolo o un panno). Nei mezzi pubblici (BTS/MRT) ci sono posti riservati prioritari per i monaci.</p>
+            </div>
+          </div>
+
+          <!-- 5. La Testa e le Statue -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🧒</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Non toccare la Testa & Rispetto Immagini Buddha</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">La testa è la parte più sacra: non toccarla mai a nessuno, neppure ai bambini. Evita selfie irriguardosi o pose che imitano il Buddha (è illegale esportare statue del Buddha senza permesso governativo).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA 2: LEGGI E TOLLERANZA ZERO -->
+        <div x-show="templeGuideTab === 'laws'" class="space-y-2.5">
+          <!-- 1. SVAPO / SIGARETTE ELETTRONICHE -->
+          <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 flex items-start gap-2.5">
+            <span class="text-lg">🚭</span>
+            <div class="text-xs space-y-0.5">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-rose-300">Sigarette Elettroniche (Vape / IQOS)</span>
+                <span class="px-1.5 py-0.2 rounded bg-rose-500 text-slate-950 font-black text-[9px] uppercase">Illegale</span>
+              </div>
+              <p class="text-rose-100/90 text-[11px] leading-relaxed">In Thailandia lo svapo è <strong>completamente vietato per legge</strong>. Importazione, possesso ed uso comportano confisca, multe salatissime (fino a centinaia di migliaia di Baht) o detenzione. Non portarle in aereo né usarle in pubblico!</p>
+            </div>
+          </div>
+
+          <!-- 2. LESA MAESTÀ -->
+          <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-2.5">
+            <span class="text-lg">👑</span>
+            <div class="text-xs space-y-0.5">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-amber-300">Rispetto della Famiglia Reale</span>
+                <span class="px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black text-[9px] uppercase">Reato Penale</span>
+              </div>
+              <p class="text-amber-100/90 text-[11px] leading-relaxed">La legge di lesa maestà è tra le più severe al mondo. Non fare mai commenti o battute sulla monarchia. Se cade una banconota o moneta per strada, <strong>non calpestarla mai con le scarpe per fermarla</strong> (è impressa la figura del Re).</p>
+            </div>
+          </div>
+
+          <!-- 3. DRONI -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🛸</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Regole sui Droni</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">È vietato far volare droni senza aver effettuato la registrazione preventiva presso NBTC e CAAT. Severamente vietato il volo nei parchi nazionali o vicino ai palazzi reali e aeroporti.</p>
+            </div>
+          </div>
+
+          <!-- 4. CORALLI E RISERVE MARINE -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🪸</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Parchi Marini & Coralli</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">A Maya Bay, Phi Phi e nei parchi marini è vietatissimo raccogliere conchiglie, frammenti di corallo o sabbia come souvenir. I controlli in aeroporto ai raggi X sono accuratissimi.</p>
+            </div>
+          </div>
+
+          <!-- 5. DOCUMENTI SEMPRE APPRESSO -->
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
+            <span class="text-lg">🛂</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-white block">Controllo Documenti e Visto</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">Tieni sempre nel telefono una foto del passaporto e del timbro d'ingresso thai (oppure salvali nella Cassaforte qui sopra) per qualsiasi controllo o noleggio veicoli.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. CASSA COMUNE RAPIDA 4 AMICI (BONUS TATTICO) -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -2046,11 +2401,64 @@
                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Durata / Scali</label>
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Durata Complessiva</label>
             <input type="text" 
                    x-model="editTransportModal.duration" 
-                   placeholder="Es. 1h 55m Diretto, 18h (1 scalo)"
+                   placeholder="Es. 1h 55m, 18h 15m"
                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Selettore Scali & Dettagli Scalo -->
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-amber-400">Scali del Volo / Tratta</label>
+            <span class="text-[10px] font-mono font-bold"
+                  :class="editTransportModal.stops > 0 ? 'text-amber-400' : 'text-emerald-400'"
+                  x-text="!editTransportModal.stops || editTransportModal.stops == 0 ? 'Tratta Diretta' : (editTransportModal.stops == 1 ? '1 Scalo Intermedio' : editTransportModal.stops + ' Scali Intermedi')"></span>
+          </div>
+
+          <!-- Bottoni Rapidi Scali (Diretto, 1 Scalo, 2 Scali, 3+ Scali) -->
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" 
+                    @click="editTransportModal.stops = 0; refreshIcons()"
+                    :class="(!editTransportModal.stops || editTransportModal.stops == 0) ? 'bg-emerald-500 text-slate-950 font-black shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold active:scale-95 transition-all text-center">
+              Diretto
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.stops = 1; refreshIcons()"
+                    :class="editTransportModal.stops == 1 ? 'bg-amber-500 text-slate-950 font-black shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold active:scale-95 transition-all text-center flex items-center justify-center gap-1">
+              <span>1 Scalo</span>
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.stops = 2; refreshIcons()"
+                    :class="editTransportModal.stops == 2 ? 'bg-amber-500 text-slate-950 font-black shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold active:scale-95 transition-all text-center">
+              2 Scali
+            </button>
+            <button type="button" 
+                    @click="editTransportModal.stops = 3; refreshIcons()"
+                    :class="editTransportModal.stops >= 3 ? 'bg-amber-500 text-slate-950 font-black shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold active:scale-95 transition-all text-center">
+              3+ Scali
+            </button>
+          </div>
+
+          <!-- Dettagli dello scalo (visibili solo se stops > 0) -->
+          <div x-show="editTransportModal.stops > 0" x-transition class="pt-1 space-y-1">
+            <label class="block text-[9px] text-slate-300 uppercase font-bold">Aeroporto / Città di Scalo</label>
+            <div class="relative">
+              <input type="text" 
+                     x-model="editTransportModal.stopsInfo" 
+                     placeholder="Es. DEL (Nuova Delhi) • 5h attesa" 
+                     class="w-full bg-slate-900 border border-amber-500/40 rounded-lg pl-7 pr-2 py-1.5 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
+              <div class="absolute left-2 top-2 text-amber-400">
+                <i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+            <p class="text-[9px] text-slate-500">Mostrato nella card del volo come: "1 Scalo · DEL"</p>
           </div>
         </div>
 
@@ -2236,6 +2644,95 @@
               class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs">
         Annulla
       </button>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MODIFICA DATI PASSAPORTO                                           -->
+  <!-- ========================================================================= -->
+  <div x-show="editPassportModal.show" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-[145] bg-black/85 backdrop-blur-md p-4 flex flex-col items-center justify-end sm:justify-center"
+       @click.self="editPassportModal.show = false"
+       x-cloak>
+    
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700/90 rounded-3xl p-5 space-y-4 shadow-2xl relative my-auto animate-in fade-in zoom-in-95">
+      
+      <!-- Close Button -->
+      <button @click="editPassportModal.show = false" 
+              class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-90 z-10">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 pr-8">
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 flex-shrink-0">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-display font-bold text-base text-white">Dati Passaporto</h3>
+          <p class="text-[11px] text-amber-300 font-semibold" x-text="editPassportModal.name"></p>
+        </div>
+      </div>
+
+      <!-- Form Campi -->
+      <div class="space-y-3 pt-1">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Nome e Cognome Completo</label>
+          <input type="text" 
+                 x-model="editPassportModal.fullName" 
+                 placeholder="Es. Mario Rossi (come da documento)"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Numero di Passaporto</label>
+          <input type="text" 
+                 x-model="editPassportModal.passportNo" 
+                 placeholder="Es. YA1234567"
+                 maxlength="15"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono font-bold uppercase focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Scadenza</label>
+            <input type="text" 
+                   x-model="editPassportModal.passportExp" 
+                   placeholder="Es. 15/06/2030"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Nazionalità</label>
+            <input type="text" 
+                   x-model="editPassportModal.nationality" 
+                   placeholder="Italiana"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+        <p class="text-[9px] text-slate-500">Questi dati vengono salvati sul telefono e sincronizzati con il gruppo via Firebase per check-in e dogana.</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
+        <button type="button" 
+                @click="editPassportModal.show = false" 
+                class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold active:scale-95 transition-all">
+          Annulla
+        </button>
+        <button type="button" 
+                @click="saveEditPassport()" 
+                class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/40">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Salva Dati</span>
+        </button>
+      </div>
 
     </div>
   </div>
@@ -2673,10 +3170,10 @@
         // I 4 Viaggiatori
         travelers: [],
         defaultTravelers: [
-          { id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' },
-          { id: 2, name: 'Marco', role: 'Tesoriere & Cassa', avatarEmoji: '💰', avatarBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
-          { id: 3, name: 'Ale', role: 'Food & Street Gourmet', avatarEmoji: '🍜', avatarBg: 'bg-teal-500/20 text-teal-300 border border-teal-500/30' },
-          { id: 4, name: 'Luca', role: 'Fotografo & Vibe Master', avatarEmoji: '📸', avatarBg: 'bg-sky-500/20 text-sky-300 border border-sky-500/30' }
+          { id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+          { id: 2, name: 'Marco', role: 'Tesoriere & Cassa', avatarEmoji: '💰', avatarBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+          { id: 3, name: 'Ale', role: 'Food & Street Gourmet', avatarEmoji: '🍜', avatarBg: 'bg-teal-500/20 text-teal-300 border border-teal-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+          { id: 4, name: 'Luca', role: 'Fotografo & Vibe Master', avatarEmoji: '📸', avatarBg: 'bg-sky-500/20 text-sky-300 border border-sky-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' }
         ],
 
         // Modals & PWA
@@ -2738,6 +3235,8 @@
           arrCity: '',
           arrTime: '',
           duration: '',
+          stops: 0,
+          stopsInfo: '',
           pnr: '',
           baggage: ''
         },
@@ -2747,6 +3246,31 @@
           title: '',
           query: ''
         },
+
+        // Doppio Fuso Orario ITA ⇄ THA
+        timeBangkok: '',
+        timeRome: '',
+        dateBangkok: '',
+        dateRome: '',
+        hourRome: 12,
+        hourBangkok: 18,
+        simulatedHourBkk: 18,
+        clockInterval: null,
+
+        // Cassaforte Passaporti & Check-in
+        showPassportsPrivacy: false,
+        editPassportModal: {
+          show: false,
+          travelerId: null,
+          name: '',
+          fullName: '',
+          passportNo: '',
+          passportExp: '',
+          nationality: 'Italiana'
+        },
+
+        // Guida Galateo Templi & Normative
+        templeGuideTab: 'temples',
 
         showPwaPrompt: false,
 
@@ -3096,6 +3620,7 @@
           this.loadItinerary();
           this.initCountdown();
           this.initWeather();
+          this.initDualClock();
           this.refreshIcons();
           this.convertFromThb();
           this.initPwaPrompt();
@@ -3267,13 +3792,22 @@
           const saved = localStorage.getItem('thailand_travelers_v2');
           if (saved) {
             try {
-              this.travelers = JSON.parse(saved);
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                this.travelers = parsed.map(t => ({
+                  fullName: t.fullName || t.name,
+                  passportNo: t.passportNo || '',
+                  passportExp: t.passportExp || '',
+                  nationality: t.nationality || 'Italiana',
+                  ...t
+                }));
+                return;
+              }
             } catch (e) {
-              this.travelers = [...this.defaultTravelers];
+              console.error('Error loading saved travelers', e);
             }
-          } else {
-            this.travelers = [...this.defaultTravelers];
           }
+          this.travelers = JSON.parse(JSON.stringify(this.defaultTravelers));
         },
 
         saveTravelers() {
@@ -3617,7 +4151,18 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                this.transports = parsed;
+                this.transports = parsed.map(t => {
+                  if (t.stops === undefined) {
+                    if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
+                      t.stops = 1;
+                      t.stopsInfo = t.stopsInfo || 'DEL';
+                    } else {
+                      t.stops = 0;
+                      t.stopsInfo = '';
+                    }
+                  }
+                  return t;
+                });
                 return;
               }
             } catch (e) {
@@ -3657,6 +4202,8 @@
             arrCity: '',
             arrTime: '',
             duration: '',
+            stops: 0,
+            stopsInfo: '',
             pnr: '',
             baggage: ''
           };
@@ -3664,6 +4211,7 @@
         },
 
         openEditTransportModal(item) {
+          const rawStops = item.stops !== undefined ? parseInt(item.stops, 10) : (item.duration && /scalo/i.test(item.duration) ? 1 : 0);
           this.editTransportModal = {
             show: true,
             isNew: false,
@@ -3679,6 +4227,8 @@
             arrCity: item.arrCity || '',
             arrTime: item.arrTime || '',
             duration: item.duration || '',
+            stops: isNaN(rawStops) ? 0 : rawStops,
+            stopsInfo: item.stopsInfo || '',
             pnr: item.pnr || '',
             baggage: item.baggage || ''
           };
@@ -3692,6 +4242,8 @@
             this.showToast('Inserisci la compagnia o il numero/titolo del trasporto');
             return;
           }
+          const stops = parseInt(this.editTransportModal.stops, 10) || 0;
+          const stopsInfo = (this.editTransportModal.stopsInfo || '').trim();
 
           if (this.editTransportModal.isNew) {
             const newT = {
@@ -3707,6 +4259,8 @@
               arrCity: (this.editTransportModal.arrCity || '').trim(),
               arrTime: (this.editTransportModal.arrTime || '').trim(),
               duration: (this.editTransportModal.duration || '').trim(),
+              stops: stops,
+              stopsInfo: stopsInfo,
               pnr: (this.editTransportModal.pnr || '').trim(),
               baggage: (this.editTransportModal.baggage || '').trim()
             };
@@ -3726,6 +4280,8 @@
               t.arrCity = (this.editTransportModal.arrCity || '').trim();
               t.arrTime = (this.editTransportModal.arrTime || '').trim();
               t.duration = (this.editTransportModal.duration || '').trim();
+              t.stops = stops;
+              t.stopsInfo = stopsInfo;
               t.pnr = (this.editTransportModal.pnr || '').trim();
               t.baggage = (this.editTransportModal.baggage || '').trim();
               this.showToast('Trasporto ' + t.carrier + ' salvato!');
@@ -3774,6 +4330,170 @@
             case 'car': return 'bg-violet-500/20 text-violet-400 border border-violet-500/30';
             default: return 'bg-slate-700/50 text-slate-300 border border-slate-600/40';
           }
+        },
+
+        getTransportStopLabel(item) {
+          const count = parseInt(item.stops, 10) || 0;
+          if (count <= 0) return 'Diretto';
+          const label = count === 1 ? '1 Scalo' : (count + ' Scali');
+          if (item.stopsInfo && item.stopsInfo.trim()) {
+            return label + ' · ' + item.stopsInfo.trim();
+          }
+          return label;
+        },
+
+        // ==========================================
+        // DOPPIO FUSO ORARIO & SMART CALL WINDOW
+        // ==========================================
+        updateDualClock() {
+          try {
+            const now = new Date();
+            // Bangkok (ICT - UTC+7)
+            const bkkTimeOpts = { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const bkkDateOpts = { timeZone: 'Asia/Bangkok', weekday: 'short', day: 'numeric', month: 'short' };
+            this.timeBangkok = new Intl.DateTimeFormat('it-IT', bkkTimeOpts).format(now);
+            this.dateBangkok = new Intl.DateTimeFormat('it-IT', bkkDateOpts).format(now);
+
+            // Roma (CET - UTC+1 in inverno)
+            const romTimeOpts = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const romDateOpts = { timeZone: 'Europe/Rome', weekday: 'short', day: 'numeric', month: 'short' };
+            this.timeRome = new Intl.DateTimeFormat('it-IT', romTimeOpts).format(now);
+            this.dateRome = new Intl.DateTimeFormat('it-IT', romDateOpts).format(now);
+
+            const romHourStr = new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', hour: 'numeric', hour12: false }).format(now);
+            const bkkHourStr = new Intl.DateTimeFormat('it-IT', { timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false }).format(now);
+            this.hourRome = parseInt(romHourStr, 10) || 0;
+            this.hourBangkok = parseInt(bkkHourStr, 10) || 0;
+          } catch(e) {
+            console.error('Clock error', e);
+          }
+        },
+
+        initDualClock() {
+          this.updateDualClock();
+          if (this.clockInterval) clearInterval(this.clockInterval);
+          this.clockInterval = setInterval(() => {
+            this.updateDualClock();
+          }, 1000);
+        },
+
+        getCallStatus() {
+          const h = this.hourRome;
+          if (h >= 0 && h < 7) {
+            return {
+              status: 'night',
+              badgeClass: 'bg-rose-950/40 border-rose-500/40 text-rose-300',
+              icon: 'moon',
+              title: 'Notte fonda in Italia (00:00 - 07:00)',
+              desc: 'In Italia stanno dormendo 😴. Evita telefonate o videochiamate, invia solo messaggi silenziosi.',
+              dotColor: 'bg-rose-400'
+            };
+          }
+          if (h >= 7 && h < 9) {
+            return {
+              status: 'early',
+              badgeClass: 'bg-amber-950/40 border-amber-500/40 text-amber-300',
+              icon: 'coffee',
+              title: 'Primo mattino in Italia (07:00 - 09:00)',
+              desc: 'Sveglia e colazione ☕. Meglio attendere le 09:00 italiane (le 15:00 a Bangkok) per le chiamate.',
+              dotColor: 'bg-amber-400'
+            };
+          }
+          if (h >= 9 && h < 13) {
+            return {
+              status: 'perfect',
+              badgeClass: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300',
+              icon: 'phone-call',
+              title: 'Momento Perfetto per Chiamare! 📞✨',
+              desc: 'Mattinata italiana attiva (09:00 - 13:00) • Pomeriggio a Bangkok (15:00 - 19:00). Tutti svegli e reperibili.',
+              dotColor: 'bg-emerald-400'
+            };
+          }
+          if (h >= 13 && h < 14) {
+            return {
+              status: 'lunch',
+              badgeClass: 'bg-sky-950/40 border-sky-500/40 text-sky-300',
+              icon: 'utensils',
+              title: 'Pausa Pranzo in Italia (13:00 - 14:00)',
+              desc: 'Pausa pranzo in corso 🍝. Buon momento per messaggi o una chiamata informale.',
+              dotColor: 'bg-sky-400'
+            };
+          }
+          if (h >= 14 && h < 22) {
+            return {
+              status: 'perfect',
+              badgeClass: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300',
+              icon: 'video',
+              title: 'Ottimo per Videochiamate & Chiacchierate! 🎬',
+              desc: 'Pomeriggio e serata in Italia (14:00 - 22:00) • Sera/Notte a Bangkok (20:00 - 04:00).',
+              dotColor: 'bg-emerald-400'
+            };
+          }
+          return {
+            status: 'late',
+            badgeClass: 'bg-amber-950/40 border-amber-500/40 text-amber-300',
+            icon: 'bed',
+            title: 'Tarda Sera in Italia (22:00 - 00:00)',
+            desc: 'In Italia ci si prepara per dormire 🌙. Chiama solo per saluti veloci prima della notte.',
+            dotColor: 'bg-amber-400'
+          };
+        },
+
+        getSimulatedRomeHour(bkkH) {
+          let romH = bkkH - 6;
+          if (romH < 0) romH += 24;
+          return romH;
+        },
+
+        // ==========================================
+        // CASSAFORTE PASSAPORTI & CHECK-IN (TM6)
+        // ==========================================
+        openEditPassport(tr) {
+          this.editPassportModal = {
+            show: true,
+            travelerId: tr.id,
+            name: tr.name,
+            fullName: tr.fullName || tr.name,
+            passportNo: tr.passportNo || '',
+            passportExp: tr.passportExp || '',
+            nationality: tr.nationality || 'Italiana'
+          };
+          this.refreshIcons();
+        },
+
+        saveEditPassport() {
+          const t = this.travelers.find(x => x.id === this.editPassportModal.travelerId);
+          if (t) {
+            t.fullName = (this.editPassportModal.fullName || '').trim();
+            t.passportNo = (this.editPassportModal.passportNo || '').toUpperCase().trim();
+            t.passportExp = (this.editPassportModal.passportExp || '').trim();
+            t.nationality = (this.editPassportModal.nationality || 'Italiana').trim();
+            this.saveTravelers();
+            this.uploadToCloud(true);
+            this.showToast('Dati passaporto salvati per ' + t.name);
+          }
+          this.editPassportModal.show = false;
+        },
+
+        copyAllPassports() {
+          const lines = this.travelers.map(t => {
+            const num = t.passportNo ? t.passportNo : 'Non inserito';
+            const exp = t.passportExp ? (' (Scad. ' + t.passportExp + ')') : '';
+            return `${t.name}: ${t.fullName || t.name} • Passaporto: ${num}${exp} • Nazionalità: ${t.nationality || 'Italiana'}`;
+          }).join('\n');
+          this.copyText(lines, 'Dati di tutti e 4 i passaporti copiati!');
+        },
+
+        copyFirstHotelInfo() {
+          const h = (this.hotels && this.hotels.length > 0) ? this.hotels[0] : null;
+          const text = h 
+            ? `HOTEL BANGKOK (TM6 / Dogana):
+${h.name}
+Indirizzo: ${h.addressEn}
+Thai: ${h.addressThai || ''}
+Tel: ${h.phone || ''}`
+            : 'Amara Bangkok Hotel • 180/1 Surawong Road, Sipraya, Bangrak, Bangkok 10500';
+          this.copyText(text, 'Dati primo alloggio (Dogana/TM6) copiati!');
         },
 
         // ==========================================
@@ -4177,7 +4897,18 @@
                   this.saveHotels();
                 }
                 if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
-                  this.transports = cloudData.transports;
+                  this.transports = cloudData.transports.map(t => {
+                    if (t.stops === undefined) {
+                      if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
+                        t.stops = 1;
+                        t.stopsInfo = t.stopsInfo || 'DEL';
+                      } else {
+                        t.stops = 0;
+                        t.stopsInfo = '';
+                      }
+                    }
+                    return t;
+                  });
                   this.saveTransports();
                 }
                 if (cloudData.travelers && Array.isArray(cloudData.travelers) && cloudData.travelers.length > 0) {
@@ -4604,7 +5335,9 @@
             arrCode: 'BKK',
             arrCity: 'Bangkok Suvarnabhumi · 26 Dic 21:15',
             arrTime: '21:15 (+1)',
-            duration: '18h 15m (1 scalo DEL · 5h)',
+            duration: '18h 15m (attesa DEL · 5h)',
+            stops: 1,
+            stopsInfo: 'DEL',
             pnr: 'BJRZOF',
             baggage: 'Economy · Posti: 27C 27D 28C 28D (FCO→DEL) · 29F 29E 29D 29C (DEL→BKK)'
           },
@@ -4748,7 +5481,9 @@
             arrCode: 'FCO',
             arrCity: 'Roma Fiumicino · 8 Gen 18:55',
             arrTime: '18:55',
-            duration: '16h 50m (1 scalo DEL · 1h 55m)',
+            duration: '16h 50m (attesa DEL · 1h 55m)',
+            stops: 1,
+            stopsInfo: 'DEL',
             pnr: 'BJRZOF',
             baggage: 'Economy · Posti: 28A 28B 28D 27E (BKK→DEL) · 38C 38D 39D 40D (DEL→FCO)'
           }
