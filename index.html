@@ -126,6 +126,12 @@
       animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
     }
 
+    /* Anti-overflow orizzontale globale */
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+
     /* Hide scrollbar for tabs navigation */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -137,7 +143,7 @@
   </style>
 </head>
 
-<body class="bg-slate-950 text-slate-100 font-sans min-h-full antialiased flex flex-col items-center selection:bg-emerald-500/30 selection:text-emerald-300"
+<body class="bg-slate-950 text-slate-100 font-sans min-h-full antialiased flex flex-col items-center selection:bg-emerald-500/30 selection:text-emerald-300 overflow-x-hidden w-full max-w-full"
       x-data="thaiApp()"
       x-init="initApp()">
 
@@ -156,7 +162,7 @@
   </div>
 
   <!-- Main Container: Mobile-First Limit (max-w-md per simulare iPhone su desktop, fluido su smartphone) -->
-  <div class="w-full max-w-md min-h-screen flex flex-col relative pb-28">
+  <div class="w-full max-w-md min-h-screen flex flex-col relative pb-28 overflow-x-hidden">
 
     <!-- Top Header Bar (iOS Style) -->
     <header class="sticky top-0 z-40 w-full glass-nav border-b border-slate-800/80">
@@ -558,12 +564,12 @@
                     <span>Modifica Giorno</span>
                   </button>
                   <template x-if="day.mainLocation">
-                    <a :href="'https://maps.google.com/?q=' + encodeURIComponent(day.mainLocation)"
-                       target="_blank"
-                       class="text-[11px] font-semibold text-slate-300 hover:text-white flex items-center gap-1">
+                    <button type="button"
+                            @click="openMapChooser(day.title, day.mainLocation, day.city)"
+                            class="text-[11px] font-semibold text-slate-300 hover:text-white flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
                       <span>Mappa</span>
-                      <i data-lucide="external-link" class="w-3 h-3"></i>
-                    </a>
+                      <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i>
+                    </button>
                   </template>
                 </div>
               </div>
@@ -581,7 +587,7 @@
           x-transition:enter="transition ease-out duration-200"
           x-transition:enter-start="opacity-0 translate-y-2"
           x-transition:enter-end="opacity-100 translate-y-0"
-          class="flex-1 px-4 pt-3 space-y-5"
+          class="flex-1 px-4 pt-3 space-y-5 overflow-x-hidden"
           x-cloak>
 
       <!-- Sotto-filtro: Hotel o Voli/Trasporti -->
@@ -753,47 +759,50 @@
         </template>
 
         <template x-for="item in transports" :key="item.id">
-          <div class="glass-card rounded-2xl border border-slate-800/90 p-4 space-y-3 shadow-lg">
+          <div class="glass-card rounded-2xl border border-slate-800/90 p-3.5 sm:p-4 space-y-3 shadow-lg overflow-hidden w-full">
             
-            <!-- Header Tratta -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg flex items-center justify-center"
+            <!-- Header Tratta (anti-overflow) -->
+            <div class="flex items-start justify-between gap-2 min-w-0">
+              <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
                      :class="getTransportBadgeClass(item.type)">
                   <i :data-lucide="getTransportIcon(item.type)" class="w-4 h-4"></i>
                 </div>
-                <div>
-                  <span class="text-xs font-extrabold uppercase text-white tracking-wide" x-text="item.carrier"></span>
-                  <span class="text-[10px] text-slate-400 block" x-text="item.flightNumber"></span>
+                <div class="min-w-0 flex-1">
+                  <span class="text-xs font-extrabold uppercase text-white tracking-wide block truncate" x-text="item.carrier"></span>
+                  <span class="text-[10px] text-slate-400 block leading-snug break-words" x-text="item.flightNumber"></span>
                 </div>
               </div>
-              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300" x-text="item.date"></span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 flex-shrink-0 whitespace-nowrap" x-text="item.date"></span>
             </div>
 
-            <!-- Grafica Partenza -> Arrivo -->
-            <div class="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <div>
-                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.depCode || 'DEP'"></span>
-                <span class="text-[11px] font-bold text-emerald-400 mt-0.5 block" x-text="item.depTime"></span>
-                <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.depCity"></span>
+            <!-- Grafica Partenza -> Arrivo (100% responsive, compatta e senza overflow) -->
+            <div class="flex items-center justify-between py-2 px-2 sm:px-2.5 rounded-xl bg-slate-950/70 border border-slate-800 gap-1 w-full overflow-hidden">
+              <!-- Partenza -->
+              <div class="flex-shrink-0 text-left min-w-0 max-w-[70px] sm:max-w-[80px]">
+                <span class="font-mono text-base sm:text-lg font-black text-white block leading-none" x-text="item.depCode || 'DEP'"></span>
+                <span class="text-[10px] sm:text-[11px] font-bold text-emerald-400 mt-0.5 block truncate" x-text="item.depTime"></span>
+                <span class="text-[9px] text-slate-400 block truncate" x-text="item.depCity" :title="item.depCity"></span>
               </div>
 
-              <!-- Freccia / Durata / Scali -->
-              <div class="flex flex-col items-center px-2 flex-1 max-w-[175px] sm:max-w-[210px] mx-1">
-                <span class="text-[10px] font-mono text-slate-400 mb-1 truncate max-w-full" x-text="item.duration"></span>
-                <div class="w-full h-0.5 relative flex items-center justify-center"
+              <!-- Freccia / Durata / Scali (Centro) -->
+              <div class="flex flex-col items-center px-1 flex-1 min-w-0 overflow-hidden">
+                <span class="text-[9px] sm:text-[10px] font-mono text-slate-400 mb-0.5 truncate max-w-full text-center" x-text="item.duration"></span>
+                
+                <!-- Linea rotta -->
+                <div class="w-full h-0.5 relative flex items-center justify-center my-1"
                      :class="(item.stops && item.stops > 0) ? 'bg-gradient-to-r from-emerald-500/40 via-amber-400/90 to-teal-400/40' : 'bg-gradient-to-r from-emerald-500/40 via-teal-400 to-emerald-500/40'">
                   <!-- Se Diretto: icona del mezzo -->
                   <template x-if="!item.stops || item.stops == 0">
                     <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-slate-300">
-                      <i :data-lucide="getTransportIcon(item.type)" class="w-3.5 h-3.5"></i>
+                      <i :data-lucide="getTransportIcon(item.type)" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
                     </div>
                   </template>
                   <!-- Se con Scalo: nodo/punto di scalo -->
                   <template x-if="item.stops && item.stops > 0">
-                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                      <div class="w-4 h-4 rounded-full bg-slate-900 border border-amber-400 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/30">
-                        <i data-lucide="git-commit" class="w-2.5 h-2.5"></i>
+                    <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                      <div class="w-3.5 h-3.5 rounded-full bg-slate-900 border border-amber-400 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/30">
+                        <i data-lucide="git-commit" class="w-2 h-2 sm:w-2.5 sm:h-2.5"></i>
                       </div>
                     </div>
                   </template>
@@ -801,34 +810,44 @@
 
                 <!-- Label: Diretto vs Scali con icona -->
                 <template x-if="!item.stops || item.stops == 0">
-                  <span class="text-[9px] text-slate-500 uppercase mt-1 font-semibold tracking-wider">Diretto</span>
+                  <span class="text-[8px] sm:text-[9px] text-slate-500 uppercase font-semibold tracking-wider">Diretto</span>
                 </template>
                 <template x-if="item.stops && item.stops > 0">
-                  <div class="flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-sm">
-                    <i data-lucide="git-commit" class="w-2.5 h-2.5 text-amber-400 flex-shrink-0"></i>
-                    <span class="text-[9px] font-black uppercase tracking-tight" x-text="getTransportStopLabel(item)"></span>
+                  <div class="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-sm max-w-full">
+                    <i data-lucide="git-commit" class="w-2 h-2 sm:w-2.5 sm:h-2.5 text-amber-400 flex-shrink-0"></i>
+                    <span class="text-[8px] sm:text-[9px] font-black uppercase tracking-tight truncate" x-text="getTransportStopLabel(item)"></span>
                   </div>
                 </template>
               </div>
 
-              <div class="text-right">
-                <span class="font-mono text-lg font-black text-white block leading-none" x-text="item.arrCode || 'ARR'"></span>
-                <span class="text-[11px] font-bold text-emerald-400 mt-0.5 block" x-text="item.arrTime"></span>
-                <span class="text-[10px] text-slate-400 block max-w-[90px] truncate" x-text="item.arrCity"></span>
+              <!-- Arrivo -->
+              <div class="flex-shrink-0 text-right min-w-0 max-w-[70px] sm:max-w-[80px]">
+                <span class="font-mono text-base sm:text-lg font-black text-white block leading-none" x-text="item.arrCode || 'ARR'"></span>
+                <span class="text-[10px] sm:text-[11px] font-bold text-emerald-400 mt-0.5 block truncate" x-text="item.arrTime"></span>
+                <span class="text-[9px] text-slate-400 block truncate" x-text="item.arrCity" :title="item.arrCity"></span>
               </div>
             </div>
 
-            <!-- Dettaglio Scalo Info se presente -->
+            <!-- Dettaglio Scalo Info se presente (con bottone Mappa Scalo) -->
             <template x-if="item.stops && item.stops > 0 && item.stopsInfo">
-              <div class="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-950/30 border border-amber-500/20 text-[10px] text-amber-300 flex items-center gap-1.5">
-                <i data-lucide="map-pin" class="w-3 h-3 text-amber-400 flex-shrink-0"></i>
-                <span>Scalo: <strong class="text-amber-200" x-text="item.stopsInfo"></strong></span>
+              <div class="mt-1 px-2.5 py-1 rounded-lg bg-amber-950/30 border border-amber-500/20 text-[10px] text-amber-300 flex items-center justify-between gap-1.5 min-w-0">
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                  <i data-lucide="map-pin" class="w-3 h-3 text-amber-400 flex-shrink-0"></i>
+                  <span class="truncate">Scalo: <strong class="text-amber-200" x-text="item.stopsInfo"></strong></span>
+                </div>
+                <button type="button" 
+                        @click="openMapChooser('Scalo Aeroporto ' + item.stopsInfo, item.stopsInfo + ' Airport')"
+                        class="text-[9px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5 flex-shrink-0 active:scale-95 transition-transform"
+                        title="Apri mappa aeroporto scalo">
+                  <span>Mappa</span>
+                  <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+                </button>
               </div>
             </template>
 
             <!-- Codice PNR / Terminal / Bagaglio -->
-            <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
-              <div>
+            <div class="flex items-start justify-between text-xs pt-1 border-t border-slate-800/80 gap-2 min-w-0">
+              <div class="flex-shrink-0">
                 <span class="text-[10px] text-slate-500 uppercase block font-bold">PNR / Biglietto:</span>
                 <div class="flex items-center gap-1.5">
                   <span class="font-mono font-bold text-amber-400 text-xs" x-text="item.pnr || 'Da confermare'"></span>
@@ -839,24 +858,34 @@
                   </template>
                 </div>
               </div>
-              <div class="text-right">
+              <div class="text-right min-w-0 flex-1">
                 <span class="text-[10px] text-slate-500 uppercase block font-bold">Bagaglio / Note:</span>
-                <span class="text-[11px] text-slate-300 font-medium" x-text="item.baggage || 'Standard'"></span>
+                <span class="text-[10px] sm:text-[11px] text-slate-300 font-medium block break-words" x-text="item.baggage || 'Standard'"></span>
               </div>
             </div>
 
-            <!-- Azioni Trasporto: Modifica & Elimina -->
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60">
-              <button @click="openEditTransportModal(item)" 
-                      class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 font-bold text-xs flex items-center gap-1.5 border border-sky-500/30 transition-all">
-                <i data-lucide="pencil" class="w-3.5 h-3.5 text-sky-400"></i>
-                <span>Modifica</span>
+            <!-- Azioni Trasporto: Mappa Arrivo, Modifica & Elimina -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 gap-1.5">
+              <button type="button" 
+                      @click="openMapChooser(item.carrier + ' (' + (item.arrCity || item.arrCode) + ')', (item.arrCity || item.arrCode) + ' Airport')"
+                      class="py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1 border border-slate-800 transition-all"
+                      title="Apri posizione aeroporto / stazione di arrivo in Google o Apple Maps">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span class="text-[11px]">Mappa</span>
               </button>
-              <button @click="deleteTransport(item.id)" 
-                      class="py-1.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-400 font-bold text-xs flex items-center gap-1.5 border border-red-500/30 transition-all">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                <span>Elimina</span>
-              </button>
+
+              <div class="flex items-center gap-1.5">
+                <button @click="openEditTransportModal(item)" 
+                        class="py-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 font-bold text-xs flex items-center gap-1 border border-sky-500/30 transition-all">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5 text-sky-400"></i>
+                  <span>Modifica</span>
+                </button>
+                <button @click="deleteTransport(item.id)" 
+                        class="py-1.5 px-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-400 font-bold text-xs flex items-center gap-1 border border-red-500/30 transition-all">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Elimina</span>
+                </button>
+              </div>
             </div>
 
           </div>
@@ -1447,10 +1476,12 @@
               <i data-lucide="phone-forwarded" class="w-3 h-3"></i>
               <span>SOS H24 (+66 81 825 6103)</span>
             </a>
-            <a href="https://maps.google.com/?q=Embassy+of+Italy+Bangkok" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1">
-              <i data-lucide="map-pin" class="w-3 h-3"></i>
-              <span>Maps</span>
-            </a>
+            <button type="button"
+                    @click="openMapChooser('Ambasciata d\'Italia a Bangkok', 'Embassy of Italy Bangkok', 'CRC Tower, 40° piano, All Seasons Place, 87 Wireless Road, Bangkok')"
+                    class="py-1.5 px-2.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-bold text-[11px] flex items-center justify-center gap-1 active:scale-95 transition-all">
+              <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i>
+              <span>Mappe</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1838,12 +1869,12 @@
 
       <!-- Tasto Rapido Apri in Maps & Chiama -->
       <div class="flex items-center gap-2">
-        <a :href="'https://maps.google.com/?q=' + encodeURIComponent(taxiModal.mapsQuery)" 
-           target="_blank"
-           class="flex-1 py-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-lg shadow-emerald-950/50">
+        <button type="button" 
+                @click="openMapChooser(taxiModal.hotelName, taxiModal.mapsQuery, taxiModal.thaiAddress || taxiModal.addressEn)" 
+                class="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-lg shadow-emerald-950/50">
           <i data-lucide="navigation" class="w-4 h-4"></i>
-          <span>Apri Navigatore Maps</span>
-        </a>
+          <span>Apri Mappe (Google / Apple)</span>
+        </button>
         <button @click="copyText(taxiModal.thaiAddress, 'Indirizzo Thai copiato!')"
                 class="p-3 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 active:scale-95">
           <i data-lucide="copy" class="w-4 h-4"></i>
@@ -4155,11 +4186,20 @@
                   if (t.stops === undefined) {
                     if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
                       t.stops = 1;
-                      t.stopsInfo = t.stopsInfo || 'DEL';
+                      t.stopsInfo = t.stopsInfo || 'DEL (Nuova Delhi)';
                     } else {
                       t.stops = 0;
                       t.stopsInfo = '';
                     }
+                  }
+                  // Normalizza duration per evitare testi chilometrici che allargano il layout
+                  if (t.id === 't1' && t.duration && t.duration.includes('(')) {
+                    t.duration = '18h 15m';
+                    if (!t.stopsInfo) t.stopsInfo = 'DEL (Nuova Delhi • 5h attesa)';
+                  }
+                  if (t.id === 't10' && t.duration && t.duration.includes('(')) {
+                    t.duration = '16h 50m';
+                    if (!t.stopsInfo) t.stopsInfo = 'DEL (Nuova Delhi • 1h 55m attesa)';
                   }
                   return t;
                 });
@@ -4337,7 +4377,9 @@
           if (count <= 0) return 'Diretto';
           const label = count === 1 ? '1 Scalo' : (count + ' Scali');
           if (item.stopsInfo && item.stopsInfo.trim()) {
-            return label + ' · ' + item.stopsInfo.trim();
+            // Estrae solo il codice aeroporto / prima parola (es: DEL da 'DEL • Nuova Delhi') per non allargare la card
+            const cleanCode = item.stopsInfo.trim().split(/[\s•·,]+/)[0];
+            return label + (cleanCode ? (' · ' + cleanCode) : '');
           }
           return label;
         },
@@ -5335,9 +5377,9 @@ Tel: ${h.phone || ''}`
             arrCode: 'BKK',
             arrCity: 'Bangkok Suvarnabhumi · 26 Dic 21:15',
             arrTime: '21:15 (+1)',
-            duration: '18h 15m (attesa DEL · 5h)',
+            duration: '18h 15m',
             stops: 1,
-            stopsInfo: 'DEL',
+            stopsInfo: 'DEL (Nuova Delhi • 5h attesa)',
             pnr: 'BJRZOF',
             baggage: 'Economy · Posti: 27C 27D 28C 28D (FCO→DEL) · 29F 29E 29D 29C (DEL→BKK)'
           },
@@ -5481,9 +5523,9 @@ Tel: ${h.phone || ''}`
             arrCode: 'FCO',
             arrCity: 'Roma Fiumicino · 8 Gen 18:55',
             arrTime: '18:55',
-            duration: '16h 50m (attesa DEL · 1h 55m)',
+            duration: '16h 50m',
             stops: 1,
-            stopsInfo: 'DEL',
+            stopsInfo: 'DEL (Nuova Delhi • 1h 55m attesa)',
             pnr: 'BJRZOF',
             baggage: 'Economy · Posti: 28A 28B 28D 27E (BKK→DEL) · 38C 38D 39D 40D (DEL→FCO)'
           }
