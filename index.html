@@ -369,16 +369,16 @@
             <p class="text-xs text-slate-400">14 giorni di avventura • 25 Dic - 8 Gen</p>
           </div>
           <div class="flex items-center gap-1.5">
-            <button @click="resetItinerary()" 
-                    title="Ripristina itinerario originale predefinito"
+            <button @click="undoItinerary()" 
+                    title="Annulla l'ultima modifica all'itinerario"
                     class="text-[10px] text-slate-400 hover:text-amber-400 flex items-center gap-1 py-1 px-2 rounded-lg bg-slate-900 border border-slate-800 active:scale-95 transition-all">
-              <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-              <span>Reset</span>
+              <i data-lucide="undo-2" class="w-3 h-3"></i>
+              <span>Annulla</span>
             </button>
             <button @click="toggleAllDays()" 
-                    class="text-xs font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 py-1 px-2 rounded-lg bg-teal-950/40 border border-teal-800/40 active:scale-95 transition-transform">
+                    class="text-xs font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 py-1 px-2.5 rounded-lg bg-teal-950/40 border border-teal-800/40 active:scale-95 transition-transform">
               <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
-              <span x-text="allExpanded ? 'Comprimi' : 'Espandi'"></span>
+              <span x-text="allExpanded ? 'Comprimi tutti' : 'Espandi tutti'"></span>
             </button>
           </div>
         </div>
@@ -622,11 +622,11 @@
               <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i>
               <span>Aggiungi Alloggio</span>
             </button>
-            <button @click="resetHotels()" 
+            <button @click="undoHotels()" 
                     class="text-[10px] text-slate-400 hover:text-amber-400 flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-slate-800 active:scale-95 transition-all"
-                    title="Ripristina i dati e recapiti originali">
-              <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-              <span>Ripristina</span>
+                    title="Annulla l'ultima modifica o eliminazione alloggio">
+              <i data-lucide="undo-2" class="w-3 h-3"></i>
+              <span>Annulla</span>
             </button>
           </div>
         </div>
@@ -738,11 +738,11 @@
               <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i>
               <span>Aggiungi Trasporto</span>
             </button>
-            <button @click="resetTransports()" 
+            <button @click="undoTransports()" 
                     class="text-[10px] text-slate-400 hover:text-sky-400 flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-slate-800 active:scale-95 transition-all"
-                    title="Ripristina i voli e trasporti originali">
-              <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-              <span>Ripristina</span>
+                    title="Annulla l'ultima modifica o eliminazione trasporto">
+              <i data-lucide="undo-2" class="w-3 h-3"></i>
+              <span>Annulla</span>
             </button>
           </div>
         </div>
@@ -1714,16 +1714,47 @@
           x-cloak>
 
       <div class="space-y-1">
-        <h2 class="font-display text-xl font-bold text-white tracking-tight">Checklist & Info Utili</h2>
-        <p class="text-xs text-slate-400">Salvataggio automatico su smartphone (localStorage)</p>
+        <h2 class="font-display text-xl font-bold text-white tracking-tight">Checklist Partecipanti</h2>
+        <p class="text-xs text-slate-400">Seleziona chi sei per visualizzare e spuntare la tua valigia personale</p>
       </div>
 
-      <!-- Barra di Progresso Bagagli -->
+      <!-- Selettore Partecipante Checklist (4 Viaggiatori con Progresso Individuale) -->
+      <div class="glass-card rounded-2xl border border-slate-800/90 p-3 space-y-2 shadow-md">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400 font-medium">Stai visualizzando la lista di:</span>
+          <span class="font-bold text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+            <span x-text="currentTraveler.avatarEmoji"></span>
+            <span x-text="currentTraveler.name"></span>
+          </span>
+        </div>
+        
+        <div class="grid grid-cols-4 gap-2 pt-0.5">
+          <template x-for="t in travelers" :key="t.id">
+            <button @click="selectChecklistTraveler(t.id)" 
+                    type="button"
+                    class="p-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border text-center relative active:scale-95"
+                    :class="selectedChecklistTravelerId === t.id 
+                      ? 'bg-emerald-500/20 border-emerald-500/70 text-white shadow-md shadow-emerald-950/40 ring-1 ring-emerald-500/40' 
+                      : 'bg-slate-900/80 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:border-slate-700'">
+              <span class="text-lg filter drop-shadow" x-text="t.avatarEmoji"></span>
+              <span class="text-xs font-bold font-display truncate max-w-full" x-text="t.name"></span>
+              <span class="text-[9.5px] font-mono font-extrabold"
+                    :class="getTravelerPackingProgress(t.id) === 100 ? 'text-emerald-400' : 'text-slate-400'"
+                    x-text="getTravelerPackingProgress(t.id) + '%'"></span>
+              <template x-if="selectedChecklistTravelerId === t.id">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -bottom-1"></span>
+              </template>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Barra di Progresso Bagagli del Partecipante Attivo -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-2.5 shadow-lg">
         <div class="flex items-center justify-between text-xs">
           <span class="font-bold text-slate-200 flex items-center gap-1.5">
             <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i>
-            Stato Bagaglio:
+            <span>Stato Valigia di <span class="text-emerald-300" x-text="currentTraveler.name"></span>:</span>
           </span>
           <span class="font-mono font-extrabold text-emerald-400" x-text="getPackingProgress() + '% Pronto'"></span>
         </div>
@@ -1735,19 +1766,22 @@
         </div>
 
         <div class="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-          <span x-text="getCompletedCount() + ' di ' + checklistItems.length + ' elementi preparati'"></span>
-          <button @click="resetChecklist()" class="text-rose-400 hover:text-rose-300 font-semibold active:scale-95 transition-transform">
-            Reset
+          <span x-text="getCompletedCount() + ' di ' + checklistItems.length + ' elementi preparati per ' + currentTraveler.name"></span>
+          <button @click="undoChecklist()" 
+                  title="Annulla l'ultima spunta o modifica"
+                  class="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 text-[11px] active:scale-95 transition-transform">
+            <i data-lucide="undo-2" class="w-3 h-3"></i>
+            <span>Annulla</span>
           </button>
         </div>
       </div>
 
-      <!-- Aggiungi Voce Custom -->
+      <!-- Aggiungi Voce Custom Personale -->
       <div class="flex items-center gap-2">
         <input type="text" 
                x-model="newCheckItem" 
                @keydown.enter="addCheckItem()"
-               placeholder="+ Aggiungi cosa da non dimenticare..." 
+               :placeholder="'+ Aggiungi cosa da preparare per ' + currentTraveler.name + '...'" 
                class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
         <button @click="addCheckItem()" 
                 class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 active:scale-95 transition-all">
@@ -4238,11 +4272,15 @@
         },
 
         refreshIcons() {
-          this.$nextTick(() => {
-            if (window.lucide) {
-              window.lucide.createIcons();
-            }
-          });
+          if (this.$nextTick) {
+            this.$nextTick(() => {
+              if (window.lucide) {
+                window.lucide.createIcons();
+              }
+            });
+          } else if (window.lucide) {
+            window.lucide.createIcons();
+          }
         },
 
         showToast(msg) {
@@ -4323,27 +4361,45 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                this.itinerary = parsed;
+                // I giorni partono sempre tutti compressi all'avvio dell'app come richiesto dall'utente
+                this.itinerary = parsed.map(d => ({ ...d, expanded: false }));
+                this.allExpanded = false;
                 return;
               }
             } catch (e) {
               console.error('Error loading saved itinerary', e);
             }
           }
-          this.itinerary = JSON.parse(JSON.stringify(this.defaultItinerary));
+          this.itinerary = JSON.parse(JSON.stringify(this.defaultItinerary)).map(d => ({ ...d, expanded: false }));
+          this.allExpanded = false;
         },
 
-        saveItinerary() {
+        saveItinerary(createSnapshot = true) {
+          if (createSnapshot) {
+            const old = localStorage.getItem('thailand_itinerary_v2');
+            if (old) localStorage.setItem('thailand_itinerary_undo', old);
+          }
           localStorage.setItem('thailand_itinerary_v2', JSON.stringify(this.itinerary));
         },
 
-        resetItinerary() {
-          if (confirm("Vuoi davvero ripristinare l'itinerario originale di 14 giorni? Le modifiche manuali verranno ripristinate ai valori iniziali.")) {
-            this.itinerary = JSON.parse(JSON.stringify(this.defaultItinerary));
-            this.saveItinerary();
-            this.showToast("Itinerario originale ripristinato!");
-            this.refreshIcons();
+        undoItinerary() {
+          const snapshot = localStorage.getItem('thailand_itinerary_undo');
+          if (snapshot) {
+            try {
+              const parsed = JSON.parse(snapshot);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                this.itinerary = parsed.map(d => ({ ...d, expanded: false }));
+                this.saveItinerary(false);
+                this.uploadToCloud(true);
+                this.showToast('↺ Ultima modifica all\'itinerario annullata!');
+                this.refreshIcons();
+                return;
+              }
+            } catch (e) {
+              console.error('Error undoing itinerary', e);
+            }
           }
+          this.showToast('Nessuna modifica recente da annullare');
         },
 
         openEditDayModal(day) {
@@ -4427,18 +4483,32 @@
           this.hotels = JSON.parse(JSON.stringify(this.defaultHotels));
         },
 
-        saveHotels() {
+        saveHotels(createSnapshot = true) {
+          if (createSnapshot) {
+            const old = localStorage.getItem('thailand_hotels_v2');
+            if (old) localStorage.setItem('thailand_hotels_undo', old);
+          }
           localStorage.setItem('thailand_hotels_v2', JSON.stringify(this.hotels));
         },
 
-        resetHotels() {
-          if (confirm("Vuoi davvero ripristinare i 7 hotel con i recapiti e codici booking originali?")) {
-            this.hotels = JSON.parse(JSON.stringify(this.defaultHotels));
-            this.saveHotels();
-            this.uploadToCloud(true);
-            this.showToast("Hotel originali ripristinati!");
-            this.refreshIcons();
+        undoHotels() {
+          const snapshot = localStorage.getItem('thailand_hotels_undo');
+          if (snapshot) {
+            try {
+              const parsed = JSON.parse(snapshot);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                this.hotels = parsed;
+                this.saveHotels(false);
+                this.uploadToCloud(true);
+                this.showToast('↺ Ultima modifica agli alloggi annullata!');
+                this.refreshIcons();
+                return;
+              }
+            } catch (e) {
+              console.error('Error undoing hotels', e);
+            }
           }
+          this.showToast('Nessuna modifica recente agli hotel da annullare');
         },
 
         openAddHotelModal() {
@@ -4586,18 +4656,33 @@
           this.transports = JSON.parse(JSON.stringify(this.defaultTransports));
         },
 
-        saveTransports() {
+        saveTransports(createSnapshot = true) {
+          if (createSnapshot) {
+            const old = localStorage.getItem('thailand_transports_v2');
+            if (old) localStorage.setItem('thailand_transports_undo', old);
+          }
           localStorage.setItem('thailand_transports_v2', JSON.stringify(this.transports));
         },
 
-        resetTransports() {
-          if (confirm("Vuoi davvero ripristinare i voli e trasferimenti originali?")) {
-            this.transports = JSON.parse(JSON.stringify(this.defaultTransports));
-            this.saveTransports();
-            this.uploadToCloud(true);
-            this.showToast("Trasporti originali ripristinati!");
-            this.refreshIcons();
+        undoTransports() {
+          const snapshot = localStorage.getItem('thailand_transports_undo');
+          if (snapshot) {
+            try {
+              const parsed = JSON.parse(snapshot);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                this.transports = parsed;
+                this.saveTransports(false);
+                this.syncTransportsToItinerary(true);
+                this.uploadToCloud(true);
+                this.showToast('↺ Ultima modifica ai trasporti annullata!');
+                this.refreshIcons();
+                return;
+              }
+            } catch (e) {
+              console.error('Error undoing transports', e);
+            }
           }
+          this.showToast('Nessuna modifica recente ai trasporti da annullare');
         },
 
         openAddTransportModal() {
@@ -5263,7 +5348,8 @@ Tel: ${h.phone || ''}`
               travelers: this.travelers,
               itinerary: this.itinerary,
               hotels: this.hotels,
-              transports: this.transports
+              transports: this.transports,
+              travelerChecklists: this.travelerChecklists
             };
             const res = await fetch(this.cloudEndpoint, {
               method: 'PUT',
@@ -5306,12 +5392,13 @@ Tel: ${h.phone || ''}`
               if (cloudData && (cloudData.itinerary || cloudData.travelers || cloudData.hotels || cloudData.transports)) {
                 const cloudTs = cloudData.updatedAtISO || '';
                 if (cloudData.itinerary && Array.isArray(cloudData.itinerary) && cloudData.itinerary.length > 0) {
-                  this.itinerary = cloudData.itinerary;
-                  this.saveItinerary();
+                  this.itinerary = cloudData.itinerary.map(d => ({ ...d, expanded: false }));
+                  this.allExpanded = false;
+                  this.saveItinerary(false);
                 }
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
                   this.hotels = cloudData.hotels;
-                  this.saveHotels();
+                  this.saveHotels(false);
                 }
                 if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
                   this.transports = cloudData.transports.map(t => {
@@ -5326,8 +5413,12 @@ Tel: ${h.phone || ''}`
                     }
                     return t;
                   });
-                  this.saveTransports();
+                  this.saveTransports(false);
                   this.syncTransportsToItinerary(false);
+                }
+                if (cloudData.travelerChecklists && typeof cloudData.travelerChecklists === 'object') {
+                  this.travelerChecklists = cloudData.travelerChecklists;
+                  localStorage.setItem('thailand_traveler_checklists_v3', JSON.stringify(this.travelerChecklists));
                 }
                 if (cloudData.travelers && Array.isArray(cloudData.travelers) && cloudData.travelers.length > 0) {
                   this.travelers = cloudData.travelers;
@@ -5547,27 +5638,72 @@ Tel: ${h.phone || ''}`
           { id: 21, category: 'Farmacia & Salute', label: 'Pastiglie contro il Mal di Mare (Travelgum/Xamamina)', note: 'Per motoscafo Krabi-Phuket e tour a Maya Bay', checked: false }
         ],
 
-        checklistItems: [],
+        selectedChecklistTravelerId: 1,
+        travelerChecklists: {},
 
         loadChecklist() {
-          const saved = localStorage.getItem('thailand_checklist_v2');
-          if (saved) {
-            try {
-              this.checklistItems = JSON.parse(saved);
-            } catch (e) {
-              this.checklistItems = [...this.defaultChecklist];
-            }
-          } else {
-            this.checklistItems = [...this.defaultChecklist];
+          const savedActive = localStorage.getItem('thailand_checklist_active_traveler');
+          if (savedActive) {
+            this.selectedChecklistTravelerId = parseInt(savedActive, 10) || 1;
           }
+
+          const savedChecklists = localStorage.getItem('thailand_traveler_checklists_v3');
+          if (savedChecklists) {
+            try {
+              this.travelerChecklists = JSON.parse(savedChecklists);
+            } catch (e) {
+              console.error('Error parsing traveler checklists', e);
+            }
+          }
+
+          // Migrazione trasparente: se esiste un vecchio thailand_checklist_v2, preservalo per Steff (id 1)
+          const oldV2 = localStorage.getItem('thailand_checklist_v2');
+          let migratedSteff = null;
+          if (oldV2) {
+            try { migratedSteff = JSON.parse(oldV2); } catch(e){}
+          }
+
+          const travelerIds = [1, 2, 3, 4];
+          travelerIds.forEach(id => {
+            if (!this.travelerChecklists[id] || !Array.isArray(this.travelerChecklists[id]) || this.travelerChecklists[id].length === 0) {
+              if (id === 1 && migratedSteff && Array.isArray(migratedSteff) && migratedSteff.length > 0) {
+                this.travelerChecklists[id] = migratedSteff;
+              } else {
+                this.travelerChecklists[id] = JSON.parse(JSON.stringify(this.defaultChecklist));
+              }
+            }
+          });
         },
 
-        saveChecklist() {
-          localStorage.setItem('thailand_checklist_v2', JSON.stringify(this.checklistItems));
+        saveChecklist(createSnapshot = true) {
+          if (createSnapshot) {
+            const old = localStorage.getItem('thailand_traveler_checklists_v3');
+            if (old) localStorage.setItem('thailand_traveler_checklists_undo', old);
+          }
+          localStorage.setItem('thailand_traveler_checklists_v3', JSON.stringify(this.travelerChecklists));
+          this.uploadToCloud(true);
+        },
+
+        selectChecklistTraveler(id) {
+          this.selectedChecklistTravelerId = id;
+          localStorage.setItem('thailand_checklist_active_traveler', id);
+          this.refreshIcons();
+        },
+
+        get currentTraveler() {
+          return (this.travelers || []).find(t => t.id === this.selectedChecklistTravelerId) || (this.travelers && this.travelers[0]) || { id: 1, name: 'Steff', avatarEmoji: '🗺️' };
+        },
+
+        get checklistItems() {
+          if (!this.travelerChecklists[this.selectedChecklistTravelerId]) {
+            this.travelerChecklists[this.selectedChecklistTravelerId] = JSON.parse(JSON.stringify(this.defaultChecklist));
+          }
+          return this.travelerChecklists[this.selectedChecklistTravelerId];
         },
 
         toggleCheckItem(id) {
-          const item = this.checklistItems.find(i => i.id === id);
+          const list = this.checklistItems;
+          const item = list.find(i => i.id === id);
           if (item) {
             item.checked = !item.checked;
             this.saveChecklist();
@@ -5578,33 +5714,46 @@ Tel: ${h.phone || ''}`
         addCheckItem() {
           const val = this.newCheckItem.trim();
           if (!val) return;
-          this.checklistItems.unshift({
-            id: Date.now(),
+          const list = this.checklistItems;
+          list.unshift({
+            id: 'custom_' + Date.now(),
             category: 'Tech & Gadget',
             label: val,
-            note: 'Aggiunto manualmente',
+            note: 'Aggiunto per ' + this.currentTraveler.name,
             checked: false,
             custom: true
           });
           this.newCheckItem = '';
           this.saveChecklist();
-          this.showToast('Oggetto aggiunto alla checklist!');
+          this.showToast('Aggiunto alla checklist di ' + this.currentTraveler.name + '!');
           this.refreshIcons();
         },
 
         deleteCheckItem(id) {
-          this.checklistItems = this.checklistItems.filter(i => i.id !== id);
+          const list = this.checklistItems;
+          this.travelerChecklists[this.selectedChecklistTravelerId] = list.filter(i => i.id !== id);
           this.saveChecklist();
           this.showToast('Elemento eliminato');
+          this.refreshIcons();
         },
 
-        resetChecklist() {
-          if (confirm('Vuoi ripristinare la checklist predefinita?')) {
-            this.checklistItems = [...this.defaultChecklist];
-            this.saveChecklist();
-            this.showToast('Checklist ripristinata!');
-            this.refreshIcons();
+        undoChecklist() {
+          const snapshot = localStorage.getItem('thailand_traveler_checklists_undo');
+          if (snapshot) {
+            try {
+              const parsed = JSON.parse(snapshot);
+              if (parsed && typeof parsed === 'object') {
+                this.travelerChecklists = parsed;
+                this.saveChecklist(false);
+                this.showToast('↺ Ultima modifica checklist annullata!');
+                this.refreshIcons();
+                return;
+              }
+            } catch(e) {
+              console.error('Error undoing checklist', e);
+            }
           }
+          this.showToast('Nessuna modifica recente alla checklist da annullare');
         },
 
         getItemsByCategory(catName) {
@@ -5616,8 +5765,15 @@ Tel: ${h.phone || ''}`
         },
 
         getPackingProgress() {
-          if (this.checklistItems.length === 0) return 0;
+          if (!this.checklistItems || this.checklistItems.length === 0) return 0;
           return Math.round((this.getCompletedCount() / this.checklistItems.length) * 100);
+        },
+
+        getTravelerPackingProgress(travelerId) {
+          const list = this.travelerChecklists[travelerId];
+          if (!list || !list.length) return 0;
+          const done = list.filter(i => i.checked).length;
+          return Math.round((done / list.length) * 100);
         },
 
         getCategoryProgress(catName) {
@@ -5938,7 +6094,7 @@ Tel: ${h.phone || ''}`
             title: 'Arrivo a Bangkok, Check-in & Prima Serata Street Food',
             backpackNotes: 'Passaporto, contanti per Airport Rail Link / Grab, vestiti leggeri e scarpe da ginnastica.',
             isToday: true,
-            expanded: true,
+            expanded: false,
             mainLocation: 'Yaowarat Road Chinatown Bangkok',
             stops: [
               { time: '20:55', name: 'Atterraggio a BKK & SIM', description: 'Ritiro bagagli, SIM TrueMove/AIS al piano arrivi e prelievo/cambio cash ai SuperRich al piano sotterraneo treni.', mapsQuery: 'Suvarnabhumi Airport Bangkok', highlight: false },
