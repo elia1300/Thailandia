@@ -901,6 +901,9 @@
     <!-- ========================================================================= -->
     <!-- TAB 3: TOOLBOX DA VIAGGIO                                                 -->
     <!-- ========================================================================= -->
+        <!-- ========================================================================= -->
+    <!-- TAB 3: TOOLBOX DA VIAGGIO                                                 -->
+    <!-- ========================================================================= -->
     <main x-show="activeTab === 'toolbox'" 
           x-transition:enter="transition ease-out duration-200"
           x-transition:enter-start="opacity-0 translate-y-2"
@@ -914,31 +917,8 @@
       </div>
 
       <!-- ========================================================== -->
-      <!-- SYNC CARD (SINCRONIZZAZIONE TRA I 4 AMICI)               -->
-      <div class="glass-card rounded-2xl border border-emerald-500/30 p-4 space-y-3 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/20">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-              <i data-lucide="cloud" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-display font-bold text-sm text-white">Sincronizzazione Gruppo</h3>
-              <span class="text-[10px] text-emerald-400 font-semibold" x-text="lastSyncTime ? 'Ultimo sync: ' + lastSyncTime : 'Tutti e 4 allineati in 1 tap'"></span>
-            </div>
-          </div>
-
-          <button @click="openSyncModal()" 
-                  class="px-2.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black active:scale-95 transition-all flex items-center gap-1 shadow-md shadow-emerald-950/40">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span>Sincronizza</span>
-          </button>
-        </div>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          🤖 <strong class="text-emerald-400">Auto-sync attivo</strong> — l'app controlla il cloud ogni 60 secondi. Chi aggiorna e carica, gli altri vedranno apparire un banner verde in cima e potranno aggiornare con un tocco.
-        </p>
-      </div>
-
-      <!-- PWA STANDALONE CARD (INFO & INSTALLAZIONE)                -->
+      <!-- 1. APP IPHONE SCHERMATA HOME (1° POSTO)                    -->
+      <!-- ========================================================== -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
@@ -964,407 +944,9 @@
         </p>
       </div>
 
-      <!-- 0. METEO & CLIMA NELLE TAPPE                         -->
       <!-- ========================================================== -->
-      <div id="weather-section" class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
-              <i data-lucide="cloud-sun" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-display font-bold text-sm text-white">Meteo & Clima nelle Tappe</h3>
-              <span class="text-[10px] text-slate-400">Previsioni nei giorni del viaggio & live</span>
-            </div>
-          </div>
-
-          <!-- Bottone Refresh Live -->
-          <button @click="refreshWeather()" 
-                  :class="weatherLoading ? 'animate-spin text-amber-400' : 'text-slate-400 hover:text-emerald-400'"
-                  class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs active:scale-95 transition-all flex items-center gap-1"
-                  title="Ricarica meteo in tempo reale">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">Aggiorna Live</span>
-          </button>
-        </div>
-
-        <!-- Selettore Orizzontale Regione / Città con Date del Soggiorno -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <template x-for="reg in weatherRegions" :key="reg.id">
-            <button @click="selectWeatherRegion(reg.id)"
-                    :class="selectedWeatherId === reg.id ? 'bg-sky-500 text-slate-950 font-bold shadow-md shadow-sky-950/50' : 'bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white'"
-                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 flex items-center gap-1.5">
-              <span x-text="reg.icon"></span>
-              <span x-text="reg.name"></span>
-              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-md"
-                    :class="selectedWeatherId === reg.id ? 'bg-black/20 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'"
-                    x-text="reg.badgeDates"></span>
-            </button>
-          </template>
-        </div>
-
-        <!-- Header Info Periodo Tappa Selezionata -->
-        <div class="p-3 rounded-xl bg-gradient-to-r from-sky-950/70 via-slate-900 to-slate-950 border border-sky-500/30 space-y-1.5">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base" x-text="currentRegion.icon"></span>
-              <span class="font-display font-black text-sm text-white" x-text="currentRegion.name"></span>
-            </div>
-            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm"
-                  x-text="currentRegion.stayPeriod"></span>
-          </div>
-          <p class="text-[11px] text-sky-200/90 leading-relaxed" x-text="currentRegion.climateSummary"></p>
-        </div>
-
-        <!-- Switcher Modalità: [🗓️ Nei Giorni del Nostro Viaggio] vs [⚡ Live Adesso] -->
-        <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
-          <button type="button"
-                  @click="weatherViewMode = 'tripDays'; refreshIcons()"
-                  :class="weatherViewMode === 'tripDays' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
-                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
-            <span>🗓️</span>
-            <span>Nei Giorni del Viaggio</span>
-          </button>
-          <button type="button"
-                  @click="weatherViewMode = 'liveToday'; refreshWeather(); refreshIcons()"
-                  :class="weatherViewMode === 'liveToday' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
-                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
-            <span>⚡</span>
-            <span>Oggi in Diretta (Live)</span>
-          </button>
-        </div>
-
-        <!-- VISTA 1: METEO NEI GIORNI PRECISI DEL VIAGGIO (RICHIESTA UTENTE) -->
-        <div x-show="weatherViewMode === 'tripDays'" class="space-y-3">
-          <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-            <span class="font-medium text-slate-300">Previsioni e clima dettagliati giorno per giorno:</span>
-            <span class="font-mono text-emerald-400 font-bold" x-text="(currentRegion.tripDays || []).length + ' Giorni di Tappa'"></span>
-          </div>
-
-          <div class="space-y-3">
-            <template x-for="dayWeather in (currentRegion.tripDays || [])" :key="dayWeather.dayNum">
-              <div class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/90 hover:border-slate-700/80 transition-all space-y-2.5 shadow-md">
-                
-                <!-- Riga Superiore: Badge Giorno, Tag, Titolo -->
-                <div class="flex items-start justify-between gap-2">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-display bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                        <span x-text="'Giorno ' + dayWeather.dayNum"></span> • <span x-text="dayWeather.date"></span>
-                      </span>
-                      <template x-if="getDynamicDayTag(dayWeather)">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                              x-text="getDynamicDayTag(dayWeather)"></span>
-                      </template>
-                    </div>
-                    <h4 class="text-xs font-bold text-slate-200 font-display pt-0.5" x-text="dayWeather.title"></h4>
-                  </div>
-
-                  <!-- Icona & Temperatura Dinamica (Adattata alla fascia oraria di arrivo/tappa) -->
-                  <div class="text-right flex-shrink-0">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <span class="text-2xl filter drop-shadow" x-text="getDynamicDayIcon(dayWeather)"></span>
-                      <span class="font-mono text-xl font-black text-white" x-text="getDynamicDayMaxTemp(dayWeather) + '°'"></span>
-                    </div>
-                    <span class="text-[10px] font-mono text-slate-400 block" x-text="'Min ' + getDynamicDayMinTemp(dayWeather) + '°C'"></span>
-                  </div>
-                </div>
-
-                <!-- Badge Orario Sincronizzato (Live Sync dal Volo/Trasporto/Itinerario) -->
-                <template x-if="getDynamicDayTimingBadge(dayWeather)">
-                  <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-[10.5px]">
-                    <div class="flex items-center gap-1.5 text-sky-300 font-medium">
-                      <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-400 flex-shrink-0"></i>
-                      <span x-text="getDynamicDayTimingBadge(dayWeather)"></span>
-                    </div>
-                    <span class="text-[9px] font-mono uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Live Sync</span>
-                  </div>
-                </template>
-
-                <!-- Condizione Sintetica & Metriche Rapide -->
-                <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between text-[11px]">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-amber-400 font-bold" x-text="getDynamicDayCondition(dayWeather)"></span>
-                  </div>
-                  <div class="flex items-center gap-3 font-mono text-[10px] text-slate-400">
-                    <span title="Probabilità di Pioggia" class="flex items-center gap-1">
-                      <span>🌧️</span>
-                      <span class="text-sky-300 font-bold" x-text="dayWeather.rainChance"></span>
-                    </span>
-                    <span title="Umidità Relativa" class="flex items-center gap-1">
-                      <span>💧</span>
-                      <span class="text-emerald-400 font-bold" x-text="dayWeather.humidity"></span>
-                    </span>
-                    <span title="Vento" class="flex items-center gap-1">
-                      <span>🍃</span>
-                      <span class="text-teal-300 font-bold" x-text="dayWeather.wind"></span>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Consiglio Operativo Clima & Valigia Dinamico (Ricalcolato in tempo reale) -->
-                <div class="text-[11px] text-slate-300 bg-sky-950/30 border border-sky-500/20 rounded-lg p-2.5 flex items-start gap-2">
-                  <i data-lucide="info" class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5"></i>
-                  <div class="leading-relaxed space-y-1">
-                    <p x-text="getDynamicDayAdvice(dayWeather)"></p>
-                    <p class="text-sky-300 text-[10px] font-semibold flex items-center gap-1">
-                      <span>👕 Outfit:</span>
-                      <span x-text="getDynamicOutfitTip(dayWeather)"></span>
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Tasto Rapido: Apri Giorno nell'Itinerario -->
-                <button type="button"
-                        @click="goToItineraryDay(dayWeather.dayNum)"
-                        class="w-full py-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-[11px] font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-1.5 active:scale-98 transition-all">
-                  <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-400"></i>
-                  <span>Vedi programma completo Giorno <span x-text="dayWeather.dayNum"></span></span>
-                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500"></i>
-                </button>
-
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <!-- VISTA 2: METEO IN TEMPO REALE OGGI (LIVE OPEN-METEO) -->
-        <div x-show="weatherViewMode === 'liveToday'" class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-          <!-- Riga Principale: Temp, Icona, Condizione -->
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="flex items-baseline gap-2">
-                <span class="font-mono text-3xl font-black text-white" x-text="currentWeather.temp + '°C'"></span>
-                <span class="text-xs font-semibold text-slate-400" x-text="'Percepita ' + currentWeather.feelsLike + '°C'"></span>
-              </div>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="text-xs font-bold text-amber-400" x-text="currentWeather.condition"></span>
-                <span class="text-[10px] text-slate-500">•</span>
-                <span class="text-[11px] text-slate-400 font-mono" x-text="'Min ' + currentWeather.minTemp + '° / Max ' + currentWeather.maxTemp + '°'"></span>
-              </div>
-            </div>
-
-            <div class="text-3xl filter drop-shadow">
-              <span x-text="currentWeather.weatherIcon"></span>
-            </div>
-          </div>
-
-          <!-- Metriche Secondarie: Umidità, Vento, Metrica Speciale (Acqua/UV) -->
-          <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-800/80 font-mono">
-            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800">
-              <span class="block text-[9px] uppercase text-slate-400 font-sans font-bold">Umidità</span>
-              <span class="text-xs font-bold text-emerald-400" x-text="currentWeather.humidity + '%'"></span>
-            </div>
-            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800">
-              <span class="block text-[9px] uppercase text-slate-400 font-sans font-bold">Vento</span>
-              <span class="text-xs font-bold text-teal-300" x-text="currentWeather.wind + ' km/h'"></span>
-            </div>
-            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800">
-              <span class="block text-[9px] uppercase text-slate-400 font-sans font-bold" x-text="currentWeather.extraMetricLabel"></span>
-              <span class="text-xs font-bold text-amber-400" x-text="currentWeather.extraMetricVal"></span>
-            </div>
-          </div>
-
-          <!-- Consigli Abbigliamento & Valigia per la Tappa -->
-          <div class="rounded-xl p-2.5 bg-sky-500/10 border border-sky-500/20 text-sky-200 flex items-start gap-2">
-            <i data-lucide="shirt" class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5"></i>
-            <div class="text-[11px] leading-relaxed">
-              <span class="font-bold text-sky-300">Cosa indossare oggi:</span>
-              <span x-text="currentWeather.packingTip"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <!-- 2. CAMBIO VALUTA & CASSA COMUNE (2° POSTO)                -->
       <!-- ========================================================== -->
-      <!-- 1. OROLOGIO DOPPIO FUSO ITA ⇄ THA (SMART CALL WINDOW)     -->
-      <!-- ========================================================== -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/20">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
-              <i data-lucide="clock" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-display font-bold text-sm text-white">Doppio Fuso & Finestra Chiamate</h3>
-              <span class="text-[10px] text-slate-400">Differenza in inverno: <strong>+6 Ore</strong> a Bangkok rispetto a Roma</span>
-            </div>
-          </div>
-          <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-            UTC+7 ⇄ UTC+1
-          </span>
-        </div>
-
-        <!-- Riquadri Orologio Digitale Live -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <!-- Orologio THAILANDIA -->
-          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                <span>🇹🇭</span> <span>Thailandia</span>
-              </span>
-              <span class="text-[10px] text-amber-400 font-mono font-bold">ICT (Ora locale)</span>
-            </div>
-            <div class="flex items-baseline gap-1 pt-0.5">
-              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeBangkok || '--:--:--'"></span>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-              <span x-text="dateBangkok || 'Oggi'"></span>
-              <span class="text-amber-400 font-semibold" x-text="(hourBangkok >= 6 && hourBangkok < 18) ? '☀️ Giorno' : '🌙 Notte'"></span>
-            </div>
-          </div>
-
-          <!-- Orologio ITALIA -->
-          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                <span>🇮🇹</span> <span>Italia</span>
-              </span>
-              <span class="text-[10px] text-emerald-400 font-mono font-bold">CET (A casa)</span>
-            </div>
-            <div class="flex items-baseline gap-1 pt-0.5">
-              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeRome || '--:--:--'"></span>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-              <span x-text="dateRome || 'Oggi'"></span>
-              <span class="text-emerald-400 font-semibold" x-text="(hourRome >= 7 && hourRome < 19) ? '☀️ Giorno' : '🌙 Notte'"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Banner Intelligente Finestra Chiamate Casa -->
-        <div class="p-3 rounded-xl border flex items-start gap-2.5 transition-colors"
-             :class="getCallStatus().badgeClass">
-          <div class="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 animate-pulse"
-               :class="getCallStatus().dotColor"></div>
-          <div class="space-y-0.5">
-            <span class="text-xs font-bold block" x-text="getCallStatus().title"></span>
-            <p class="text-[11px] opacity-90 leading-relaxed" x-text="getCallStatus().desc"></p>
-          </div>
-        </div>
-
-        <!-- Simulatore Rapido di Fuso Orario -->
-        <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
-          <div class="flex items-center justify-between text-[10px]">
-            <span class="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="sliders" class="w-3 h-3 text-indigo-400"></i>
-              <span>Simula orario per organizzare videochiamate:</span>
-            </span>
-            <span class="font-mono font-bold text-indigo-300">Bangkok ➔ Roma (-6h)</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <input type="range" min="0" max="23" x-model.number="simulatedHourBkk"
-                   class="flex-1 accent-indigo-500 cursor-pointer">
-            <div class="text-right flex-shrink-0 font-mono text-xs">
-              <span class="text-amber-400 font-bold" x-text="String(simulatedHourBkk).padStart(2, '0') + ':00 THA'"></span>
-              <span class="text-slate-500 px-1">➔</span>
-              <span class="text-emerald-400 font-bold" x-text="String(getSimulatedRomeHour(simulatedHourBkk)).padStart(2, '0') + ':00 ITA'"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================================== -->
-      <!-- 2. CASSAFORTE DATI RAPIDI CHECK-IN & PASSAPORTI           -->
-      <!-- ========================================================== -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/15">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <i data-lucide="shield-check" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-display font-bold text-sm text-white">Cassaforte Check-in & Passaporti</h3>
-              <span class="text-[10px] text-slate-400">Dati dei 4 amici per reception, voli interni & dogana</span>
-            </div>
-          </div>
-
-          <!-- Tasto Privacy Nascondi / Mostra -->
-          <button type="button" 
-                  @click="showPassportsPrivacy = !showPassportsPrivacy; refreshIcons()"
-                  class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs active:scale-95 transition-all flex items-center gap-1"
-                  :title="showPassportsPrivacy ? 'Nascondi numeri' : 'Mostra numeri'">
-            <i :data-lucide="showPassportsPrivacy ? 'eye-off' : 'eye'" class="w-3.5 h-3.5 text-amber-400"></i>
-            <span class="text-[10px] font-semibold" x-text="showPassportsPrivacy ? 'Nascondi' : 'Mostra'"></span>
-          </button>
-        </div>
-
-        <!-- Box 4 Passaporti -->
-        <div class="space-y-2">
-          <template x-for="tr in travelers" :key="tr.id">
-            <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
-              <div class="flex items-center gap-2 min-w-0">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-                     :class="tr.avatarBg || 'bg-slate-800 text-white'">
-                  <span x-text="tr.avatarEmoji || '👤'"></span>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold text-white truncate" x-text="tr.name"></span>
-                    <span class="text-[10px] text-slate-400 truncate" x-text="tr.fullName && tr.fullName !== tr.name ? '(' + tr.fullName + ')' : ''"></span>
-                  </div>
-                  <div class="flex items-center gap-2 text-[10px] font-mono mt-0.5">
-                    <span class="text-amber-400 font-bold"
-                          x-text="showPassportsPrivacy ? (tr.passportNo || 'N° Passaporto non inserito') : (tr.passportNo ? (tr.passportNo.substring(0,2) + '••••' + tr.passportNo.slice(-2)) : 'N° Passaporto non inserito')"></span>
-                    <template x-if="tr.passportExp">
-                      <span class="text-slate-500 font-sans" x-text="'Scad: ' + tr.passportExp"></span>
-                    </template>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Azioni Copia & Modifica -->
-              <div class="flex items-center gap-1 flex-shrink-0">
-                <template x-if="tr.passportNo">
-                  <button type="button" 
-                          @click="copyText(tr.passportNo, 'Passaporto di ' + tr.name + ' copiato!')"
-                          class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-amber-400 active:scale-90 transition-all"
-                          title="Copia numero passaporto">
-                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                  </button>
-                </template>
-                <button type="button" 
-                        @click="openEditPassport(tr)"
-                        class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-sky-300 active:scale-90 transition-all"
-                        title="Modifica dati passaporto">
-                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Tasti Rapidi: Copia Tutti e 4 i Passaporti + Dati Primo Hotel (TM6) -->
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button type="button" 
-                  @click="copyAllPassports()"
-                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            <span>Copia Tutti e 4</span>
-          </button>
-          
-          <button type="button" 
-                  @click="copyFirstHotelInfo()"
-                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
-            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-            <span>Dati Hotel Dogana TM6</span>
-          </button>
-        </div>
-
-        <!-- Box Informativo Dogana / Scheda Arrivo TM6 -->
-        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
-          <div class="flex items-center justify-between text-slate-400 font-bold text-[10px]">
-            <span class="flex items-center gap-1 text-emerald-400">
-              <i data-lucide="info" class="w-3 h-3"></i>
-              <span>Primo Alloggio in Thailandia (per Dogana e Check-in):</span>
-            </span>
-          </div>
-          <p class="font-medium text-white">Amara Bangkok Hotel • 180/1 Surawong Road, Bangrak, Bangkok 10500</p>
-          <p class="text-[10px] text-slate-400">Tocca "Dati Hotel Dogana TM6" per copiare subito nome e indirizzo esatto richiesti al controllo passaporti all'arrivo a Bangkok.</p>
-        </div>
-      </div>
-
-      <!-- 3. CONVERTITORE DI VALUTA ISTANTANEO THB <-> EUR -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -1437,9 +1019,620 @@
             </button>
           </div>
         </div>
+
+        <!-- Divisione Rapida Conto 4 Amici -->
+        <div class="pt-2 border-t border-slate-800/80 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span class="text-xs font-bold text-white">Divisione Rapida Conto (4 Amici)</span>
+            </div>
+            <span class="text-[10px] text-slate-400">Quota a testa</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="flex-1 bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center">
+              <span class="text-xs text-slate-500 font-bold px-1">฿ Totale:</span>
+              <input type="number" 
+                     x-model.number="splitTotalThb" 
+                     placeholder="1200" 
+                     class="w-full bg-transparent text-sm font-mono font-bold text-amber-400 focus:outline-none">
+            </div>
+            <div class="p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-center min-w-[100px]">
+              <span class="text-[10px] text-emerald-400 font-bold block uppercase">A testa (1/4)</span>
+              <span class="font-mono text-sm font-black text-white" x-text="Math.round(splitTotalThb / 4) + ' ฿'"></span>
+              <span class="text-[9px] text-slate-400 block font-mono" x-text="'~ ' + ( (splitTotalThb / 4) / exchangeRate ).toFixed(1) + ' €'"></span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 2. CONTATTI DI EMERGENZA & AMBASCIATA -->
+      <!-- ========================================================== -->
+      <!-- 3. METEO & CLIMA NELLE TAPPE (3° POSTO) - COMPRIMIBILE    -->
+      <!-- ========================================================== -->
+      <div id="weather-section" class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+              <i data-lucide="cloud-sun" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Meteo & Clima nelle Tappe</h3>
+              <span class="text-[10px] text-slate-400">Previsioni nei giorni del viaggio & live</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <!-- Bottone Refresh Live -->
+            <button @click="refreshWeather()" 
+                    :class="weatherLoading ? 'animate-spin text-amber-400' : 'text-slate-400 hover:text-emerald-400'"
+                    class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs active:scale-95 transition-all flex items-center gap-1"
+                    title="Ricarica meteo in tempo reale">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">Aggiorna</span>
+            </button>
+
+            <!-- Tasto Espandi / Comprimi Header -->
+            <button type="button" 
+                    @click="weatherCardExpanded = !weatherCardExpanded; refreshIcons()"
+                    class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-sky-400 active:scale-95 transition-all"
+                    :title="weatherCardExpanded ? 'Comprimi card meteo' : 'Espandi previsioni complete'">
+              <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="weatherCardExpanded ? 'rotate-180 text-sky-400' : ''"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ANTEPRIMA SEMPRE VISIBILE: Selettore Regione & Quadro Climatico -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <template x-for="reg in weatherRegions" :key="reg.id">
+            <button @click="selectWeatherRegion(reg.id)"
+                    :class="selectedWeatherId === reg.id ? 'bg-sky-500 text-slate-950 font-bold shadow-md shadow-sky-950/50' : 'bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white'"
+                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 flex items-center gap-1.5">
+              <span x-text="reg.icon"></span>
+              <span x-text="reg.name"></span>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-md"
+                    :class="selectedWeatherId === reg.id ? 'bg-black/20 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'"
+                    x-text="reg.badgeDates"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Header Info Periodo Tappa Selezionata -->
+        <div class="p-3 rounded-xl bg-gradient-to-r from-sky-950/70 via-slate-900 to-slate-950 border border-sky-500/30 space-y-1.5">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base" x-text="currentRegion.icon"></span>
+              <span class="font-display font-black text-sm text-white" x-text="currentRegion.name"></span>
+            </div>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm"
+                  x-text="currentRegion.stayPeriod"></span>
+          </div>
+          <p class="text-[11px] text-sky-200/90 leading-relaxed" x-text="currentRegion.climateSummary"></p>
+        </div>
+
+        <!-- SEZIONE ESPANDIBILE (Previsioni Giorno per Giorno & Live) -->
+        <div x-show="weatherCardExpanded" x-collapse class="space-y-3.5 pt-1">
+          <!-- Switcher Modalità: [🗓️ Nei Giorni del Nostro Viaggio] vs [⚡ Live Adesso] -->
+          <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button type="button"
+                    @click="weatherViewMode = 'tripDays'; refreshIcons()"
+                    :class="weatherViewMode === 'tripDays' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+              <span>🗓️</span>
+              <span>Nei Giorni del Viaggio</span>
+            </button>
+            <button type="button"
+                    @click="weatherViewMode = 'liveToday'; refreshWeather(); refreshIcons()"
+                    :class="weatherViewMode === 'liveToday' ? 'bg-sky-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+              <span>⚡</span>
+              <span>Oggi in Diretta (Live)</span>
+            </button>
+          </div>
+
+          <!-- VISTA 1: METEO NEI GIORNI PRECISI DEL VIAGGIO -->
+          <div x-show="weatherViewMode === 'tripDays'" class="space-y-3">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+              <span class="font-medium text-slate-300">Previsioni e clima dettagliati giorno per giorno:</span>
+              <span class="font-mono text-emerald-400 font-bold" x-text="(currentRegion.tripDays || []).length + ' Giorni di Tappa'"></span>
+            </div>
+
+            <div class="space-y-3">
+              <template x-for="dayWeather in (currentRegion.tripDays || [])" :key="dayWeather.dayNum">
+                <div class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/90 hover:border-slate-700/80 transition-all space-y-2.5 shadow-md">
+                  <!-- Riga Superiore: Badge Giorno, Tag, Titolo -->
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-400 font-mono font-bold text-xs"
+                              x-text="'Giorno ' + dayWeather.dayNum + ' • ' + dayWeather.date"></span>
+                        <span class="text-[10px] text-slate-400 font-medium" x-text="getDynamicDayTag(dayWeather)"></span>
+                      </div>
+                      <h4 class="font-display font-bold text-xs sm:text-sm text-white leading-snug" x-text="dayWeather.title"></h4>
+                    </div>
+                  </div>
+
+                  <!-- Riga Metriche: Temp, Meteo, Pioggia, Vento -->
+                  <div class="grid grid-cols-4 gap-1.5 pt-0.5">
+                    <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-center">
+                      <span class="text-[9px] text-slate-400 block">Temp Prevista</span>
+                      <span class="font-mono font-bold text-xs text-amber-400" x-text="getDynamicDayMinTemp(dayWeather) + '° - ' + getDynamicDayMaxTemp(dayWeather) + '°'"></span>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-center">
+                      <span class="text-[9px] text-slate-400 block">Condizione</span>
+                      <span class="text-xs font-semibold text-sky-300 truncate block" x-text="getDynamicDayIcon(dayWeather) + ' ' + getDynamicDayCondition(dayWeather)"></span>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-center">
+                      <span class="text-[9px] text-slate-400 block">Pioggia</span>
+                      <span class="font-mono font-bold text-xs text-teal-300" x-text="dayWeather.rainChance"></span>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-center">
+                      <span class="text-[9px] text-slate-400 block">Vento / Aria</span>
+                      <span class="text-[10px] font-medium text-slate-300 truncate block" x-text="dayWeather.wind"></span>
+                    </div>
+                  </div>
+
+                  <!-- Suggerimento Outfit & Consiglio Tattico -->
+                  <div class="space-y-1.5 text-[11px] pt-1 border-t border-slate-900">
+                    <div class="flex items-start gap-1.5 text-slate-300 leading-relaxed">
+                      <span class="text-xs flex-shrink-0">💡</span>
+                      <span x-text="getDynamicDayAdvice(dayWeather)"></span>
+                    </div>
+                    <div class="flex items-start gap-1.5 text-sky-300/90 font-medium">
+                      <span class="text-xs flex-shrink-0">👕</span>
+                      <span x-text="'Outfit: ' + getDynamicOutfitTip(dayWeather)"></span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- VISTA 2: OGGI IN DIRETTA (LIVE APPARENT TEMP & FORECAST) -->
+          <div x-show="weatherViewMode === 'liveToday'" class="space-y-3">
+            <div class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Oggi a</span>
+                  <h4 class="font-display font-black text-lg text-white" x-text="currentRegion.name"></h4>
+                </div>
+                <div class="text-right">
+                  <div class="flex items-baseline justify-end gap-1">
+                    <span class="text-3xl" x-text="currentWeather.weatherIcon"></span>
+                    <span class="font-mono text-3xl font-black text-white" x-text="currentWeather.temp + '°'"></span>
+                  </div>
+                  <span class="text-[11px] text-sky-300 font-medium" x-text="'Percepita: ' + currentWeather.feelsLike + '°C'"></span>
+                </div>
+              </div>
+
+              <!-- Metriche Dettagliate -->
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-900">
+                <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                  <span class="text-[10px] text-slate-400 block">Condizione</span>
+                  <span class="text-xs font-bold text-white truncate block" x-text="currentWeather.condition"></span>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                  <span class="text-[10px] text-slate-400 block">Umidità</span>
+                  <span class="text-xs font-bold text-teal-400 font-mono" x-text="currentWeather.humidity + '%'"></span>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                  <span class="text-[10px] text-slate-400 block">Vento</span>
+                  <span class="text-xs font-bold text-sky-400 font-mono" x-text="currentWeather.wind + ' km/h'"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasto Espandi / Comprimi Bottom -->
+        <button type="button" 
+                @click="weatherCardExpanded = !weatherCardExpanded; refreshIcons()"
+                class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-sky-500/40 text-sky-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+          <span x-text="weatherCardExpanded ? 'Comprimi previsioni giorno per giorno ▴' : 'Espandi previsioni giorno per giorno (' + (currentRegion.tripDays || []).length + ' tappe) ▾'"></span>
+          <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="weatherCardExpanded ? 'rotate-180' : ''"></i>
+        </button>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- 4. DOPPIO FUSO & FINESTRA CHIAMATE (4° POSTO) - COMPRIMIBILE -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Doppio Fuso & Finestra Chiamate</h3>
+              <span class="text-[10px] text-slate-400">Differenza in inverno: <strong>+6 Ore</strong> a Bangkok rispetto a Roma</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+              UTC+7 ⇄ UTC+1
+            </span>
+            <button type="button" 
+                    @click="dualClockCardExpanded = !dualClockCardExpanded; refreshIcons()"
+                    class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-indigo-400 active:scale-95 transition-all"
+                    :title="dualClockCardExpanded ? 'Comprimi simulatore' : 'Espandi simulatore orari'">
+              <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="dualClockCardExpanded ? 'rotate-180 text-indigo-400' : ''"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ANTEPRIMA SEMPRE VISIBILE: Riquadri Orologio Digitale Live -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <!-- Orologio THAILANDIA -->
+          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span>🇹🇭</span> <span>Thailandia</span>
+              </span>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">ICT (Ora locale)</span>
+            </div>
+            <div class="flex items-baseline gap-1 pt-0.5">
+              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeBangkok || '--:--:--'"></span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span x-text="dateBangkok || 'Oggi'"></span>
+              <span class="text-amber-400 font-semibold" x-text="(hourBangkok >= 6 && hourBangkok < 18) ? '☀️ Giorno' : '🌙 Notte'"></span>
+            </div>
+          </div>
+
+          <!-- Orologio ITALIA -->
+          <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span>🇮🇹</span> <span>Italia</span>
+              </span>
+              <span class="text-[10px] text-emerald-400 font-mono font-bold">CET (A casa)</span>
+            </div>
+            <div class="flex items-baseline gap-1 pt-0.5">
+              <span class="font-mono text-2xl sm:text-3xl font-black text-white tracking-tight" x-text="timeRome || '--:--:--'"></span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span x-text="dateRome || 'Oggi'"></span>
+              <span class="text-emerald-400 font-semibold" x-text="(hourRome >= 7 && hourRome < 19) ? '☀️ Giorno' : '🌙 Notte'"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner Intelligente Finestra Chiamate Casa -->
+        <div class="p-3 rounded-xl border flex items-start gap-2.5 transition-colors"
+             :class="getCallStatus().badgeClass">
+          <div class="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 animate-pulse"
+               :class="getCallStatus().dotColor"></div>
+          <div class="space-y-0.5">
+            <span class="text-xs font-bold block" x-text="getCallStatus().title"></span>
+            <p class="text-[11px] opacity-90 leading-relaxed" x-text="getCallStatus().desc"></p>
+          </div>
+        </div>
+
+        <!-- SEZIONE ESPANDIBILE (Simulatore Orario e Consigli) -->
+        <div x-show="dualClockCardExpanded" x-collapse class="space-y-3 pt-1">
+          <!-- Simulatore Rapido di Fuso Orario -->
+          <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <i data-lucide="sliders" class="w-3 h-3 text-indigo-400"></i>
+                <span>Simula orario per organizzare videochiamate:</span>
+              </span>
+              <span class="font-mono font-bold text-indigo-300">Bangkok ➔ Roma (-6h)</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <input type="range" min="0" max="23" x-model.number="simulatedHourBkk"
+                     class="flex-1 accent-indigo-500 cursor-pointer">
+              <div class="text-right flex-shrink-0 font-mono text-xs">
+                <span class="text-amber-400 font-bold" x-text="String(simulatedHourBkk).padStart(2, '0') + ':00 THA'"></span>
+                <span class="text-slate-500 px-1">➔</span>
+                <span class="text-emerald-400 font-bold" x-text="String(getSimulatedRomeHour(simulatedHourBkk)).padStart(2, '0') + ':00 ITA'"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasto Espandi / Comprimi Bottom -->
+        <button type="button" 
+                @click="dualClockCardExpanded = !dualClockCardExpanded; refreshIcons()"
+                class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/40 text-indigo-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+          <span x-text="dualClockCardExpanded ? 'Comprimi simulatore orari ▴' : 'Espandi simulatore videochiamate ▾'"></span>
+          <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="dualClockCardExpanded ? 'rotate-180' : ''"></i>
+        </button>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- 5. FRASI UTILI & GALATEO TEMPLI (5° POSTO) - COMPRIMIBILE  -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+              <i data-lucide="languages" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Mini Frasario di Sopravvivenza</h3>
+              <span class="text-[10px] text-amber-400 font-medium">Uomini: +khráp • Donne: +khâ</span>
+            </div>
+          </div>
+
+          <button type="button" 
+                  @click="phrasesCardExpanded = !phrasesCardExpanded; refreshIcons()"
+                  class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-teal-400 active:scale-95 transition-all"
+                  :title="phrasesCardExpanded ? 'Comprimi frasario' : 'Espandi tutte le frasi'">
+            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="phrasesCardExpanded ? 'rotate-180 text-teal-400' : ''"></i>
+          </button>
+        </div>
+
+        <!-- ANTEPRIMA SEMPRE VISIBILE: Prime 4 Frasi Cruciali -->
+        <div class="space-y-2">
+          <template x-for="(phrase, pIdx) in thaiPhrases.slice(0, 4)" :key="pIdx">
+            <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-white" x-text="phrase.ita"></span>
+                  <template x-if="phrase.crucial">
+                    <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">FONDAMENTALE!</span>
+                  </template>
+                </div>
+                <div class="flex items-baseline gap-2">
+                  <span class="font-mono text-xs font-bold text-emerald-400" x-text="phrase.phonetic"></span>
+                  <span class="text-xs text-slate-400 font-sans" x-text="phrase.thai"></span>
+                </div>
+              </div>
+
+              <!-- Audio Speech -->
+              <button @click="speakPhrase(phrase.thai)" 
+                      title="Ascolta pronuncia"
+                      class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 flex items-center justify-center active:scale-95 transition-all">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <!-- SEZIONE ESPANDIBILE: Frasi Rimanenti & Guida Galateo Templi -->
+        <div x-show="phrasesCardExpanded" x-collapse class="space-y-3 pt-1 border-t border-slate-800/80">
+          <!-- Frasi dalla 5 in poi -->
+          <div class="space-y-2 pt-2">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Altre frasi utili da viaggio:</span>
+            <template x-for="(phrase, pIdx) in thaiPhrases.slice(4)" :key="'extra-'+pIdx">
+              <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-white" x-text="phrase.ita"></span>
+                    <template x-if="phrase.crucial">
+                      <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">FONDAMENTALE!</span>
+                    </template>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-mono text-xs font-bold text-emerald-400" x-text="phrase.phonetic"></span>
+                    <span class="text-xs text-slate-400 font-sans" x-text="phrase.thai"></span>
+                  </div>
+                </div>
+
+                <button @click="speakPhrase(phrase.thai)" 
+                        title="Ascolta pronuncia"
+                        class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 flex items-center justify-center active:scale-95 transition-all">
+                  <i data-lucide="volume-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </template>
+          </div>
+
+          <!-- GUIDA GALATEO TEMPLI -->
+          <div class="space-y-3 pt-2 border-t border-slate-800/80">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+                <i data-lucide="landmark" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <h4 class="font-display font-bold text-xs text-white">Galateo Templi & Normative Locali</h4>
+                <span class="text-[10px] text-slate-400">Regole buddhiste e norme da rispettare</span>
+              </div>
+            </div>
+
+            <!-- Tab Switcher: [🛕 Templi & Monaci] vs [⚠️ Leggi & Tolleranza Zero] -->
+            <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
+              <button type="button"
+                      @click="templeGuideTab = 'temples'; refreshIcons()"
+                      :class="templeGuideTab === 'temples' ? 'bg-teal-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                      class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+                <span>🛕</span>
+                <span>Galateo Templi</span>
+              </button>
+              <button type="button"
+                      @click="templeGuideTab = 'laws'; refreshIcons()"
+                      :class="templeGuideTab === 'laws' ? 'bg-rose-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                      class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+                <span>⚠️</span>
+                <span>Leggi & Multe</span>
+              </button>
+            </div>
+
+            <!-- VISTA 1: GALATEO NEI TEMPLI -->
+            <div x-show="templeGuideTab === 'temples'" class="space-y-2">
+              <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2">
+                <span class="text-base">👔</span>
+                <div class="text-xs space-y-0.5">
+                  <span class="font-bold text-white block">Dress Code Obbligatorio</span>
+                  <p class="text-slate-300 text-[11px] leading-relaxed">Spalle e ginocchia coperte per tutti. Niente canottiere o shorts. Porta un sarong o pantaloni leggeri.</p>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2">
+                <span class="text-base">👟</span>
+                <div class="text-xs space-y-0.5">
+                  <span class="font-bold text-white block">Togliersi Scarpe e Occhiali da Sole</span>
+                  <p class="text-slate-300 text-[11px] leading-relaxed">Togliti scarpe e cappello prima di entrare nella sala principale delle preghiere.</p>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2">
+                <span class="text-base">🦶</span>
+                <div class="text-xs space-y-0.5">
+                  <span class="font-bold text-white block">Regola Sacra dei Piedi</span>
+                  <p class="text-slate-300 text-[11px] leading-relaxed">Non puntare mai la pianta dei piedi verso statue del Buddha o persone: siediti con le gambe ripiegate all'indietro.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- VISTA 2: LEGGI E TOLLERANZA ZERO -->
+            <div x-show="templeGuideTab === 'laws'" class="space-y-2">
+              <div class="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/40 flex items-start gap-2">
+                <span class="text-base">🚭</span>
+                <div class="text-xs space-y-0.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-rose-300">Sigarette Elettroniche (Vape / IQOS)</span>
+                    <span class="px-1.5 py-0.2 rounded bg-rose-500 text-slate-950 font-black text-[9px] uppercase">Illegale</span>
+                  </div>
+                  <p class="text-rose-100/90 text-[11px] leading-relaxed">In Thailandia lo svapo è <strong>completamente vietato</strong>: confisca, multe salatissime o fermo. Non portarle!</p>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-2">
+                <span class="text-base">👑</span>
+                <div class="text-xs space-y-0.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-amber-300">Rispetto della Famiglia Reale</span>
+                    <span class="px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black text-[9px] uppercase">Reato Penale</span>
+                  </div>
+                  <p class="text-amber-100/90 text-[11px] leading-relaxed">Massimo rispetto per la monarchia. Se cade una banconota non calpestarla mai con i piedi.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasto Espandi / Comprimi Bottom -->
+        <button type="button" 
+                @click="phrasesCardExpanded = !phrasesCardExpanded; refreshIcons()"
+                class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-teal-500/40 text-teal-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+          <span x-text="phrasesCardExpanded ? 'Comprimi frasario e galateo ▴' : 'Espandi tutte le 11 frasi utili e galateo templi ▾'"></span>
+          <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="phrasesCardExpanded ? 'rotate-180' : ''"></i>
+        </button>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- 6. CASSAFORTE CHECK-IN & PASSAPORTI (6° POSTO) - COMPRIMIBILE -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/15">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Cassaforte Check-in & Passaporti</h3>
+              <span class="text-[10px] text-slate-400">Dati dei 4 amici per reception, voli interni & dogana</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <!-- Tasto Privacy Nascondi / Mostra -->
+            <button type="button" 
+                    @click="showPassportsPrivacy = !showPassportsPrivacy; refreshIcons()"
+                    class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs active:scale-95 transition-all flex items-center gap-1"
+                    :title="showPassportsPrivacy ? 'Nascondi numeri' : 'Mostra numeri'">
+              <i :data-lucide="showPassportsPrivacy ? 'eye-off' : 'eye'" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span class="text-[10px] font-semibold hidden sm:inline" x-text="showPassportsPrivacy ? 'Nascondi' : 'Mostra'"></span>
+            </button>
+
+            <!-- Tasto Espandi / Comprimi -->
+            <button type="button" 
+                    @click="vaultCardExpanded = !vaultCardExpanded; refreshIcons()"
+                    class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-amber-400 active:scale-95 transition-all"
+                    :title="vaultCardExpanded ? 'Comprimi cassaforte' : 'Espandi dettagli'">
+              <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="vaultCardExpanded ? 'rotate-180 text-amber-400' : ''"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ANTEPRIMA SEMPRE VISIBILE: Pulsanti Rapidi + Sintesi 4 Amici -->
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" 
+                  @click="copyAllPassports()"
+                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copia Tutti e 4</span>
+          </button>
+          
+          <button type="button" 
+                  @click="copyFirstHotelInfo()"
+                  class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span>Dati Hotel Dogana TM6</span>
+          </button>
+        </div>
+
+        <!-- Box 4 Passaporti Sintetico / Completo -->
+        <div class="space-y-2">
+          <template x-for="tr in travelers" :key="tr.id">
+            <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+                     :class="tr.avatarBg || 'bg-slate-800 text-white'">
+                  <span x-text="tr.avatarEmoji || '👤'"></span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-white truncate" x-text="tr.name"></span>
+                    <span class="text-[10px] text-slate-400 truncate" x-text="tr.fullName && tr.fullName !== tr.name ? '(' + tr.fullName + ')' : ''"></span>
+                  </div>
+                  <div class="flex items-center gap-2 text-[10px] font-mono mt-0.5">
+                    <span class="text-amber-400 font-bold"
+                          x-text="showPassportsPrivacy ? (tr.passportNo || 'N° non inserito') : (tr.passportNo ? (tr.passportNo.substring(0,2) + '••••' + tr.passportNo.slice(-2)) : 'N° non inserito')"></span>
+                    <template x-if="vaultCardExpanded && tr.passportExp">
+                      <span class="text-slate-500 font-sans" x-text="'Scad: ' + tr.passportExp"></span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Azioni Copia & Modifica -->
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <template x-if="tr.passportNo">
+                  <button type="button" 
+                          @click="copyText(tr.passportNo, 'Passaporto di ' + tr.name + ' copiato!')"
+                          class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-amber-400 active:scale-90 transition-all"
+                          title="Copia numero passaporto">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  </button>
+                </template>
+                <button type="button" 
+                        @click="openEditPassport(tr)"
+                        class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-sky-300 active:scale-90 transition-all"
+                        title="Modifica dati passaporto">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- SEZIONE ESPANDIBILE: Info Dogana TM6 con Hotel Reale di Bangkok -->
+        <div x-show="vaultCardExpanded" x-collapse class="space-y-2 pt-1 border-t border-slate-800/80">
+          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+            <div class="flex items-center justify-between text-slate-400 font-bold text-[10px]">
+              <span class="flex items-center gap-1 text-emerald-400">
+                <i data-lucide="info" class="w-3 h-3"></i>
+                <span>Primo Alloggio Ufficiale per Modulo TM6 & Dogana:</span>
+              </span>
+            </div>
+            <p class="font-medium text-white">Sukhothai Residence Ruam Ruedi • 26-26/24 Soi.Ruamruedee Ploenchit Rd, Pathumwan, Bangkok</p>
+            <p class="text-[10px] text-slate-400">Tocca "Dati Hotel Dogana TM6" in alto per copiare negli appunti nome e indirizzo completi da presentare all'ufficiale immigrazione.</p>
+          </div>
+        </div>
+
+        <!-- Tasto Espandi / Comprimi Bottom -->
+        <button type="button" 
+                @click="vaultCardExpanded = !vaultCardExpanded; refreshIcons()"
+                class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-amber-500/40 text-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+          <span x-text="vaultCardExpanded ? 'Comprimi dettagli cassaforte ▴' : 'Espandi dettagli completi passaporti e info dogana ▾'"></span>
+          <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="vaultCardExpanded ? 'rotate-180' : ''"></i>
+        </button>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- 7. EMERGENZE & NUMERI UTILI (7° POSTO)                     -->
+      <!-- ========================================================== -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
@@ -1501,208 +1694,30 @@
         </div>
       </div>
 
-      <!-- 3. MINI FRASARIO THAI DI SOPRAVVIVENZA -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
-              <i data-lucide="languages" class="w-4 h-4"></i>
-            </div>
-            <h3 class="font-display font-bold text-sm text-white">Mini Frasario di Sopravvivenza</h3>
-          </div>
-          <span class="text-[10px] text-amber-400 font-medium">Uomini: +khráp • Donne: +khâ</span>
-        </div>
-
-        <div class="space-y-2">
-          <template x-for="(phrase, pIdx) in thaiPhrases" :key="pIdx">
-            <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2 hover:border-slate-700 transition-colors">
-              <div class="space-y-0.5">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-white" x-text="phrase.ita"></span>
-                  <template x-if="phrase.crucial">
-                    <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">FONDAMENTALE!</span>
-                  </template>
-                </div>
-                <div class="flex items-baseline gap-2">
-                  <span class="font-mono text-xs font-bold text-emerald-400" x-text="phrase.phonetic"></span>
-                  <span class="text-xs text-slate-400 font-sans" x-text="phrase.thai"></span>
-                </div>
-              </div>
-
-              <!-- Audio Speech o Copia -->
-              <button @click="speakPhrase(phrase.thai)" 
-                      title="Ascolta pronuncia"
-                      class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 flex items-center justify-center active:scale-95 transition-all">
-                <i data-lucide="volume-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </template>
-        </div>
-      </div>
-
       <!-- ========================================================== -->
-      <!-- 5. GUIDA GALATEO TEMPLI & NORMATIVE LOCALI                 -->
+      <!-- 8. SINCRONIZZAZIONE GRUPPO (IN FONDO, 8° POSTO)            -->
       <!-- ========================================================== -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/20">
+      <div class="glass-card rounded-2xl border border-emerald-500/30 p-4 space-y-3 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/20">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
-              <i data-lucide="landmark" class="w-4 h-4"></i>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <i data-lucide="cloud" class="w-4 h-4"></i>
             </div>
             <div>
-              <h3 class="font-display font-bold text-sm text-white">Galateo Templi & Normative Locali</h3>
-              <span class="text-[10px] text-slate-400">Regole buddhiste e leggi severe da rispettare in Thailandia</span>
+              <h3 class="font-display font-bold text-sm text-white">Sincronizzazione Gruppo</h3>
+              <span class="text-[10px] text-emerald-400 font-semibold" x-text="lastSyncTime ? 'Ultimo sync: ' + lastSyncTime : 'Tutti e 4 allineati in 1 tap'"></span>
             </div>
           </div>
-        </div>
 
-        <!-- Tab Switcher: [🛕 Templi & Monaci] vs [⚠️ Leggi & Tolleranza Zero] -->
-        <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
-          <button type="button"
-                  @click="templeGuideTab = 'temples'; refreshIcons()"
-                  :class="templeGuideTab === 'temples' ? 'bg-teal-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
-                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
-            <span>🛕</span>
-            <span>Galateo Templi</span>
-          </button>
-          <button type="button"
-                  @click="templeGuideTab = 'laws'; refreshIcons()"
-                  :class="templeGuideTab === 'laws' ? 'bg-rose-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
-                  class="py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
-            <span>⚠️</span>
-            <span>Leggi & Tolleranza Zero</span>
+          <button @click="openSyncModal()" 
+                  class="px-2.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black active:scale-95 transition-all flex items-center gap-1 shadow-md shadow-emerald-950/40">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Sincronizza</span>
           </button>
         </div>
-
-        <!-- VISTA 1: GALATEO NEI TEMPLI -->
-        <div x-show="templeGuideTab === 'temples'" class="space-y-2.5">
-          <!-- 1. Dress Code -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">👔</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Dress Code Obbligatorio</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">Spalle e ginocchia coperte sia per uomini sia per donne. Niente canottiere, scollature o pantaloncini corti. Metti un sarong leggero o pantaloni lunghi nello zaino prima di visitare i templi.</p>
-            </div>
-          </div>
-
-          <!-- 2. Togliersi le Scarpe -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">👟</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Togliersi Scarpe e Occhiali da Sole</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">Togliti sempre le scarpe e il cappello prima di entrare nella sala principale delle preghiere (Ubosot). Troverai scarpette o ripiani dedicati all'ingresso.</p>
-            </div>
-          </div>
-
-          <!-- 3. I Piedi -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🦶</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Regola Sacra dei Piedi (Vietato puntarli)</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">I piedi sono considerati la parte più impura del corpo: non puntare MAI la pianta dei piedi verso statue del Buddha, monaci o altre persone. Quando ti siedi, ripiega le gambe all'indietro o a sirena.</p>
-            </div>
-          </div>
-
-          <!-- 4. Donne e Monaci -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🧘‍♂️</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Interazione con i Monaci Buddhista</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">Le donne non possono toccare un monaco né consegnargli offerte mano nella mano (vanno posati su un tavolo o un panno). Nei mezzi pubblici (BTS/MRT) ci sono posti riservati prioritari per i monaci.</p>
-            </div>
-          </div>
-
-          <!-- 5. La Testa e le Statue -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🧒</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Non toccare la Testa & Rispetto Immagini Buddha</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">La testa è la parte più sacra: non toccarla mai a nessuno, neppure ai bambini. Evita selfie irriguardosi o pose che imitano il Buddha (è illegale esportare statue del Buddha senza permesso governativo).</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- VISTA 2: LEGGI E TOLLERANZA ZERO -->
-        <div x-show="templeGuideTab === 'laws'" class="space-y-2.5">
-          <!-- 1. SVAPO / SIGARETTE ELETTRONICHE -->
-          <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 flex items-start gap-2.5">
-            <span class="text-lg">🚭</span>
-            <div class="text-xs space-y-0.5">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-rose-300">Sigarette Elettroniche (Vape / IQOS)</span>
-                <span class="px-1.5 py-0.2 rounded bg-rose-500 text-slate-950 font-black text-[9px] uppercase">Illegale</span>
-              </div>
-              <p class="text-rose-100/90 text-[11px] leading-relaxed">In Thailandia lo svapo è <strong>completamente vietato per legge</strong>. Importazione, possesso ed uso comportano confisca, multe salatissime (fino a centinaia di migliaia di Baht) o detenzione. Non portarle in aereo né usarle in pubblico!</p>
-            </div>
-          </div>
-
-          <!-- 2. LESA MAESTÀ -->
-          <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-2.5">
-            <span class="text-lg">👑</span>
-            <div class="text-xs space-y-0.5">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-amber-300">Rispetto della Famiglia Reale</span>
-                <span class="px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black text-[9px] uppercase">Reato Penale</span>
-              </div>
-              <p class="text-amber-100/90 text-[11px] leading-relaxed">La legge di lesa maestà è tra le più severe al mondo. Non fare mai commenti o battute sulla monarchia. Se cade una banconota o moneta per strada, <strong>non calpestarla mai con le scarpe per fermarla</strong> (è impressa la figura del Re).</p>
-            </div>
-          </div>
-
-          <!-- 3. DRONI -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🛸</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Regole sui Droni</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">È vietato far volare droni senza aver effettuato la registrazione preventiva presso NBTC e CAAT. Severamente vietato il volo nei parchi nazionali o vicino ai palazzi reali e aeroporti.</p>
-            </div>
-          </div>
-
-          <!-- 4. CORALLI E RISERVE MARINE -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🪸</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Parchi Marini & Coralli</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">A Maya Bay, Phi Phi e nei parchi marini è vietatissimo raccogliere conchiglie, frammenti di corallo o sabbia come souvenir. I controlli in aeroporto ai raggi X sono accuratissimi.</p>
-            </div>
-          </div>
-
-          <!-- 5. DOCUMENTI SEMPRE APPRESSO -->
-          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-2.5">
-            <span class="text-lg">🛂</span>
-            <div class="text-xs space-y-0.5">
-              <span class="font-bold text-white block">Controllo Documenti e Visto</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">Tieni sempre nel telefono una foto del passaporto e del timbro d'ingresso thai (oppure salvali nella Cassaforte qui sopra) per qualsiasi controllo o noleggio veicoli.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. CASSA COMUNE RAPIDA 4 AMICI (BONUS TATTICO) -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <i data-lucide="users" class="w-4 h-4"></i>
-            </div>
-            <h3 class="font-display font-bold text-sm text-white">Divisione Rapida Conto (4 Amici)</h3>
-          </div>
-          <span class="text-[10px] text-slate-400">Quota a testa</span>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <div class="flex-1 bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center">
-            <span class="text-xs text-slate-500 font-bold px-1">฿ Totale:</span>
-            <input type="number" 
-                   x-model.number="splitTotalThb" 
-                   placeholder="1200" 
-                   class="w-full bg-transparent text-sm font-mono font-bold text-amber-400 focus:outline-none">
-          </div>
-          <div class="p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-center min-w-[100px]">
-            <span class="text-[10px] text-emerald-400 font-bold block uppercase">A testa (1/4)</span>
-            <span class="font-mono text-sm font-black text-white" x-text="Math.round(splitTotalThb / 4) + ' ฿'"></span>
-            <span class="text-[9px] text-slate-400 block font-mono" x-text="'~ ' + ( (splitTotalThb / 4) / exchangeRate ).toFixed(1) + ' €'"></span>
-          </div>
-        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          🤖 <strong class="text-emerald-400">Auto-sync attivo</strong> — l'app controlla il cloud ogni 60 secondi. Chi aggiorna e carica, gli altri vedranno apparire un banner verde in cima e potranno aggiornare con un tocco.
+        </p>
       </div>
 
     </main>
@@ -3378,6 +3393,10 @@
         },
 
         // Meteo State
+        weatherCardExpanded: false,
+        dualClockCardExpanded: false,
+        phrasesCardExpanded: false,
+        vaultCardExpanded: false,
         selectedWeatherId: 'bangkok',
         weatherViewMode: 'tripDays', // 'tripDays' (i giorni in cui siamo lì) oppure 'liveToday' (in diretta oggi)
         weatherLoading: false,
@@ -3802,32 +3821,11 @@
                    this.transports.find(t => t.type === 'flight' && (t.arrCode === 'BKK' || (t.arrCity && t.arrCity.toLowerCase().includes('bangkok')))) || 
                    this.transports[0] || null;
           }
-          if (dayNum === 3) {
-            return this.transports.find(t => t.id === 't2') || 
-                   this.transports.find(t => t.type === 'train' || (t.depCode === 'BKK' && t.arrCode === 'CNX'));
-          }
-          if (dayNum === 4) {
-            return this.transports.find(t => t.id === 't2') || 
-                   this.transports.find(t => t.arrCode === 'CNX');
-          }
-          if (dayNum === 7) {
-            return this.transports.find(t => t.id === 't3') || 
-                   this.transports.find(t => t.arrCode === 'URT');
-          }
-          if (dayNum === 9) {
-            return this.transports.find(t => t.id === 't5') || 
-                   this.transports.find(t => t.arrCode === 'KBV');
-          }
-          if (dayNum === 10 || dayNum === 11) {
-            return this.transports.find(t => t.id === 't6') || this.transports.find(t => t.id === 't7');
-          }
-          if (dayNum === 13) {
-            return this.transports.find(t => t.id === 't9') || 
-                   this.transports.find(t => t.depCode === 'HKT' && t.arrCode === 'BKK');
+          if (dayNum === 6) {
+            return this.transports.find(t => t.id === 't2' || (t.depCode === 'CNX' && t.arrCode === 'URT')) || null;
           }
           if (dayNum === 14) {
-            return this.transports.find(t => t.id === 't10') || 
-                   this.transports.find(t => t.arrCode === 'FCO' || t.arrCode === 'MXP');
+            return this.transports.find(t => t.id === 't3' || t.id === 't10' || (t.arrCode === 'FCO' || t.arrCode === 'MXP')) || null;
           }
           return null;
         },
@@ -3961,8 +3959,8 @@
             const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
             const p = this.parseTimeHour(arrStr);
             const h = p ? p.hour : 20;
-            if (h >= 20) return 26; // Temperatura notturna reale all'atterraggio
-            if (h >= 18) return 28; // Temperatura serale
+            if (h >= 20) return 26;
+            if (h >= 18) return 28;
           }
           return dayWeather.maxTemp || 32;
         },
@@ -3979,7 +3977,7 @@
             const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
             const p = this.parseTimeHour(arrStr);
             const h = p ? p.hour : 20;
-            if (h >= 19) return '🏮 Arrivo Serale & Street Food Notturno';
+            if (h >= 19) return '🏮 Arrivo Serale & Check-in';
             if (h < 12) return '🛬 Arrivo Mattutino & Prime Esplorazioni';
           }
           return dayWeather.tag || '';
@@ -3991,130 +3989,49 @@
           if (num === 1) {
             const t = this.getDayPrimaryTransport(1);
             const arrStr = (t && t.arrTime) ? t.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            const tempStr = h >= 19 ? '25°C serali' : '31°C diurni';
-            return `Volo andata: atterraggio ore ${arrStr} • ${tempStr}`;
+            return 'Volo andata: atterraggio ore ' + arrStr + ' • 25°C serali';
           }
-          if (num === 3) {
-            const t = this.getDayPrimaryTransport(3);
-            const depStr = (t && t.depTime) ? t.depTime.trim() : '18:40';
-            return `Treno notturno: partenza ore ${depStr} • Cuccetta climatizzata`;
-          }
-          if (num === 4) {
-            const t = this.getDayPrimaryTransport(4);
-            const arrStr = (t && t.arrTime) ? t.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '07:15';
-            return `Arrivo stazione Chiang Mai: ore ${arrStr} • Fresco a 18°C`;
-          }
-          if (num === 7) {
-            const t = this.getDayPrimaryTransport(7);
-            const depStr = (t && t.depTime) ? t.depTime.trim() : '07:30';
-            return `Volo Surat Thani: ore ${depStr} • Lago Cheow Lan a 28°C`;
-          }
-          if (num === 9) {
-            const t = this.getDayPrimaryTransport(9);
-            const arrStr = (t && t.arrTime) ? t.arrTime.trim() : '16:00';
-            return `Arrivo Railay Beach: ore ${arrStr} • Mare calmo a 29°C`;
-          }
-          if (num === 13) {
-            const t = this.getDayPrimaryTransport(13);
-            const depStr = (t && t.depTime) ? t.depTime.trim() : '19:45';
-            const arrStr = (t && t.arrTime) ? t.arrTime.trim() : '21:15';
-            return `Volo HKT ➔ BKK: decollo ${depStr} • atterraggio ${arrStr}`;
+          if (num === 6) {
+            const t = this.getDayPrimaryTransport(6);
+            const depStr = (t && t.depTime) ? t.depTime.trim() : '08:10';
+            return 'Volo Thai AirAsia: decollo CNX ore ' + depStr + ' • Capodanno Khao Sok';
           }
           if (num === 14) {
             const t = this.getDayPrimaryTransport(14);
             const depStr = (t && t.depTime) ? t.depTime.trim() : '08:05';
-            return `Volo rientro FCO: decollo BKK ore ${depStr}`;
+            return 'Volo rientro FCO: decollo BKK ore ' + depStr;
           }
           return null;
         },
 
-        // Sincronizzazione Intelligente: Trasporti ➔ Tappe Itinerario
         syncTransportsToItinerary(force = false) {
           if (!this.transports || !Array.isArray(this.transports) || !this.itinerary || !Array.isArray(this.itinerary)) return;
 
-          // 1. Giorno 1 - Atterraggio a Bangkok
+          // 1. Giorno 1 - Atterraggio a Bangkok (Volo t1)
           const t1 = this.transports.find(t => t.id === 't1') || this.transports[0];
           if (t1 && t1.arrTime && this.itinerary[0]) {
             const cleanArr = t1.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
-            const p = this.parseTimeHour(cleanArr);
             const d1 = this.itinerary[0];
-
             if (d1 && d1.stops && d1.stops.length > 0) {
-              const currentStopTime = d1.stops[0].time;
-              if (force || currentStopTime !== cleanArr) {
-                d1.stops[0].time = cleanArr;
-                d1.stops[0].name = `Atterraggio a BKK (${cleanArr}) & SIM`;
-
-                if (p && p.hour >= 19) {
-                  const h = p.hour;
-                  const m = p.minute;
-
-                  let checkInH = h + 1;
-                  let checkInM = m + 15;
-                  if (checkInM >= 60) { checkInH += 1; checkInM -= 60; }
-                  const checkInTime = `${String(checkInH).padStart(2, '0')}:${String(checkInM).padStart(2, '0')}`;
-
-                  let foodH = checkInH;
-                  let foodM = checkInM + 45;
-                  if (foodM >= 60) { foodH += 1; foodM -= 60; }
-                  const foodTime = `${String(foodH).padStart(2, '0')}:${String(foodM).padStart(2, '0')}`;
-
-                  let drinkH = foodH;
-                  let drinkM = foodM + 45;
-                  if (drinkM >= 60) { drinkH += 1; drinkM -= 60; }
-                  const drinkTime = `${String(drinkH).padStart(2, '0')}:${String(drinkM).padStart(2, '0')}`;
-
-                  if (d1.stops[1]) {
-                    d1.stops[1].time = checkInTime;
-                    d1.stops[1].name = 'Check-in Notturno Grand China Hotel';
-                    d1.stops[1].description = 'Raggiungimento hotel con taxi ufficiale o Airport Rail Link, check-in rapido e sistemazione in camera.';
-                  }
-                  if (d1.stops[2]) {
-                    d1.stops[2].time = foodTime;
-                    d1.stops[2].name = 'Street Food Notturno tra i Neon di Yaowarat';
-                    d1.stops[2].description = 'Spiedini satay, noodles fumanti da Nai Ek Roll Noodle e succo fresco senza l\'afa diurna.';
-                  }
-                  if (d1.stops[3]) {
-                    d1.stops[3].time = drinkTime;
-                    d1.stops[3].name = 'Primo Brindisi Notturno a Bangkok';
-                    d1.stops[3].description = 'Birra Chang o Singha ghiacciata nei vicoli storici di Talat Noi per brindare al viaggio.';
-                  }
-                }
-              }
+              d1.stops[0].time = cleanArr;
             }
           }
 
-          // 2. Giorno 3 & 4 - Treno Notturno
-          const t2 = this.transports.find(t => t.id === 't2');
+          // 2. Giorno 6 - Volo Thai AirAsia CNX -> URT (t2)
+          const t2 = this.transports.find(t => t.id === 't2' || (t.depCode === 'CNX' && t.arrCode === 'URT'));
           if (t2) {
-            const d3 = this.itinerary.find(d => d.dayNum === 3);
-            if (d3 && d3.stops && d3.stops.length > 0 && t2.depTime) {
-              const lastStop = d3.stops[d3.stops.length - 1];
-              if (lastStop && lastStop.name.toLowerCase().includes('treno')) {
-                lastStop.time = t2.depTime.trim();
-              }
-            }
-            const d4 = this.itinerary.find(d => d.dayNum === 4);
-            if (d4 && d4.stops && d4.stops.length > 0 && t2.arrTime) {
-              const firstStop = d4.stops[0];
-              const cleanArr = t2.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
-              if (firstStop && firstStop.name.toLowerCase().includes('arrivo')) {
-                firstStop.time = cleanArr;
-              }
+            const d6 = this.itinerary.find(d => d.dayNum === 6);
+            if (d6 && d6.stops && d6.stops.length >= 2 && t2.depTime) {
+              d6.stops[1].time = t2.depTime.trim();
             }
           }
 
-          // 3. Giorno 14 - Volo di Rientro
-          const t10 = this.transports.find(t => t.id === 't10');
-          if (t10 && t10.depTime) {
+          // 3. Giorno 14 - Volo di Rientro (t3)
+          const t3 = this.transports.find(t => t.id === 't3' || t.id === 't10' || (t.depCode === 'BKK' && t.arrCode === 'FCO'));
+          if (t3 && t3.depTime) {
             const d14 = this.itinerary.find(d => d.dayNum === 14);
             if (d14 && d14.stops && d14.stops.length > 0) {
-              const lastStop = d14.stops[d14.stops.length - 1];
-              if (lastStop && (lastStop.name.toLowerCase().includes('volo') || lastStop.name.toLowerCase().includes('rientro') || lastStop.name.toLowerCase().includes('shopping'))) {
-                lastStop.time = t10.depTime.trim();
-              }
+              d14.stops[0].time = t3.depTime.trim();
             }
           }
 
@@ -4392,19 +4309,7 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                // Aggiorna tappe reali per Chiang Mai (Kristi House) e Volo AirAsia del 31 Dic
-                this.itinerary = parsed.map(d => {
-                  if (d.id === 'd6' && /Lancio delle Lanterne/i.test(JSON.stringify(d.stops))) {
-                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd6')));
-                  }
-                  if (d.id === 'd7' && /Volo Diretto Chiang Mai ➔ Surat Thani/i.test(JSON.stringify(d.stops))) {
-                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd7')));
-                  }
-                  if (d.id === 'd4' && /U Chiang Mai/i.test(JSON.stringify(d.stops))) {
-                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd4')));
-                  }
-                  return { ...d, expanded: false };
-                });
+                this.itinerary = parsed.map(d => ({ ...d, expanded: false }));
                 this.allExpanded = false;
                 return;
               }
@@ -4515,16 +4420,7 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                // Aggiorna automaticamente Kristi House e Art's Riverview Lodge se c'erano vecchi placeholder
-                this.hotels = parsed.map(h => {
-                  if (h.id === 'h3' && (/U Chiang Mai/i.test(h.name) || /NYE-8821/i.test(h.bookingRef))) {
-                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h3')));
-                  }
-                  if (h.id === 'h4' && (!h.name.includes("Art's") || /Panvaree/i.test(h.name) || /500 Rai/i.test(h.name))) {
-                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h4')));
-                  }
-                  return h;
-                });
+                this.hotels = parsed;
                 return;
               }
             } catch (e) {
@@ -4677,34 +4573,7 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                // Aggiorna automaticamente il volo AirAsia FD 5420 se c'era ancora il vecchio placeholder FD 3031
-                this.transports = parsed.map(t => {
-                  if (t.id === 't3' && (/FD 3031/i.test(t.flightNumber) || /AA-CNX-URT/i.test(t.pnr))) {
-                    return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't3')));
-                  }
-                  if (t.id === 't4' && /1 Gen/i.test(t.date)) {
-                    return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't4')));
-                  }
-                  if (t.stops === undefined) {
-                    if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
-                      t.stops = 1;
-                      t.stopsInfo = t.stopsInfo || 'DEL (Nuova Delhi)';
-                    } else {
-                      t.stops = 0;
-                      t.stopsInfo = '';
-                    }
-                  }
-                  // Normalizza duration per evitare testi chilometrici che allargano il layout
-                  if (t.id === 't1' && t.duration && t.duration.includes('(')) {
-                    t.duration = '18h 15m';
-                    if (!t.stopsInfo) t.stopsInfo = 'DEL (Nuova Delhi • 5h attesa)';
-                  }
-                  if (t.id === 't10' && t.duration && t.duration.includes('(')) {
-                    t.duration = '16h 50m';
-                    if (!t.stopsInfo) t.stopsInfo = 'DEL (Nuova Delhi • 1h 55m attesa)';
-                  }
-                  return t;
-                });
+                this.transports = parsed;
                 return;
               }
             } catch (e) {
@@ -5053,7 +4922,7 @@ ${h.name}
 Indirizzo: ${h.addressEn}
 Thai: ${h.addressThai || ''}
 Tel: ${h.phone || ''}`
-            : 'Amara Bangkok Hotel • 180/1 Surawong Road, Sipraya, Bangrak, Bangkok 10500';
+            : 'Sukhothai Residence Ruam Ruedi • 26-26/24 Soi.Ruamruedee Ploenchit Rd, Pathumwan, Bangkok 10330';
           this.copyText(text, 'Dati primo alloggio (Dogana/TM6) copiati!');
         },
 
@@ -5456,33 +5325,11 @@ Tel: ${h.phone || ''}`
                   this.saveItinerary(false);
                 }
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
-                  this.hotels = cloudData.hotels.map(h => {
-                    if (h.id === 'h3' && (/U Chiang Mai/i.test(h.name) || /NYE-8821/i.test(h.bookingRef))) {
-                      return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h3')));
-                    }
-                    if (h.id === 'h4' && (!h.name.includes("Art's") || /Panvaree/i.test(h.name) || /500 Rai/i.test(h.name))) {
-                      return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h4')));
-                    }
-                    return h;
-                  });
+                  this.hotels = cloudData.hotels;
                   this.saveHotels(false);
                 }
                 if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
-                  this.transports = cloudData.transports.map(t => {
-                    if (t.id === 't3' && (/FD 3031/i.test(t.flightNumber) || /AA-CNX-URT/i.test(t.pnr))) {
-                      return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't3')));
-                    }
-                    if (t.stops === undefined) {
-                      if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
-                        t.stops = 1;
-                        t.stopsInfo = t.stopsInfo || 'DEL';
-                      } else {
-                        t.stops = 0;
-                        t.stopsInfo = '';
-                      }
-                    }
-                    return t;
-                  });
+                  this.transports = cloudData.transports;
                   this.saveTransports(false);
                   this.syncTransportsToItinerary(false);
                 }
@@ -5861,122 +5708,47 @@ Tel: ${h.phone || ''}`
           {
             id: 'h1',
             city: 'Bangkok',
-            name: 'Grand China Hotel Bangkok (Chinatown)',
-            nameThai: 'โรงแรมแกรนด์ ไชน่า กรุงเทพฯ',
-            addressEn: '215 Yaowarat Road, Samphanthawong, Bangkok 10100',
-            addressThai: 'เลขที่ 215 ถนนเยาวราช แขวงสัมพันธวงศ์ เขตสัมพันธวงศ์ กรุงเทพมหานคร 10100',
+            name: 'Sukhothai Residence Ruam Ruedi',
+            nameThai: 'สุโขทัย เรสซิเดนซ์ ร่วมฤดี',
+            addressEn: '26-26/24 Soi.Ruamruedee Ploenchit Rd, Ploenchit, Patumwan, 10330 Bangkok, Thailandia',
+            addressThai: '26-26/24 ซอยร่วมฤดี ถนนเพลินจิต แขวงลุมพินี เขตปทุมวัน กรุงเทพมหานคร 10330',
             dates: '26 - 28 Dic (2 notti)',
             nights: 2,
-            checkIn: '14:00',
-            checkOut: '12:00',
-            bookingRef: 'BKK-26DEC-4P',
-            phone: '+66 2 224 9977',
-            mapsQuery: 'Grand China Hotel Bangkok Yaowarat'
+            checkIn: '14:00 - 24:00 (sab 26 dic)',
+            checkOut: 'Entro le 12:00 (lun 28 dic)',
+            bookingRef: 'Booking: 6744238315 · PIN: 1531 · Edoardo Fabbri · THB 6.039,56 (Family 2-Bedroom Suite)',
+            phone: '+66 2 650 7555',
+            mapsQuery: 'Sukhothai Residence Ruam Ruedi Bangkok'
           },
           {
             id: 'h2',
-            city: 'Treno Notturno',
-            name: 'CNR Special Express No. 9 (Cuccette 1°/2° Classe)',
-            nameThai: 'รถไฟด่วนพิเศษ CNR ขบวนที่ 9 (กรุงเทพ - เชียงใหม่)',
-            addressEn: 'Stazione Krung Thep Aphiwat Central Terminal, Bangkok',
-            addressThai: 'สถานีกลางกรุงเทพอภิวัฒน์ (สถานีกลางบางซื่อ) กรุงเทพฯ',
-            dates: '28 - 29 Dic (1 notte a bordo)',
-            nights: 1,
-            checkIn: 'Partenza 18:40',
-            checkOut: 'Arrivo 07:15',
-            bookingRef: 'SRT-TRAIN-CNR9',
-            phone: '1690 (Call Center SRT)',
-            mapsQuery: 'Krung Thep Aphiwat Central Terminal'
-          },
-          {
-            id: 'h3',
             city: 'Chiang Mai',
-            name: 'Kristi House (Old City)',
+            name: 'Kristi House',
             nameThai: 'คริสตี้ เฮาส์ เชียงใหม่',
-            addressEn: '14/2 Soi 5, Ratchadamnoen Road, Sri Phum, Chiang Mai Old City 50200',
+            addressEn: '14/2 Soi 5 Ratchadamnoen Rd, Sripoom, Muang, Si Phum, 50200 Chiang Mai, Thailandia',
             addressThai: '14/2 ซอย 5 ถนนราชดำเนิน ตำบลศรีภูมิ อำเภอเมือง เชียงใหม่ 50200',
             dates: '29 - 31 Dic (2 notti)',
             nights: 2,
-            checkIn: '14:00 (mar 29 dic)',
-            checkOut: '06:30 (gio 31 dic - volo URT)',
-            bookingRef: 'Booking.com · Intestato: Edoardo Fabbri · THB 6.039,56 (Family 2-Bedroom Suite)',
-            phone: '+66 53 218 301',
+            checkIn: '14:00 - 23:30 (mar 29 dic)',
+            checkOut: '01:00 - 12:00 (gio 31 dic)',
+            bookingRef: 'Booking: 6344518390 · PIN: 2414 · Edoardo Fabbri · THB 2.317,44 (Camera Familiare Deluxe)',
+            phone: '+66 83 189 9666',
             mapsQuery: 'Kristi House Chiang Mai'
           },
           {
-            id: 'h4',
+            id: 'h3',
             city: 'Khao Sok',
-            name: "Art's Riverview Lodge (Khao Sok)",
+            name: "Art's Riverview Lodge",
             nameThai: 'อาร์ตส์ ริเวอร์วิว ลอดจ์ เขาสก',
-            addressEn: '54/3 Moo 6, T.Khlong Sok, Phanom District, Surat Thani 84250',
+            addressEn: '54/3 Moo 6, T.Khlong Sok, Phanom District, Surat Thani 84250, Thailandia',
             addressThai: '54/3 หมู่ 6 ตำบลคลองศก อำเภอพนม จังหวัดสุราษฎร์ธานี 84250',
             dates: '31 Dic - 1 Gen (1 notte - Capodanno)',
             nights: 1,
-            checkIn: '14:00 (gio 31 dic)',
+            checkIn: 'Dalle 14:00 (gio 31 dic)',
             checkOut: '11:00 - 12:00 (ven 1 gen)',
             bookingRef: 'Booking: 6236482071 · PIN: 6807 · Edoardo Fabbri · THB 2.520 (Quadrupla con Terrazza, Colazione Inclusa)',
             phone: '+66 81 864 4493',
             mapsQuery: "Art's Riverview Lodge Khao Sok"
-          },
-          {
-            id: 'h4b',
-            city: 'Khao Sok (Lago)',
-            name: 'Floating Resort Bungalow sul Lago Cheow Lan',
-            nameThai: 'แพที่พัก เขื่อนเชี่ยวหลาน เขาสก',
-            addressEn: 'Cheow Lan Lake, Khao Sok National Park, Ban Ta Khun, Surat Thani 84230',
-            addressThai: 'ท่าเรือเทศบาลเขื่อนเชี่ยวหลาน (กุ้ยหลินเมืองไทย) ตำบลเขาพัง อำเภอบ้านตาขุน สุราษฎร์ธานี',
-            dates: '1 - 2 Gen (1 notte sul lago)',
-            nights: 1,
-            checkIn: '11:00 (Imbarco Pier)',
-            checkOut: '10:00 (Rientro Pier)',
-            bookingRef: 'Tour 2D1N Lago Cheow Lan',
-            phone: '+66 89 132 0007',
-            mapsQuery: 'Cheow Lan Lake Pier Ratchaprapha Dam'
-          },
-          {
-            id: 'h5',
-            city: 'Krabi',
-            name: 'Railay Bay Resort & Spa (Railay Beach / Ao Nang)',
-            nameThai: 'ไร่เลย์ เบย์ รีสอร์ท แอนด์ สปา กระบี่',
-            addressEn: '145 Moo 2, Ao Nang, Muang, Railay Beach, Krabi 81000',
-            addressThai: '145 หมู่ 2 อ่าวนาง อำเภอเมืองกระบี่ จังหวัดกระบี่ 81000 (ท่าเรืออ่าวน้ำเมา/อ่าวนาง)',
-            dates: '2 - 4 Gen (2 notti)',
-            nights: 2,
-            checkIn: '15:00',
-            checkOut: '12:00',
-            bookingRef: 'KB-RAILAY-994',
-            phone: '+66 75 819 801',
-            mapsQuery: 'Railay Bay Resort and Spa Krabi'
-          },
-          {
-            id: 'h6',
-            city: 'Phuket',
-            name: 'The Charm Resort Phuket (Patong / Kata Beach)',
-            nameThai: 'เดอะ ชาร์ม รีสอร์ท ภูเก็ต หาดป่าตอง',
-            addressEn: '212 Thaweewong Road, Patong Beach, Kathu, Phuket 83150',
-            addressThai: '212 ถนนทวีวงศ์ หาดป่าตอง อำเภอกะทู้ จังหวัดภูเก็ต 83150',
-            dates: '4 - 7 Gen (3 notti)',
-            nights: 3,
-            checkIn: '14:00',
-            checkOut: '12:00',
-            bookingRef: 'HKT-CHARM-301',
-            phone: '+66 76 318 300',
-            mapsQuery: 'The Charm Resort Phuket Patong'
-          },
-          {
-            id: 'h7',
-            city: 'Bangkok (Airport)',
-            name: 'Novotel Bangkok Suvarnabhumi Airport Hotel',
-            nameThai: 'โรงแรมโนโวเทล สุวรรณภูมิ แอร์พอร์ต',
-            addressEn: '999 Suvarnabhumi Airport Hotel Building, Moo 1, Nongprue, Bang Phli, Samut Prakan 10540',
-            addressThai: '999 อาคารโรงแรมท่าอากาศยานสุวรรณภูมิ หมู่ 1 ตำบลหนองปรือ อำเภอบางพลี สมุทรปราการ 10540',
-            dates: '7 - 8 Gen (1 notte)',
-            nights: 1,
-            checkIn: '15:00',
-            checkOut: '12:00',
-            bookingRef: 'BKK-AIRPORT-NOV77',
-            phone: '+66 2 131 1111',
-            mapsQuery: 'Novotel Bangkok Suvarnabhumi Airport Hotel'
           }
         ],
 
@@ -6002,24 +5774,8 @@ Tel: ${h.phone || ''}`
           },
           {
             id: 't2',
-            type: 'ferry',
-            carrier: 'State Railway of Thailand',
-            flightNumber: 'Special Express CNR No. 9 (Cuccette)',
-            date: '28 Dic 2026',
-            depCode: 'BKK',
-            depCity: 'Stazione Krung Thep Aphiwat',
-            depTime: '18:40',
-            arrCode: 'CNX',
-            arrCity: 'Chiang Mai Station',
-            arrTime: '07:15 (+1)',
-            duration: '12h 35m',
-            pnr: 'SRT-CNR-984',
-            baggage: 'Valigie al seguito in scompartimento cuccetta'
-          },
-          {
-            id: 't3',
             type: 'flight',
-            carrier: 'Thai AirAsia · Booking.com',
+            carrier: 'Thai AirAsia · FD 5420',
             flightNumber: 'FD 5420 · Volo Diretto Chiang Mai ➔ Surat Thani',
             date: '31 Dic 2026',
             depCode: 'CNX',
@@ -6031,107 +5787,11 @@ Tel: ${h.phone || ''}`
             duration: '1h 55m (Diretto)',
             stops: 0,
             stopsInfo: '',
-            pnr: '40-1150607074 · PIN: 9816',
-            baggage: 'Economy · 4 passeggeri (Totale: 586,99 €) · Intestato: Edoardo Fabbri'
+            pnr: 'YHGNWD · Booking: 40-1150607074 · PIN: 9816',
+            baggage: 'Economy · 4 passeggeri (586,99 €) · 4 bagagli a mano (max 5kg) + 4 oggetti personali'
           },
           {
-            id: 't4',
-            type: 'ferry',
-            carrier: 'Van Privato / Transfer',
-            flightNumber: "Van Transfer (Surat Thani Airport ➔ Art's Riverview Lodge)",
-            date: '31 Dic 2026',
-            depCode: 'URT',
-            depCity: 'Surat Thani Airport',
-            depTime: '10:45',
-            arrCode: 'SOK',
-            arrCity: "Art's Riverview Lodge (Khao Sok)",
-            arrTime: '12:30',
-            duration: '1h 45m',
-            pnr: 'TRANSFER-KHAOSOK-ARTS',
-            baggage: 'Transfer diretto van con aria condizionata dopo atterraggio volo FD5420'
-          },
-          {
-            id: 't5',
-            type: 'ferry',
-            carrier: 'Van Transfer Diretto',
-            flightNumber: 'Van Privato (Khao Sok Lake ➔ Krabi Ao Nang)',
-            date: '2 Gen 2027',
-            depCode: 'SOK',
-            depCity: 'Khao Sok Pier',
-            depTime: '11:30',
-            arrCode: 'KBV',
-            arrCity: 'Krabi (Ao Nang / Railay)',
-            arrTime: '16:00',
-            duration: '4h 30m',
-            pnr: 'VAN-KRABI-4P',
-            baggage: 'Sosta pranzo e van panoramico verso sud'
-          },
-          {
-            id: 't6',
-            type: 'ferry',
-            carrier: 'Ao Nang Princess / Speedboat',
-            flightNumber: 'Catamarano Veloce Krabi ➔ Phuket (1h)',
-            date: '4 Gen 2027',
-            depCode: 'KBV',
-            depCity: 'Krabi Pier',
-            depTime: '17:00',
-            arrCode: 'HKT',
-            arrCity: 'Phuket Rassada Pier',
-            arrTime: '18:15',
-            duration: '1h 15m',
-            pnr: 'BOAT-KBV-HKT',
-            baggage: 'Bagagli stivati a bordo motoscafo'
-          },
-          {
-            id: 't7',
-            type: 'ferry',
-            carrier: 'Speedboat Full-Day Tour',
-            flightNumber: 'Tour Isole Phi Phi (Maya Bay + Pi Leh Lagoon)',
-            date: '5 Gen 2027',
-            depCode: 'HKT',
-            depCity: 'Marina di Phuket',
-            depTime: '07:30',
-            arrCode: 'PHI',
-            arrCity: 'Arcipelago Phi Phi Islands',
-            arrTime: '17:30',
-            duration: 'Full Day (10h)',
-            pnr: 'TOUR-PHIPHI-DAY',
-            baggage: 'Dry-bag, telo mare, maschera snorkeling'
-          },
-          {
-            id: 't8',
-            type: 'ferry',
-            carrier: 'Jet Ski Safari 6 Ore',
-            flightNumber: 'Tour Guidato Moto d\'Acqua tra Isole di Phuket',
-            date: '7 Gen 2027',
-            depCode: 'JET',
-            depCity: 'Phuket East Coast',
-            depTime: '09:00',
-            arrCode: 'JET',
-            arrCity: 'Isole Khai & Naka',
-            arrTime: '15:00',
-            duration: '6 Ore Adrenalina',
-            pnr: 'JETSKI-SAFARI-6H',
-            baggage: 'Giubbotto salvagente & custodia impermeabile'
-          },
-          {
-            id: 't9',
-            type: 'flight',
-            carrier: 'AirAsia / Thai VietJet',
-            flightNumber: 'VZ 307 • Volo Serale Phuket ➔ Bangkok',
-            date: '7 Gen 2027',
-            depCode: 'HKT',
-            depCity: 'Phuket International',
-            depTime: '19:45',
-            arrCode: 'BKK',
-            arrCity: 'Bangkok Suvarnabhumi',
-            arrTime: '21:15',
-            duration: '1h 30m',
-            pnr: 'VZ-HKT-BKK',
-            baggage: '20kg stiva + cabina'
-          },
-          {
-            id: 't10',
+            id: 't3',
             type: 'flight',
             carrier: 'Air India · PNR: BJRZOF',
             flightNumber: 'BKK → DEL · AI2333 (4h 45m) + DEL → FCO · AI123 (10h 10m)',
@@ -6178,56 +5838,60 @@ Tel: ${h.phone || ''}`
             date: '26 Dic',
             city: 'Bangkok',
             cityGroup: 'Bangkok',
-            title: 'Arrivo a Bangkok, Check-in & Prima Serata Street Food',
-            backpackNotes: 'Passaporto, contanti per Airport Rail Link / Grab, vestiti leggeri e scarpe da ginnastica.',
-            isToday: true,
+            title: 'Arrivo a Bangkok & Check-in Hotel',
+            backpackNotes: 'Passaporti, documenti di viaggio, contanti/carte, adattatori presa',
+            isToday: false,
             expanded: false,
-            mainLocation: 'Yaowarat Road Chinatown Bangkok',
+            mainLocation: 'Sukhothai Residence Ruam Ruedi Bangkok',
             stops: [
-              { time: '20:55', name: 'Atterraggio a BKK & SIM', description: 'Ritiro bagagli, SIM TrueMove/AIS al piano arrivi e prelievo/cambio cash ai SuperRich al piano sotterraneo treni.', mapsQuery: 'Suvarnabhumi Airport Bangkok', highlight: false },
-              { time: '22:15', name: 'Check-in Notturno Grand China Hotel', description: 'Raggiungimento hotel con taxi ufficiale o Airport Rail Link, check-in rapido e sistemazione in camera.', mapsQuery: 'Grand China Hotel Bangkok', highlight: false },
-              { time: '23:00', name: 'Street Food Notturno tra i Neon di Chinatown', description: 'Primi assaggi tra spiedini satay, noodles fumanti da Nai Ek Roll Noodle e succo di melograno fresco senza l\'afa diurna.', mapsQuery: 'Nai Ek Roll Noodle Yaowarat', highlight: true, insiderTip: 'Prendere il tè freddo thai Cha Yen e dessert al mango!' },
-              { time: '23:45', name: 'Primo Brindisi Notturno a Bangkok', description: 'Birra Chang o Singha ghiacciata in un locale caratteristico tra i vicoli storici di Talat Noi per brindare al viaggio.', mapsQuery: 'Talat Noi Bangkok', highlight: false }
+              {
+                time: '20:55',
+                name: 'Atterraggio a BKK (Volo Air India) & SIM',
+                description: 'Atterraggio all\'aeroporto Suvarnabhumi (BKK), ritiro bagagli, SIM TrueMove/AIS e prelievo contanti.',
+                mapsQuery: 'Suvarnabhumi Airport Bangkok',
+                highlight: false
+              },
+              {
+                time: '22:15',
+                name: 'Check-in a Sukhothai Residence Ruam Ruedi',
+                description: 'Trasferimento in hotel e check-in nella Family Two-Bedroom Suite (Check-in attivo fino alle 24:00). Deposito 1000 THB in contanti.',
+                mapsQuery: 'Sukhothai Residence Ruam Ruedi Bangkok',
+                highlight: true
+              }
             ]
           },
           {
             id: 'd2',
             dayNum: 2,
             date: '27 Dic',
-            city: 'Bangkok & Dintorni',
+            city: 'Bangkok',
             cityGroup: 'Bangkok',
-            title: 'Tour 10h: Mercato Galleggiante Damnoen Saduak & Treno di Maeklong',
-            backpackNotes: 'Spray antizanzare, crema solare, occhiali, contanti in banconote piccole, borsa impermeabile per la barca.',
+            title: 'Bangkok — Giornata da pianificare',
+            backpackNotes: '',
             isToday: false,
             expanded: false,
-            mainLocation: 'Damnoen Saduak Floating Market',
-            stops: [
-              { time: '07:00', name: 'Partenza Tour Fuori Città', description: 'Minivan climatizzato in partenza dall\'hotel verso le province storiche a ovest di Bangkok.', mapsQuery: 'Grand China Hotel Bangkok', highlight: false },
-              { time: '08:45', name: 'Maeklong Railway Market', description: 'Spettacolo unico al mondo: i mercanti ritirano le tende e i banchi in 10 secondi mentre il treno passa a filo della frutta!', mapsQuery: 'Maeklong Railway Market', highlight: true, insiderTip: 'Posizionarsi vicino alla campana della stazione per il passaggio!' },
-              { time: '11:00', name: 'Damnoen Saduak Floating Market', description: 'Giro sui canali su tipica barca di legno tra signore che cucinano pancake al cocco e zuppe a bordo.', mapsQuery: 'Damnoen Saduak Floating Market', highlight: true },
-              { time: '14:00', name: 'Pranzo Tipico & Rientro a Bangkok', description: 'Pranzo tradizionale e rientro in città nel primo pomeriggio.', mapsQuery: 'Bangkok Chinatown', highlight: false },
-              { time: '18:30', name: 'Massaggio Thai Defaticante', description: '1-2 ore di autentico massaggio thailandese ai piedi per ricaricare le energie.', mapsQuery: 'Wat Pho Thai Traditional Massage', highlight: false },
-              { time: '21:00', name: 'Serata a Bangkok', description: 'Serata vivace tra Khao San Road o musica dal vivo a Sukhumvit.', mapsQuery: 'Khao San Road Bangkok', highlight: false }
-            ]
+            mainLocation: 'Bangkok',
+            stops: []
           },
           {
             id: 'd3',
             dayNum: 3,
             date: '28 Dic',
-            city: 'Bangkok ➔ Treno',
+            city: 'Bangkok',
             cityGroup: 'Bangkok',
-            title: 'I Grandi Templi Reali & Partenza col Treno Notturno per Chiang Mai',
-            backpackNotes: 'Pantaloni lunghi e spalle coperte per i templi. Scarpe slip-on facili da sfilare. Felpa calda per il treno notturno (A/C forte!).',
+            title: 'Bangkok — Check-out Hotel & Trasferimento',
+            backpackNotes: '',
             isToday: false,
             expanded: false,
-            mainLocation: 'The Grand Palace Bangkok',
+            mainLocation: 'Sukhothai Residence Ruam Ruedi Bangkok',
             stops: [
-              { time: '08:30', name: 'Grand Palace & Buddha di Smeraldo', description: 'La magnifica dimora storica dei re del Siam e il veneratissimo Wat Phra Kaew.', mapsQuery: 'The Grand Palace Bangkok', highlight: true },
-              { time: '11:30', name: 'Wat Pho (Buddha Sdraiato)', description: 'Statua monumentale dorata lunga 46 metri. Culla del massaggio e tempio tra i più suggestivi.', mapsQuery: 'Wat Pho Bangkok', highlight: false },
-              { time: '13:00', name: 'Pranzo lungo il Fiume Chao Phraya', description: 'Pranzo vista fiume con curry verde e riso all\'ananas.', mapsQuery: 'Tha Tien Pier Bangkok', highlight: false },
-              { time: '15:30', name: 'Traghetto a Wat Arun (Tempio dell\'Alba)', description: 'Attraversiamo il fiume con la barca pubblica per ammirare le guglie decorate di porcellane.', mapsQuery: 'Wat Arun Bangkok', highlight: true },
-              { time: '17:30', name: 'Ritiro Zaini & Transfer Stazione', description: 'Recupero bagagli in hotel e trasferimento alla stazione centrale Krung Thep Aphiwat.', mapsQuery: 'Krung Thep Aphiwat Central Terminal', highlight: false },
-              { time: '18:40', name: 'Partenza Treno Notturno Special Express No. 9', description: 'Esperienza iconica: saliamo sul treno con cuccette che ci culla per tutta la notte verso le montagne del nord.', mapsQuery: 'Krung Thep Aphiwat Central Terminal', highlight: true, insiderTip: 'Le cuccette inferiori sono più spaziose e hanno finestrino privato!' }
+              {
+                time: '12:00',
+                name: 'Check-out da Sukhothai Residence Ruam Ruedi',
+                description: 'Check-out dalla struttura di Bangkok entro le ore 12:00 e restituzione deposito cauzionale.',
+                mapsQuery: 'Sukhothai Residence Ruam Ruedi Bangkok',
+                highlight: false
+              }
             ]
           },
           {
@@ -6236,39 +5900,33 @@ Tel: ${h.phone || ''}`
             date: '29 Dic',
             city: 'Chiang Mai',
             cityGroup: 'Chiang Mai',
-            title: 'Arrivo a Chiang Mai in Treno, Antica Città Murata & Khao Soi',
-            backpackNotes: 'Vestiti leggeri per il giorno, giacchetta per la sera fresca del nord, scarpe da passeggio.',
+            title: 'Chiang Mai — Arrivo & Check-in',
+            backpackNotes: '',
             isToday: false,
             expanded: false,
-            mainLocation: 'Wat Chedi Luang Chiang Mai',
+            mainLocation: 'Kristi House Chiang Mai',
             stops: [
-              { time: '07:15', name: 'Arrivo alla Stazione di Chiang Mai', description: 'Discesa dal treno notturno tra le fresche montagne del nord. Songthaew rosso verso Kristi House nella Old City.', mapsQuery: 'Chiang Mai Railway Station', highlight: false },
-              { time: '08:30', name: 'Check-in Kristi House & Colazione', description: 'Deposito bagagli alla Kristi House (14/2 Soi 5, Ratchadamnoen Road) e colazione rigenerante nel cuore della città antica.', mapsQuery: 'Kristi House Chiang Mai', highlight: false },
-              { time: '10:30', name: 'Esplorazione Templi della Old City', description: 'Visita all\'imponente Wat Chedi Luang del XIV secolo e al dorato Wat Phra Singh.', mapsQuery: 'Wat Chedi Luang Chiang Mai', highlight: true },
-              { time: '13:00', name: 'Khao Soi: Il Piatto Simbolo del Nord', description: 'Pranzo tipico con noodles in brodo di curry cremoso al cocco, pollo e lime.', mapsQuery: 'Khao Soi Khun Yai Chiang Mai', highlight: true, insiderTip: 'Aggiungere scalogno marinato e peperoncino tostato!' },
-              { time: '15:30', name: 'Massaggio Rigenerante', description: 'Relax totale dopo il viaggio in treno nei vicoli tranquilli del centro.', mapsQuery: 'Chiang Mai Old City', highlight: false },
-              { time: '19:00', name: 'Chiang Mai Night Bazaar', description: 'Chilometri di artigianato locale, abbigliamento in lino e street food con musica acustica all\'aperto.', mapsQuery: 'Chiang Mai Night Bazaar', highlight: false }
+              {
+                time: '14:00',
+                name: 'Check-in a Kristi House (Old City)',
+                description: 'Sistemazione nella Camera Familiare Deluxe (check-in disponibile dalle 14:00 alle 23:30).',
+                mapsQuery: 'Kristi House Chiang Mai',
+                highlight: true
+              }
             ]
           },
           {
             id: 'd5',
             dayNum: 5,
             date: '30 Dic',
-            city: 'Chiang Rai (Day Trip)',
+            city: 'Chiang Mai',
             cityGroup: 'Chiang Mai',
-            title: 'Escursione Full-Day a Chiang Rai: Tempio Bianco & Tempio Blu',
-            backpackNotes: 'Abbigliamento consono per i templi (spalle e ginocchia coperte), occhiali da sole, snack per il viaggio in van.',
+            title: 'Chiang Mai — Giornata da pianificare',
+            backpackNotes: '',
             isToday: false,
             expanded: false,
-            mainLocation: 'Wat Rong Khun White Temple Chiang Rai',
-            stops: [
-              { time: '07:00', name: 'Partenza in Van verso Chiang Rai', description: 'Partenza di buon mattino attraverso i panorami montani con sosta alle sorgenti termali di Mae Kachan.', mapsQuery: 'Mae Kachan Hot Spring', highlight: false },
-              { time: '10:30', name: 'Wat Rong Khun (Il Tempio Bianco)', description: 'Il capolavoro surrealista più famoso della Thailandia: candido, tempestato di specchietti e dettagli mozzafiato.', mapsQuery: 'Wat Rong Khun White Temple Chiang Rai', highlight: true },
-              { time: '12:30', name: 'Wat Rong Suea Ten (Il Tempio Blu)', description: 'Tempio moderno dalle tonalità zaffiro e oro con un imponente Buddha bianco di porcellana all\'interno.', mapsQuery: 'Wat Rong Suea Ten Blue Temple Chiang Rai', highlight: true },
-              { time: '14:00', name: 'Pranzo Tradizionale a Chiang Rai', description: 'Pranzo thai a buffet con specialità del nord.', mapsQuery: 'Chiang Rai Clock Tower', highlight: false },
-              { time: '15:30', name: 'Baan Dam (La Casa Nera)', description: 'Complesso misterioso e suggestivo di 40 case in legno di teak scuro tra arte e architettura Lanna.', mapsQuery: 'Baandam Museum Black House Chiang Rai', highlight: false },
-              { time: '19:30', name: 'Rientro a Chiang Mai & Serata a Nimman', description: 'Rientro in hotel e cena informale nel quartiere trendy di Nimmanhaemin tra birre artigianali e live music.', mapsQuery: 'Nimmanhaemin Road Chiang Mai', highlight: false }
-            ]
+            mainLocation: 'Chiang Mai',
+            stops: []
           },
           {
             id: 'd6',
@@ -6276,175 +5934,88 @@ Tel: ${h.phone || ''}`
             date: '31 Dic',
             city: 'Chiang Mai ➔ Khao Sok',
             cityGroup: 'Khao Sok',
-            title: "Volo per Surat Thani, Arrivo ad Art's Riverview Lodge & CAPODANNO 2027!",
-            backpackNotes: "Sveglia all'alba! Scarpe comode, passaporti, documenti di prenotazione Art's Riverview Lodge e volo Thai AirAsia FD5420 pronti.",
+            title: 'Volo per il Sud & Capodanno a Khao Sok',
+            backpackNotes: 'Documenti volo AirAsia, zainetto con cambio per la giungla',
             isToday: false,
             expanded: false,
             mainLocation: "Art's Riverview Lodge Khao Sok",
             stops: [
-              { time: '06:15', name: 'Check-out Kristi House & Transfer Aeroporto (CNX)', description: 'Partenza di prima mattina in taxi/Grab verso l\'aeroporto di Chiang Mai.', mapsQuery: 'Chiang Mai International Airport', highlight: false },
-              { time: '08:10 - 10:05', name: 'Volo Diretto Thai AirAsia FD 5420 (CNX ➔ URT)', description: 'Volo interno di 1h 55m che ci porta dritti al sud della Thailandia. Prenotazione Booking: 40-1150607074 (PIN: 9816).', mapsQuery: 'Surat Thani International Airport', highlight: true },
-              { time: '10:45', name: "Transfer Van verso Art's Riverview Lodge", description: 'Van climatizzato in partenza dall\'aeroporto di Surat Thani direttamente verso la giungla di Khao Sok Village.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
-              { time: '12:30', name: "Check-in Art's Riverview Lodge & Sistemazione", description: 'Arrivo nella suggestiva struttura sul fiume Sok. Sistemazione nella Camera Quadrupla con Terrazza affacciata sulla natura.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: true },
-              { time: '14:30', name: 'Pranzo Tipico & Relax sul Fiume Sok', description: 'Pranzo thai rilassante, bagno nel fiume o passeggiata esplorativa al villaggio di Khao Sok.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
-              { time: '20:30', name: 'Cenone & Brindisi di CAPODANNO 2027 nella Giungla!', description: 'Festeggiamenti di San Silvestro e brindisi al 2027 immersi nei suoni magici e nell\'atmosfera unica della foresta tropicale!', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: true, insiderTip: 'Brindisi di mezzanotte sulla terrazza con i 4 amici!' }
+              {
+                time: '06:30',
+                name: 'Check-out Kristi House & Transfer Aeroporto CNX',
+                description: 'Partenza di buon mattino da Kristi House verso l\'aeroporto di Chiang Mai.',
+                mapsQuery: 'Chiang Mai International Airport',
+                highlight: false
+              },
+              {
+                time: '08:10',
+                name: 'Volo Thai AirAsia FD 5420 (CNX ➔ URT)',
+                description: 'Decollo ore 08:10 da Chiang Mai, atterraggio alle 10:05 a Surat Thani (Durata 1h 55m).',
+                mapsQuery: 'Surat Thani Airport',
+                highlight: true
+              },
+              {
+                time: '14:00',
+                name: "Check-in Art's Riverview Lodge (Khao Sok)",
+                description: 'Arrivo nel Parco Nazionale di Khao Sok, sistemazione nella Camera Quadrupla con Terrazza e festeggiamenti di Capodanno!',
+                mapsQuery: "Art's Riverview Lodge Khao Sok",
+                highlight: true
+              }
             ]
           },
           {
             id: 'd7',
             dayNum: 7,
             date: '01 Gen',
-            city: 'Khao Sok ➔ Lago Cheow Lan',
+            city: 'Khao Sok',
             cityGroup: 'Khao Sok',
-            title: "Primo Giorno del 2027: Colazione sul Fiume & Avventura al Lago Cheow Lan",
-            backpackNotes: 'Costume da bagno, scarpe da scoglio, sacca stagna (Dry-bag indispensabile!), crema solare.',
+            title: 'Khao Sok — Primo Giorno 2027 & Check-out',
+            backpackNotes: '',
             isToday: false,
             expanded: false,
-            mainLocation: 'Cheow Lan Lake Khao Sok National Park',
+            mainLocation: "Art's Riverview Lodge Khao Sok",
             stops: [
-              { time: '08:30', name: "Colazione Inclusa ad Art's Riverview Lodge", description: 'Colazione tropicale completa inclusa nella prenotazione sulla terrazza panoramica lungo il fiume.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
-              { time: '10:30', name: "Check-out & Transfer verso il Molo del Lago", description: 'Partenza in van verso il molo Ratchaprapha Dam per iniziare la navigazione sul lago Cheow Lan.', mapsQuery: 'Ratchaprapha Dam Pier Khao Sok', highlight: false },
-              { time: '11:45', name: 'Imbarco Longtail Boat tra i Faraglioni Carsici', description: 'Navigazione spettacolare sull\'acqua color smeraldo tra enormi pareti di roccia emergenti dal lago.', mapsQuery: 'Cheow Lan Lake Pier', highlight: true },
-              { time: '13:00', name: 'Check-in Bungalow Galleggianti & Pranzo', description: 'Sistemazione nelle casette galleggianti sul lago, primo tuffo e pranzo thai tradizionale.', mapsQuery: 'Cheow Lan Lake', highlight: true },
-              { time: '15:30', name: 'Kayak Libero, Trekking & Grotta dei Coralli', description: 'Pomeriggio di esplorazione in kayak tra le insenature della baia e visita alla Coral Cave.', mapsQuery: 'Coral Cave Khao Sok', highlight: false },
-              { time: '19:30', name: 'Cena sul Lago & Notte Sotto le Stelle', description: 'Cena tipica sotto la volta stellata, cullati dal silenzio e dalla pace assoluta del lago.', mapsQuery: 'Cheow Lan Lake', highlight: false }
+              {
+                time: '09:00',
+                name: 'Colazione Inclusa con vista giungla',
+                description: 'Colazione inclusa nel prezzo servita sulla terrazza panoramica sul fiume Sok.',
+                mapsQuery: "Art's Riverview Lodge Khao Sok",
+                highlight: false
+              },
+              {
+                time: '11:00',
+                name: "Check-out Art's Riverview Lodge",
+                description: 'Check-out dalla struttura (dalle 11:00 alle 12:00).',
+                mapsQuery: "Art's Riverview Lodge Khao Sok",
+                highlight: false
+              }
             ]
           },
-          {
-            id: 'd8',
-            dayNum: 8,
-            date: '02 Gen',
-            city: 'Khao Sok ➔ Krabi',
-            cityGroup: 'Khao Sok',
-            title: 'Safari Mattutino sul Lago Khao Sok & Van Panoramico per Krabi',
-            backpackNotes: 'Costume per l\'ultimo bagno all\'alba, vestiti comodi e snack per il tragitto in van di 4-5 ore verso Krabi.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Railay Beach Krabi',
-            stops: [
-              { time: '06:30', name: 'Safari in Barca nella Nebbia dell\'Alba', description: 'Giro silenzioso all\'alba per avvistare buceri, scimmie langur e gibboni selvatici nella foresta.', mapsQuery: 'Cheow Lan Lake Khao Sok', highlight: true },
-              { time: '08:30', name: 'Colazione & Ultimo Bagno nel Lago', description: 'Colazione vista lago e tuffo rigenerante prima di fare i bagagli.', mapsQuery: 'Panvaree Resort', highlight: false },
-              { time: '10:00', name: 'Rientro in Barca al Molo di Khao Sok', description: 'Navigazione di rientro verso la diga di Ratchaprapha e conclusione del tour GetYourGuide.', mapsQuery: 'Ratchaprapha Dam Pier', highlight: false },
-              { time: '11:30', name: 'Partenza Van Privato per Krabi (4-5h)', description: 'Viaggio confortevole verso la costa del Mar delle Andamane attraverso paesaggi tropicali.', mapsQuery: 'Krabi Thailand', highlight: false },
-              { time: '16:00', name: 'Arrivo a Krabi & Check-in Resort', description: 'Arrivo prima di cena, sistemazione in resort vista mare a Railay / Ao Nang.', mapsQuery: 'Railay Bay Resort and Spa Krabi', highlight: false },
-              { time: '18:30', name: 'Tramonto sul Mare & Cena di Pesce', description: 'Primo indimenticabile tramonto andamano con grigliata di gamberoni giganti e pesce fresco.', mapsQuery: 'Ao Nang Beach Krabi', highlight: true }
-            ]
-          },
-          {
-            id: 'd9',
-            dayNum: 9,
-            date: '03 Gen',
-            city: 'Krabi',
-            cityGroup: 'Krabi',
-            title: 'La Magia di Railay Beach: Falesie, Phra Nang Cave & Tramonto',
-            backpackNotes: 'Maschera snorkeling, scarpette da scoglio per le rocce, telo mare, crema solare protettiva per i coralli.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Phra Nang Cave Beach Krabi',
-            stops: [
-              { time: '09:00', name: 'Longtail Boat per la Penisola di Railay', description: 'Spiaggia paradisiaca tagliata fuori dalla terraferma da imponenti falesie verticali giurassiche.', mapsQuery: 'Railay Beach Krabi', highlight: true },
-              { time: '10:30', name: 'Phra Nang Cave Beach', description: 'Una delle spiagge più belle del mondo con sabbia bianchissima, grotte sacre e acqua turchese.', mapsQuery: 'Phra Nang Cave Beach Krabi', highlight: true },
-              { time: '13:00', name: 'Pranzo dalle Barchette sulla Spiaggia', description: 'Pad thai fumante, pancake alla banana e frullati di frutta tropicale preparati direttamente sulle barche.', mapsQuery: 'Railay West Beach Krabi', highlight: false },
-              { time: '15:30', name: 'Arrampicata / Trekking al Viewpoint', description: 'Salita sulle rocce carsiche per ammirare il panorama mozzafiato sulle due baie gemelle di Railay.', mapsQuery: 'Railay Beach Viewpoint', highlight: false },
-              { time: '18:00', name: 'Tramonto Infuocato a Railay West', description: 'Bagno nell\'acqua tiepida mentre il sole colora le falesie di rosso, viola e oro.', mapsQuery: 'Railay West Krabi', highlight: true },
-              { time: '21:00', name: 'Serata Rilassante tra Cocktail & Fire Show', description: 'Cocktail nei bar sulla spiaggia con giocolieri del fuoco e musica reggae.', mapsQuery: 'Railay Beach Bars', highlight: false }
-            ]
-          },
-          {
-            id: 'd10',
-            dayNum: 10,
-            date: '04 Gen',
-            city: 'Krabi ➔ Phuket',
-            cityGroup: 'Krabi',
-            title: 'Mattinata al Mare a Krabi & Catamarano Veloce per Phuket',
-            backpackNotes: 'Zaini pronti per il trasferimento in barca, costume e ciabatte, documento di prenotazione traghetto.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Ao Nang Beach Krabi',
-            stops: [
-              { time: '09:30', name: 'Mattinata di Mare & Relax a Krabi', description: 'Ultimi bagni, passeggiata rilassata lungo la scogliera o noleggio kayak.', mapsQuery: 'Ao Nang Krabi', highlight: false },
-              { time: '13:00', name: 'Pranzo Thai & Ritiro Bagagli', description: 'Pranzo vista mare e recupero bagagli in hotel.', mapsQuery: 'Ao Nang Beach', highlight: false },
-              { time: '16:00', name: 'Trasferimento al Molo di Krabi', description: 'Arrivo al molo per i controlli di imbarco sul traghetto veloce.', mapsQuery: 'Nopparat Thara Pier Krabi', highlight: false },
-              { time: '17:00', name: 'Catamarano Veloce Krabi ➔ Phuket (1h)', description: 'Traversata panoramica al tramonto di un\'ora attraverso il mare verso l\'isola di Phuket.', mapsQuery: 'Rassada Pier Phuket', highlight: true },
-              { time: '18:15', name: 'Arrivo a Phuket & Check-in Hotel', description: 'Sbarco a Rassada Pier e transfer verso il resort a Patong / Kata Beach.', mapsQuery: 'The Charm Resort Phuket Patong', highlight: false },
-              { time: '20:30', name: 'Cena & Serata nella Movida di Phuket', description: 'Cena di gruppo e primo assaggio dell\'energia notturna di Phuket (Bangla Road o locali sulla spiaggia).', mapsQuery: 'Bangla Road Patong Phuket', highlight: false }
-            ]
-          },
-          {
-            id: 'd11',
-            dayNum: 11,
-            date: '05 Gen',
-            city: 'Phuket ➔ Phi Phi',
-            cityGroup: 'Phuket',
-            title: 'Tour Isole Phi Phi in Giornata: Maya Bay, Pi Leh Lagoon & Snorkeling',
-            backpackNotes: 'Sveglia presto! Dry-bag, crema solare reef-safe, maschera e boccaglio, scarpette da scoglio, pastiglia contro il mal di mare.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Maya Bay Koh Phi Phi Leh',
-            stops: [
-              { time: '07:15', name: 'Pick-up Hotel & Imbarco Speedboat', description: 'Partenza dalla marina di Phuket sul motoscafo rapido verso l\'arcipelago delle Phi Phi.', mapsQuery: 'Royal Phuket Marina', highlight: false },
-              { time: '09:30', name: 'Maya Bay all\'Alba (The Beach)', description: 'Ingresso alla spiaggia iconica resa celebre da Leonardo DiCaprio prima del picco dei turisti.', mapsQuery: 'Maya Bay Koh Phi Phi Leh', highlight: true, insiderTip: 'Camminare lungo la battigia e ammirare la vegetazione incontaminata!' },
-              { time: '11:30', name: 'Tuffi a Pi Leh Lagoon', description: 'Fjord naturale spettacolare con acqua color smeraldo trasparente e pareti verticali alte 100m.', mapsQuery: 'Pileh Lagoon Phi Phi Leh', highlight: true },
-              { time: '13:00', name: 'Pranzo a Phi Phi Don & Monkey Beach', description: 'Pranzo a buffet sulla spiaggia e incontro con le simpatiche scimmiette sulla scogliera.', mapsQuery: 'Monkey Beach Koh Phi Phi', highlight: false },
-              { time: '15:00', name: 'Snorkeling a Shark Point & Bamboo Island', description: 'Nuotata indimenticabile tra squaletti pinna nera del reef (innocui) e formazioni coralline.', mapsQuery: 'Shark Point Phi Phi', highlight: false },
-              { time: '17:30', name: 'Rientro a Phuket & Cena Celebrativa', description: 'Rientro alla marina di Phuket, doccia rigenerante e cena a base di pesce fresco e granchio.', mapsQuery: 'Patong Beach Phuket', highlight: false }
-            ]
-          },
-          {
-            id: 'd12',
-            dayNum: 12,
-            date: '06 Gen',
-            city: 'Phuket',
-            cityGroup: 'Phuket',
-            title: 'Phuket: Architettura di Old Town, Relax in Spiaggia & Sunset Viewpoint',
-            backpackNotes: 'Abbigliamento leggero e spalle coperte per il Big Buddha, costume per il pomeriggio in spiaggia.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Old Phuket Town Thalang Road',
-            stops: [
-              { time: '09:30', name: 'Big Buddha di Phuket', description: 'Statua monumentale alta 45 metri in marmo bianco sulla cima del monte con panorama su tutta l\'isola.', mapsQuery: 'Big Buddha Phuket', highlight: true },
-              { time: '11:30', name: 'Passeggiata a Old Phuket Town', description: 'Edifici storici coloniali in stile sino-portoghese, botteghe artigiane, caffè hipster e street art.', mapsQuery: 'Old Phuket Town Thalang Road', highlight: true },
-              { time: '13:30', name: 'Pranzo Peranakan Tradizionale', description: 'Assaggio dei sapori unici di Phuket come il maiale brasato Moo Hong e noodles Hokkien.', mapsQuery: 'Raya Restaurant Phuket Old Town', highlight: false },
-              { time: '15:30', name: 'Relax a Nai Harn / Kata Noi Beach', description: 'Pomeriggio di mare e sabbia dorata in una delle baie più scenografiche dell\'isola.', mapsQuery: 'Nai Harn Beach Phuket', highlight: false },
-              { time: '18:00', name: 'Tramonto Epico a Promthep Cape', description: 'Il punto più a sud di Phuket con vista sull\'orizzonte infinito illuminato dal tramonto.', mapsQuery: 'Promthep Cape Phuket', highlight: true },
-              { time: '20:30', name: 'Night Market & Street Food', description: 'Bancarelle colorate, spiedini, frutti di mare e birra ghiacciata all\'Oasis Night Market.', mapsQuery: 'Phuket Weekend Market', highlight: false }
-            ]
-          },
-          {
-            id: 'd13',
-            dayNum: 13,
-            date: '07 Gen',
-            city: 'Phuket ➔ Bangkok',
-            cityGroup: 'Phuket',
-            title: 'Tour Adrenalinico di 6 Ore in Moto d\'Acqua & Volo Serale per Bangkok',
-            backpackNotes: 'Costume da bagno, occhiali con laccetto di sicurezza, crema solare waterproof, vestiti asciutti per il volo.',
-            isToday: false,
-            expanded: false,
-            mainLocation: 'Phuket International Airport',
-            stops: [
-              { time: '08:30', name: 'Briefing Jet Ski Safari Tour (6 Ore)', description: 'Incontro al centro nautico e assegnazione delle moto d\'acqua per l\'escursione guidata più adrenalinica del viaggio!', mapsQuery: 'Phuket Jet Ski Safari', highlight: true },
-              { time: '09:30 - 15:00', name: '6 Ore in Moto d\'Acqua tra le Isole', description: 'Sfrecciamo sulle onde tra Koh Khai, Koh Naka e baie segrete con soste snorkeling e pranzo sull\'isola.', mapsQuery: 'Khai Island Phuket', highlight: true, insiderTip: 'Esperienza mozzafiato da fare assolutamente in gruppo!' },
-              { time: '15:30', name: 'Doccia & Ritiro Zaini Pronti', description: 'Rientro alla base, cambio con vestiti asciutti e recupero delle valigie.', mapsQuery: 'The Charm Resort Phuket', highlight: false },
-              { time: '17:30', name: 'Trasferimento all\'Aeroporto di Phuket (HKT)', description: 'Arrivo in aeroporto per il check-in del volo interno verso la capitale.', mapsQuery: 'Phuket International Airport', highlight: false },
-              { time: '19:45', name: 'Volo Diretto Phuket ➔ Bangkok (1h 30m)', description: 'Volo serale verso l\'aeroporto Suvarnabhumi (BKK) di Bangkok.', mapsQuery: 'Suvarnabhumi Airport Bangkok', highlight: false },
-              { time: '21:30', name: 'Check-in Hotel Airport & Ultima Cena Thai', description: 'Sistemazione al Novotel Suvarnabhumi e ultimo memorabile brindisi con i 4 amici alla splendida vacanza trascorsa insieme!', mapsQuery: 'Novotel Bangkok Suvarnabhumi Airport Hotel', highlight: true }
-            ]
-          },
+          { id: 'd8', dayNum: 8, date: '02 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd9', dayNum: 9, date: '03 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd10', dayNum: 10, date: '04 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd11', dayNum: 11, date: '05 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd12', dayNum: 12, date: '06 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd13', dayNum: 13, date: '07 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
           {
             id: 'd14',
             dayNum: 14,
             date: '08 Gen',
-            city: 'Bangkok ➔ Italia',
-            cityGroup: 'Bangkok',
-            title: 'Arrivederci Thailandia! Volo di Rientro in Italia',
-            backpackNotes: 'Passaporto, boarding pass, souvenir imballati, vestiti comodi per le 12 ore di volo verso casa.',
+            city: 'Bangkok ➔ Roma',
+            cityGroup: 'Rientro',
+            title: 'Volo di Rientro a Roma FCO',
+            backpackNotes: 'Passaporti, boarding pass',
             isToday: false,
             expanded: false,
             mainLocation: 'Suvarnabhumi Airport Bangkok',
             stops: [
-              { time: '08:00', name: 'Ultima Colazione Tropicale', description: 'Mango fresco, dragon fruit e caffè thai prima di avviarci al terminal partenze.', mapsQuery: 'Novotel Bangkok Suvarnabhumi', highlight: false },
-              { time: '08:45', name: 'Trasferimento al Terminal Partenze (BKK)', description: 'Check-in bagagli, controllo passaporti e rimborso IVA (VAT Refund).', mapsQuery: 'Suvarnabhumi Airport', highlight: false },
-              { time: '10:45', name: 'Decollo Volo Diretto per l\'Italia', description: 'Decollo del volo internazionale verso l\'Italia. Si torna a casa carichi di foto, ricordi ed emozioni indelebili!', mapsQuery: 'Milan Malpensa Airport', highlight: true }
+              {
+                time: '08:05',
+                name: 'Volo Air India BKK ➔ DEL ➔ FCO',
+                description: 'Decollo da Bangkok Suvarnabhumi alle 08:05, scalo a Nuova Delhi e atterraggio a Roma FCO alle 18:55.',
+                mapsQuery: 'Suvarnabhumi Airport Bangkok',
+                highlight: true
+              }
             ]
           }
         ]
