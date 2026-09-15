@@ -5456,11 +5456,22 @@ Tel: ${h.phone || ''}`
                   this.saveItinerary(false);
                 }
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
-                  this.hotels = cloudData.hotels;
+                  this.hotels = cloudData.hotels.map(h => {
+                    if (h.id === 'h3' && (/U Chiang Mai/i.test(h.name) || /NYE-8821/i.test(h.bookingRef))) {
+                      return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h3')));
+                    }
+                    if (h.id === 'h4' && (!h.name.includes("Art's") || /Panvaree/i.test(h.name) || /500 Rai/i.test(h.name))) {
+                      return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h4')));
+                    }
+                    return h;
+                  });
                   this.saveHotels(false);
                 }
                 if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
                   this.transports = cloudData.transports.map(t => {
+                    if (t.id === 't3' && (/FD 3031/i.test(t.flightNumber) || /AA-CNX-URT/i.test(t.pnr))) {
+                      return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't3')));
+                    }
                     if (t.stops === undefined) {
                       if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
                         t.stops = 1;
