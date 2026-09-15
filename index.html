@@ -4186,7 +4186,7 @@
           this.showToast('Meteo live aggiornato in tempo reale!');
         },
 
-        // Countdown Logic (allineato dinamicamente alla partenza del volo alle 21:00)
+        // Countdown Logic (allineato dinamicamente alla partenza del volo alle 21:00 con compensazione ora solare/legale)
         initCountdown() {
           let targetDateStr = '2026-12-25T21:00:00';
           let subtitle = '25 Dic 2026 • 21:00 (Volo per Bangkok)';
@@ -4207,11 +4207,16 @@
           }
 
           this.countdown.label = subtitle;
-          const departureDate = new Date(targetDateStr).getTime();
+          const targetObj = new Date(targetDateStr);
+          const departureDate = targetObj.getTime();
           
           const update = () => {
-            const now = new Date().getTime();
-            const diff = departureDate - now;
+            const nowObj = new Date();
+            const now = nowObj.getTime();
+            // Compensazione del cambio ora legale (estate) -> ora solare (inverno):
+            // In autunno le lancette si spostano indietro di 1h. Questo allinea i giorni e le ore esattamente all'orologio di partenza.
+            const dstOffset = (nowObj.getTimezoneOffset() - targetObj.getTimezoneOffset()) * 60 * 1000;
+            const diff = (departureDate - now) + dstOffset;
 
             if (diff <= 0) {
               this.countdown.days = '00';
