@@ -3253,7 +3253,7 @@
         // I 4 Viaggiatori
         travelers: [],
         defaultTravelers: [
-          { id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+          { id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', fullName: 'Edoardo Fabbri', passportNo: '', passportExp: '', nationality: 'Italiana' },
           { id: 2, name: 'Marco', role: 'Tesoriere & Cassa', avatarEmoji: '💰', avatarBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
           { id: 3, name: 'Ale', role: 'Food & Street Gourmet', avatarEmoji: '🍜', avatarBg: 'bg-teal-500/20 text-teal-300 border border-teal-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
           { id: 4, name: 'Luca', role: 'Fotografo & Vibe Master', avatarEmoji: '📸', avatarBg: 'bg-sky-500/20 text-sky-300 border border-sky-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' }
@@ -4392,8 +4392,19 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                // I giorni partono sempre tutti compressi all'avvio dell'app come richiesto dall'utente
-                this.itinerary = parsed.map(d => ({ ...d, expanded: false }));
+                // Aggiorna tappe reali per Chiang Mai (Kristi House) e Volo AirAsia del 31 Dic
+                this.itinerary = parsed.map(d => {
+                  if (d.id === 'd6' && /Lancio delle Lanterne/i.test(JSON.stringify(d.stops))) {
+                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd6')));
+                  }
+                  if (d.id === 'd7' && /Volo Diretto Chiang Mai ➔ Surat Thani/i.test(JSON.stringify(d.stops))) {
+                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd7')));
+                  }
+                  if (d.id === 'd4' && /U Chiang Mai/i.test(JSON.stringify(d.stops))) {
+                    return JSON.parse(JSON.stringify(this.defaultItinerary.find(x => x.id === 'd4')));
+                  }
+                  return { ...d, expanded: false };
+                });
                 this.allExpanded = false;
                 return;
               }
@@ -4504,7 +4515,16 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                this.hotels = parsed;
+                // Aggiorna automaticamente Kristi House e Art's Riverview Lodge se c'erano vecchi placeholder
+                this.hotels = parsed.map(h => {
+                  if (h.id === 'h3' && (/U Chiang Mai/i.test(h.name) || /NYE-8821/i.test(h.bookingRef))) {
+                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h3')));
+                  }
+                  if (h.id === 'h4' && (!h.name.includes("Art's") || /Panvaree/i.test(h.name) || /500 Rai/i.test(h.name))) {
+                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h4')));
+                  }
+                  return h;
+                });
                 return;
               }
             } catch (e) {
@@ -4657,7 +4677,14 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
+                // Aggiorna automaticamente il volo AirAsia FD 5420 se c'era ancora il vecchio placeholder FD 3031
                 this.transports = parsed.map(t => {
+                  if (t.id === 't3' && (/FD 3031/i.test(t.flightNumber) || /AA-CNX-URT/i.test(t.pnr))) {
+                    return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't3')));
+                  }
+                  if (t.id === 't4' && /1 Gen/i.test(t.date)) {
+                    return JSON.parse(JSON.stringify(this.defaultTransports.find(x => x.id === 't4')));
+                  }
                   if (t.stops === undefined) {
                     if (t.id === 't1' || t.id === 't10' || (t.duration && /scalo/i.test(t.duration))) {
                       t.stops = 1;
@@ -5853,30 +5880,45 @@ Tel: ${h.phone || ''}`
           {
             id: 'h3',
             city: 'Chiang Mai',
-            name: 'U Chiang Mai Hotel (Old City - Capodanno)',
-            nameThai: 'โรงแรม ยู เชียงใหม่',
-            addressEn: '70 Ratchadamnoen Road, Sri-Poom, Chiang Mai Old City 50200',
-            addressThai: '70 ถนนราชดำเนิน ตำบลศรีภูมิ อำเภอเมืองเชียงใหม่ เชียงใหม่ 50200',
-            dates: '29 Dic - 1 Gen (3 notti)',
-            nights: 3,
-            checkIn: '14:00',
-            checkOut: '12:00',
-            bookingRef: 'CNX-NYE-8821',
-            phone: '+66 53 327 000',
-            mapsQuery: 'U Chiang Mai Hotel Ratchadamnoen'
+            name: 'Kristi House (Old City)',
+            nameThai: 'คริสตี้ เฮาส์ เชียงใหม่',
+            addressEn: '14/2 Soi 5, Ratchadamnoen Road, Sri Phum, Chiang Mai Old City 50200',
+            addressThai: '14/2 ซอย 5 ถนนราชดำเนิน ตำบลศรีภูมิ อำเภอเมือง เชียงใหม่ 50200',
+            dates: '29 - 31 Dic (2 notti)',
+            nights: 2,
+            checkIn: '14:00 (mar 29 dic)',
+            checkOut: '06:30 (gio 31 dic - volo URT)',
+            bookingRef: 'Booking.com · Intestato: Edoardo Fabbri · THB 6.039,56 (Family 2-Bedroom Suite)',
+            phone: '+66 53 218 301',
+            mapsQuery: 'Kristi House Chiang Mai'
           },
           {
             id: 'h4',
+            city: 'Khao Sok',
+            name: "Art's Riverview Lodge (Khao Sok)",
+            nameThai: 'อาร์ตส์ ริเวอร์วิว ลอดจ์ เขาสก',
+            addressEn: '54/3 Moo 6, T.Khlong Sok, Phanom District, Surat Thani 84250',
+            addressThai: '54/3 หมู่ 6 ตำบลคลองศก อำเภอพนม จังหวัดสุราษฎร์ธานี 84250',
+            dates: '31 Dic - 1 Gen (1 notte - Capodanno)',
+            nights: 1,
+            checkIn: '14:00 (gio 31 dic)',
+            checkOut: '11:00 - 12:00 (ven 1 gen)',
+            bookingRef: 'Booking: 6236482071 · PIN: 6807 · Edoardo Fabbri · THB 2.520 (Quadrupla con Terrazza, Colazione Inclusa)',
+            phone: '+66 81 864 4493',
+            mapsQuery: "Art's Riverview Lodge Khao Sok"
+          },
+          {
+            id: 'h4b',
             city: 'Khao Sok (Lago)',
-            name: 'Panvaree / 500 Rai Floating Resort (Bungalow sul Lago)',
-            nameThai: 'แพพันวารีย์ / แพ 500 ไร่ เขื่อนเชี่ยวหลาน เขาสก',
+            name: 'Floating Resort Bungalow sul Lago Cheow Lan',
+            nameThai: 'แพที่พัก เขื่อนเชี่ยวหลาน เขาสก',
             addressEn: 'Cheow Lan Lake, Khao Sok National Park, Ban Ta Khun, Surat Thani 84230',
             addressThai: 'ท่าเรือเทศบาลเขื่อนเชี่ยวหลาน (กุ้ยหลินเมืองไทย) ตำบลเขาพัง อำเภอบ้านตาขุน สุราษฎร์ธานี',
             dates: '1 - 2 Gen (1 notte sul lago)',
             nights: 1,
             checkIn: '11:00 (Imbarco Pier)',
             checkOut: '10:00 (Rientro Pier)',
-            bookingRef: 'GYG-KHAOSOK-2D',
+            bookingRef: 'Tour 2D1N Lago Cheow Lan',
             phone: '+66 89 132 0007',
             mapsQuery: 'Cheow Lan Lake Pier Ratchaprapha Dam'
           },
@@ -5966,34 +6008,36 @@ Tel: ${h.phone || ''}`
           {
             id: 't3',
             type: 'flight',
-            carrier: 'AirAsia / Thai Lion Air',
-            flightNumber: 'FD 3031 · Volo Interno Diretto',
-            date: '1 Gen 2027',
+            carrier: 'Thai AirAsia · Booking.com',
+            flightNumber: 'FD 5420 · Volo Diretto Chiang Mai ➔ Surat Thani',
+            date: '31 Dic 2026',
             depCode: 'CNX',
-            depCity: 'Chiang Mai Airport',
-            depTime: '07:30',
+            depCity: 'Chiang Mai Airport (CNX)',
+            depTime: '08:10',
             arrCode: 'URT',
-            arrCity: 'Surat Thani Airport',
-            arrTime: '09:25',
-            duration: '1h 55m',
-            pnr: 'AA-CNX-URT',
-            baggage: 'Bagaglio 20kg incluso'
+            arrCity: 'Surat Thani Airport (URT)',
+            arrTime: '10:05',
+            duration: '1h 55m (Diretto)',
+            stops: 0,
+            stopsInfo: '',
+            pnr: '40-1150607074 · PIN: 9816',
+            baggage: 'Economy · 4 passeggeri (Totale: 586,99 €) · Intestato: Edoardo Fabbri'
           },
           {
             id: 't4',
             type: 'ferry',
-            carrier: 'Van Privato / Bolt Transfer',
-            flightNumber: 'Van VIP 9 Posti (Surat Thani ➔ Khao Sok Lake)',
-            date: '1 Gen 2027',
+            carrier: 'Van Privato / Transfer',
+            flightNumber: "Van Transfer (Surat Thani Airport ➔ Art's Riverview Lodge)",
+            date: '31 Dic 2026',
             depCode: 'URT',
             depCity: 'Surat Thani Airport',
-            depTime: '09:45',
-            arrCode: 'PIER',
-            arrCity: 'Cheow Lan Lake Pier',
-            arrTime: '11:00',
-            duration: '1h 15m',
-            pnr: 'VAN-KHAOSOK-1',
-            baggage: 'Transfer diretto van con aria condizionata'
+            depTime: '10:45',
+            arrCode: 'SOK',
+            arrCity: "Art's Riverview Lodge (Khao Sok)",
+            arrTime: '12:30',
+            duration: '1h 45m',
+            pnr: 'TRANSFER-KHAOSOK-ARTS',
+            baggage: 'Transfer diretto van con aria condizionata dopo atterraggio volo FD5420'
           },
           {
             id: 't5',
@@ -6187,8 +6231,8 @@ Tel: ${h.phone || ''}`
             expanded: false,
             mainLocation: 'Wat Chedi Luang Chiang Mai',
             stops: [
-              { time: '07:15', name: 'Arrivo alla Stazione di Chiang Mai', description: 'Discesa dal treno notturno tra le fresche montagne del nord. Songthaew rosso verso l\'hotel nella Old City.', mapsQuery: 'Chiang Mai Railway Station', highlight: false },
-              { time: '08:30', name: 'Colazione & Check-in U Chiang Mai', description: 'Deposito bagagli e colazione rigenerante nel cuore della città antica.', mapsQuery: 'U Chiang Mai Hotel', highlight: false },
+              { time: '07:15', name: 'Arrivo alla Stazione di Chiang Mai', description: 'Discesa dal treno notturno tra le fresche montagne del nord. Songthaew rosso verso Kristi House nella Old City.', mapsQuery: 'Chiang Mai Railway Station', highlight: false },
+              { time: '08:30', name: 'Check-in Kristi House & Colazione', description: 'Deposito bagagli alla Kristi House (14/2 Soi 5, Ratchadamnoen Road) e colazione rigenerante nel cuore della città antica.', mapsQuery: 'Kristi House Chiang Mai', highlight: false },
               { time: '10:30', name: 'Esplorazione Templi della Old City', description: 'Visita all\'imponente Wat Chedi Luang del XIV secolo e al dorato Wat Phra Singh.', mapsQuery: 'Wat Chedi Luang Chiang Mai', highlight: true },
               { time: '13:00', name: 'Khao Soi: Il Piatto Simbolo del Nord', description: 'Pranzo tipico con noodles in brodo di curry cremoso al cocco, pollo e lime.', mapsQuery: 'Khao Soi Khun Yai Chiang Mai', highlight: true, insiderTip: 'Aggiungere scalogno marinato e peperoncino tostato!' },
               { time: '15:30', name: 'Massaggio Rigenerante', description: 'Relax totale dopo il viaggio in treno nei vicoli tranquilli del centro.', mapsQuery: 'Chiang Mai Old City', highlight: false },
@@ -6219,41 +6263,40 @@ Tel: ${h.phone || ''}`
             id: 'd6',
             dayNum: 6,
             date: '31 Dic',
-            city: 'Chiang Mai',
-            cityGroup: 'Chiang Mai',
-            title: 'Santuario Elefanti, Zattere di Bambù, Zipline & CAPODANNO 2027!',
-            backpackNotes: 'Costume da bagno, cambio completo, scarpe bagnabili, telo in microfibra e outfit pronto per la festa di Capodanno!',
+            city: 'Chiang Mai ➔ Khao Sok',
+            cityGroup: 'Khao Sok',
+            title: "Volo per Surat Thani, Arrivo ad Art's Riverview Lodge & CAPODANNO 2027!",
+            backpackNotes: "Sveglia all'alba! Scarpe comode, passaporti, documenti di prenotazione Art's Riverview Lodge e volo Thai AirAsia FD5420 pronti.",
             isToday: false,
             expanded: false,
-            mainLocation: 'Tha Phae Gate Chiang Mai',
+            mainLocation: "Art's Riverview Lodge Khao Sok",
             stops: [
-              { time: '08:00', name: 'Santuario Etico degli Elefanti', description: 'Esperienza rispettosa nella giungla: prepariamo banane e canne da zucchero, camminata e bagno nel fiume con gli elefanti (No Riding).', mapsQuery: 'Elephant Nature Park Chiang Mai', highlight: true },
-              { time: '11:30', name: 'Bamboo Rafting sul Fiume', description: 'Discesa rilassante e divertente lungo il corso d\'acqua su zattere di bambù tradizionali.', mapsQuery: 'Mae Taeng River Chiang Mai', highlight: true },
-              { time: '13:30', name: 'Pranzo nella Giungla & Zipline', description: 'Pranzo buffet all\'aperto e volo panoramico tra le chiome degli alberi secolari con il percorso zipline.', mapsQuery: 'Mae Taeng Chiang Mai', highlight: false },
-              { time: '16:30', name: 'Rientro in Hotel & Preparativi Notte di San Silvestro', description: 'Doccia rinfrescante, relax e preparazione degli abiti per i festeggiamenti.', mapsQuery: 'U Chiang Mai Hotel', highlight: false },
-              { time: '20:30', name: 'Cenone di Capodanno', description: 'Grande cena di fine anno con i 4 amici tra specialità locali, cocktail e brindisi.', mapsQuery: 'Riverside Bar and Restaurant Chiang Mai', highlight: false },
-              { time: '23:30', name: 'Lancio delle Lanterne & Countdown 2027!', description: 'Migliaia di lanterne volanti (Khom Loi) illuminate nel cielo di Chiang Mai a Tha Phae Gate per dare il benvenuto al 2027!', mapsQuery: 'Tha Phae Gate Chiang Mai', highlight: true, insiderTip: 'Esprimere un desiderio di gruppo mentre la lanterna si alza in volo!' }
+              { time: '06:15', name: 'Check-out Kristi House & Transfer Aeroporto (CNX)', description: 'Partenza di prima mattina in taxi/Grab verso l\'aeroporto di Chiang Mai.', mapsQuery: 'Chiang Mai International Airport', highlight: false },
+              { time: '08:10 - 10:05', name: 'Volo Diretto Thai AirAsia FD 5420 (CNX ➔ URT)', description: 'Volo interno di 1h 55m che ci porta dritti al sud della Thailandia. Prenotazione Booking: 40-1150607074 (PIN: 9816).', mapsQuery: 'Surat Thani International Airport', highlight: true },
+              { time: '10:45', name: "Transfer Van verso Art's Riverview Lodge", description: 'Van climatizzato in partenza dall\'aeroporto di Surat Thani direttamente verso la giungla di Khao Sok Village.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
+              { time: '12:30', name: "Check-in Art's Riverview Lodge & Sistemazione", description: 'Arrivo nella suggestiva struttura sul fiume Sok. Sistemazione nella Camera Quadrupla con Terrazza affacciata sulla natura.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: true },
+              { time: '14:30', name: 'Pranzo Tipico & Relax sul Fiume Sok', description: 'Pranzo thai rilassante, bagno nel fiume o passeggiata esplorativa al villaggio di Khao Sok.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
+              { time: '20:30', name: 'Cenone & Brindisi di CAPODANNO 2027 nella Giungla!', description: 'Festeggiamenti di San Silvestro e brindisi al 2027 immersi nei suoni magici e nell\'atmosfera unica della foresta tropicale!', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: true, insiderTip: 'Brindisi di mezzanotte sulla terrazza con i 4 amici!' }
             ]
           },
           {
             id: 'd7',
             dayNum: 7,
             date: '01 Gen',
-            city: 'Khao Sok (Lago)',
+            city: 'Khao Sok ➔ Lago Cheow Lan',
             cityGroup: 'Khao Sok',
-            title: 'Volo a Surat Thani & Avventura 2 Giorni sul Lago di Khao Sok',
-            backpackNotes: 'Sacca stagna (Dry-bag indispensabile!), costume da bagno, infradito, torcia, crema solare, spray insetti tropicale.',
+            title: "Primo Giorno del 2027: Colazione sul Fiume & Avventura al Lago Cheow Lan",
+            backpackNotes: 'Costume da bagno, scarpe da scoglio, sacca stagna (Dry-bag indispensabile!), crema solare.',
             isToday: false,
             expanded: false,
             mainLocation: 'Cheow Lan Lake Khao Sok National Park',
             stops: [
-              { time: '06:00', name: 'Trasferimento in Aeroporto a Chiang Mai', description: 'Partenza post-Capodanno verso l\'aeroporto CNX per il volo verso il sud tropicale.', mapsQuery: 'Chiang Mai International Airport', highlight: false },
-              { time: '07:30', name: 'Volo Diretto Chiang Mai ➔ Surat Thani', description: 'Volo AirAsia FD 3031 di 1h 55m che ci porta dritti al sud della Thailandia.', mapsQuery: 'Surat Thani International Airport', highlight: false },
-              { time: '09:45', name: 'Van Privato per il Lago Cheow Lan', description: 'Transfer in van climatizzato verso il molo principale del Parco Nazionale di Khao Sok.', mapsQuery: 'Ratchaprapha Dam Pier Khao Sok', highlight: false },
-              { time: '11:00', name: 'Imbarco su Longtail Boat sul Lago', description: 'Inizio del tour di 2 giorni: navigazione spettacolare tra enormi faraglioni di roccia calcarea emergenti dall\'acqua smeraldo.', mapsQuery: 'Cheow Lan Lake Pier', highlight: true },
-              { time: '13:00', name: 'Check-in Bungalow Galleggianti & Pranzo', description: 'Sistemazione nelle magiche casette galleggianti sull\'acqua circondate dalla foresta pluviale incontaminata.', mapsQuery: 'Panvaree Resort Cheow Lan Lake', highlight: true },
-              { time: '15:30', name: 'Kayak, Tuffi nell\'Acqua Calda & Grotte', description: 'Pomeriggio in kayak libero, nuoto e trekking guidato nella grotta carsica dei coralli.', mapsQuery: 'Coral Cave Khao Sok', highlight: false },
-              { time: '19:30', name: 'Cena sul Lago & Cielo Stellato', description: 'Cena tipica sotto un cielo stellato straordinario, cullati dal silenzio assoluto della natura.', mapsQuery: 'Cheow Lan Lake', highlight: false }
+              { time: '08:30', name: "Colazione Inclusa ad Art's Riverview Lodge", description: 'Colazione tropicale completa inclusa nella prenotazione sulla terrazza panoramica lungo il fiume.', mapsQuery: "Art's Riverview Lodge Khao Sok", highlight: false },
+              { time: '10:30', name: "Check-out & Transfer verso il Molo del Lago", description: 'Partenza in van verso il molo Ratchaprapha Dam per iniziare la navigazione sul lago Cheow Lan.', mapsQuery: 'Ratchaprapha Dam Pier Khao Sok', highlight: false },
+              { time: '11:45', name: 'Imbarco Longtail Boat tra i Faraglioni Carsici', description: 'Navigazione spettacolare sull\'acqua color smeraldo tra enormi pareti di roccia emergenti dal lago.', mapsQuery: 'Cheow Lan Lake Pier', highlight: true },
+              { time: '13:00', name: 'Check-in Bungalow Galleggianti & Pranzo', description: 'Sistemazione nelle casette galleggianti sul lago, primo tuffo e pranzo thai tradizionale.', mapsQuery: 'Cheow Lan Lake', highlight: true },
+              { time: '15:30', name: 'Kayak Libero, Trekking & Grotta dei Coralli', description: 'Pomeriggio di esplorazione in kayak tra le insenature della baia e visita alla Coral Cave.', mapsQuery: 'Coral Cave Khao Sok', highlight: false },
+              { time: '19:30', name: 'Cena sul Lago & Notte Sotto le Stelle', description: 'Cena tipica sotto la volta stellata, cullati dal silenzio e dalla pace assoluta del lago.', mapsQuery: 'Cheow Lan Lake', highlight: false }
             ]
           },
           {
