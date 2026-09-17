@@ -64,6 +64,10 @@
     }
   </script>
 
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -72,6 +76,43 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 
   <style>
+    /* Map Vehicle Marker & Leaflet Dark Mode Customization */
+    .vehicle-marker-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin-left: -24px;
+      margin-top: -24px;
+      pointer-events: none;
+      transition: transform 0.08s linear;
+    }
+    .vehicle-marker-icon {
+      font-size: 28px;
+      line-height: 1;
+      filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.9));
+      z-index: 2;
+    }
+    .vehicle-marker-glow {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(16, 185, 129, 0) 70%);
+      animation: pulse-glow 1.5s infinite;
+      z-index: 1;
+    }
+    @keyframes pulse-glow {
+      0% { transform: scale(0.85); opacity: 0.6; }
+      50% { transform: scale(1.35); opacity: 1; }
+      100% { transform: scale(0.85); opacity: 0.6; }
+    }
+    .leaflet-container {
+      background-color: #030712 !important;
+      font-family: inherit;
+    }
+
     /* Safe-Area iOS Support */
     :root {
       --sat: env(safe-area-inset-top, 0px);
@@ -362,6 +403,28 @@
               </div>
             </template>
           </div>
+        </div>
+
+        <!-- BANNER CARD MAPPA ROTTA ANIMATA & TIMELINE -->
+        <div @click="openInteractiveMap()"
+             class="glass-card rounded-2xl border border-emerald-500/40 p-3.5 bg-gradient-to-r from-emerald-950/50 via-slate-900 to-teal-950/40 shadow-xl cursor-pointer hover:border-emerald-400/70 active:scale-98 transition-all flex items-center justify-between gap-3 group">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0 group-hover:scale-110 transition-transform">
+              <i data-lucide="compass" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="font-display font-black text-sm text-white group-hover:text-emerald-300 transition-colors">Mappa & Timeline Animata</h3>
+                <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px] uppercase border border-emerald-500/30">Live 3D</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-tight truncate">Rotta 14 tappe con aerei ✈️, treni 🚆 e timeline interattiva</p>
+            </div>
+          </div>
+          <button type="button" 
+                  class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black flex items-center gap-1 shadow-md shadow-emerald-950/40 flex-shrink-0 group-hover:bg-emerald-400 transition-colors">
+            <span>Esplora</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
         </div>
       </section>
 
@@ -718,6 +781,42 @@
               </button>
             </div>
 
+            <!-- Sezione Voucher / Conferma PDF -->
+            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                <i data-lucide="file-check" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Voucher / Conferma:</span>
+              </div>
+
+              <template x-if="docsState['hotel_' + hotel.id]">
+                <div class="flex items-center gap-1.5">
+                  <button type="button"
+                          @click="openDocViewer('hotel_' + hotel.id)"
+                          class="py-1 px-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold active:scale-95 transition-all flex items-center gap-1.5">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    <span>Apri Voucher PDF</span>
+                  </button>
+                  <button type="button"
+                          @click="deleteDocFor('hotel_' + hotel.id)"
+                          class="p-1 rounded-lg text-slate-500 hover:text-rose-400 active:scale-95"
+                          title="Rimuovi voucher">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </template>
+
+              <template x-if="!docsState['hotel_' + hotel.id]">
+                <label class="py-1 px-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-400 hover:text-amber-300 text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
+                  <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                  <span>Carica PDF</span>
+                  <input type="file" 
+                         accept="application/pdf,image/*" 
+                         @change="handleFileUpload($event, 'hotel_' + hotel.id, 'hotel', hotel.name)" 
+                         class="hidden">
+                </label>
+              </template>
+            </div>
+
             <!-- Telefono Hotel rapido -->
             <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80 text-slate-400">
               <span>Reception Hotel:</span>
@@ -879,6 +978,33 @@
               </button>
 
               <div class="flex items-center gap-1.5">
+              <!-- Biglietto PDF Trasporto -->
+              <template x-if="docsState['transport_' + item.id]">
+                <div class="flex items-center gap-1">
+                  <button type="button"
+                          @click="openDocViewer('transport_' + item.id)"
+                          class="py-1.5 px-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold active:scale-95 transition-all flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    <span>Biglietto</span>
+                  </button>
+                  <button type="button"
+                          @click="deleteDocFor('transport_' + item.id)"
+                          class="p-1 rounded-lg text-slate-500 hover:text-rose-400 active:scale-95"
+                          title="Rimuovi biglietto">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </template>
+              <template x-if="!docsState['transport_' + item.id]">
+                <label class="py-1.5 px-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-sky-500/40 text-slate-400 hover:text-sky-300 text-xs font-semibold active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                  <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                  <span>PDF</span>
+                  <input type="file" 
+                         accept="application/pdf,image/*" 
+                         @change="handleFileUpload($event, 'transport_' + item.id, 'transport', item.carrier + ' ' + (item.flightNumber || (item.arrCity || 'Spostamento')))" 
+                         class="hidden">
+                </label>
+              </template>
                 <button @click="openEditTransportModal(item)" 
                         class="py-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 font-bold text-xs flex items-center gap-1 border border-sky-500/30 transition-all">
                   <i data-lucide="pencil" class="w-3.5 h-3.5 text-sky-400"></i>
@@ -1620,6 +1746,52 @@
             <p class="text-[10px] text-slate-400">Tocca "Dati Hotel Dogana TM6" in alto per copiare negli appunti nome e indirizzo completi da presentare all'ufficiale immigrazione.</p>
           </div>
         </div>
+
+        <!-- Archivio Voucher & Biglietti Offline (Caricati dall'utente) -->
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="folder-archive" class="w-4 h-4 text-emerald-400"></i>
+                <span class="text-xs font-bold text-white">Archivio Biglietti & Voucher Offline</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400 font-bold"
+                    x-text="Object.keys(docsState).length + ' File Salvati'"></span>
+            </div>
+
+            <template x-if="Object.keys(docsState).length === 0">
+              <p class="text-[11px] text-slate-500 leading-relaxed italic">
+                Nessun file o biglietto ancora caricato. Puoi caricare i voucher e le carte d'imbarco PDF direttamente dalle schede in <em>Logistica → Hotel</em> e <em>Voli</em> per averli sempre a portata di mano anche senza connessione.
+              </p>
+            </template>
+
+            <template x-if="Object.keys(docsState).length > 0">
+              <div class="space-y-1.5 pt-1">
+                <template x-for="(doc, dKey) in docsState" :key="dKey">
+                  <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex items-center gap-2">
+                      <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"></i>
+                      <div class="min-w-0">
+                        <span class="text-xs font-bold text-slate-200 block truncate" x-text="doc.targetTitle"></span>
+                        <span class="text-[9px] text-slate-400 font-mono block truncate" x-text="doc.name + ' (' + formatFileSize(doc.size) + ')'"></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <button type="button" 
+                              @click="openDocViewer(dKey)"
+                              class="py-1 px-2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold active:scale-95">
+                        Apri
+                      </button>
+                      <button type="button" 
+                              @click="deleteDocFor(dKey)"
+                              class="p-1 rounded-md text-slate-500 hover:text-rose-400 active:scale-95">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
 
         <!-- Tasto Espandi / Comprimi Bottom -->
         <button type="button" 
@@ -3255,6 +3427,222 @@
   <!-- ========================================================================= -->
   <!-- BOTTOM NAVIGATION BAR (FIXED IOS STYLE)                                   -->
   <!-- ========================================================================= -->
+  <!-- ========================================================================= -->
+  <!-- MODAL: MAPPA INTERATTIVA ANIMATA & TIMELINE                               -->
+  <!-- ========================================================================= -->
+  <div x-show="mapModal.show" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="fixed inset-0 z-[140] bg-slate-950 flex flex-col overflow-hidden"
+       x-cloak>
+    
+    <!-- Top Bar -->
+    <header class="flex-shrink-0 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between z-10">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+          <i data-lucide="compass" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="font-display font-black text-sm text-white">Rotta Thailandia 2026</h2>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px] uppercase border border-emerald-500/30">14 Tappe</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight">Timeline animata • Bangkok, Chiang Mai, Khao Sok, Krabi, Phuket</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" 
+                @click="recenterMap()"
+                title="Centra rotta completa"
+                class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700">
+          <i data-lucide="crosshair" class="w-4 h-4"></i>
+        </button>
+        <button type="button" 
+                @click="closeInteractiveMap()" 
+                title="Chiudi mappa"
+                class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Map Viewport -->
+    <div class="relative flex-1 w-full bg-slate-950 overflow-hidden">
+      <div id="trip-map-container" class="w-full h-full"></div>
+
+      <!-- Floating Stage Card (Top Left) -->
+      <div class="absolute top-3 left-3 right-3 sm:right-auto sm:max-w-sm pointer-events-none z-[500]">
+        <div class="glass-card rounded-2xl border border-slate-700/80 p-3 shadow-2xl bg-slate-900/90 backdrop-blur-md pointer-events-auto space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-lg bg-emerald-500 text-slate-950 font-black font-mono text-[10px] uppercase shadow-sm">
+                Day <span x-text="Math.round(timelineDay)"></span> / 14
+              </span>
+              <span class="text-xs font-bold text-white truncate" x-text="currentStageInfo ? currentStageInfo.city : 'In Viaggio'"></span>
+            </div>
+            <span class="text-[10px] text-amber-400 font-mono font-semibold" x-text="currentStageInfo ? currentStageInfo.date : ''"></span>
+          </div>
+
+          <p class="text-xs text-slate-200 font-medium leading-snug line-clamp-2" x-text="currentStageInfo ? currentStageInfo.title : 'Volo Internazionale'"></p>
+
+          <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80 gap-2">
+            <div class="flex items-center gap-1.5 min-w-0 text-slate-400 truncate">
+              <span class="text-sm" x-text="currentStageInfo ? currentStageInfo.modeIcon : '✈️'"></span>
+              <span class="truncate" x-text="currentStageInfo ? currentStageInfo.transportBadge : 'Scalo & Trasferimento'"></span>
+            </div>
+            <button type="button" 
+                    @click="closeInteractiveMap(); jumpToDay(Math.round(timelineDay))"
+                    class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 flex-shrink-0 active:scale-95">
+              <span>Scheda</span>
+              <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Bottom Controller: Scrubber & Playback -->
+      <div class="absolute bottom-4 left-3 right-3 sm:max-w-md sm:mx-auto pointer-events-none z-[500]">
+        <div class="glass-card rounded-2xl border border-slate-700/80 p-3 shadow-2xl bg-slate-900/95 backdrop-blur-md pointer-events-auto space-y-2.5">
+          <!-- Timeline Slider -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono font-bold text-slate-400">
+              <span>25 DIC (DAY 1)</span>
+              <span class="text-emerald-400 font-black">GIORNO <span x-text="Math.round(timelineDay)"></span></span>
+              <span>08 GEN (DAY 14)</span>
+            </div>
+            <input type="range" 
+                   min="1" 
+                   max="14" 
+                   step="0.05" 
+                   x-model.number="timelineDay" 
+                   @input="onTimelineSliderInput()" 
+                   class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none">
+          </div>
+
+          <!-- Playback Controls -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1">
+              <button type="button" 
+                      @click="stepMapDay(-1)"
+                      title="Giorno Precedente"
+                      class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-90 flex items-center justify-center transition-all border border-slate-700">
+                <i data-lucide="skip-back" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <button type="button" 
+                      @click="togglePlay()"
+                      title="Riproduci rotta animata"
+                      class="px-3.5 h-8 rounded-xl font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-md"
+                      :class="isPlaying ? 'bg-amber-400 text-slate-950 shadow-amber-950/50' : 'bg-emerald-500 text-slate-950 shadow-emerald-950/50 hover:bg-emerald-400'">
+                <i :data-lucide="isPlaying ? 'pause' : 'play'" class="w-3.5 h-3.5" :class="isPlaying ? 'fill-current' : ''"></i>
+                <span x-text="isPlaying ? 'Pausa' : 'Riproduci'"></span>
+              </button>
+
+              <button type="button" 
+                      @click="stepMapDay(1)"
+                      title="Giorno Successivo"
+                      class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-90 flex items-center justify-center transition-all border border-slate-700">
+                <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Velocità & Reset -->
+            <div class="flex items-center gap-1">
+              <button type="button" 
+                      @click="togglePlaySpeed()"
+                      title="Velocità riproduzione"
+                      class="px-2.5 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono text-[11px] font-bold active:scale-90">
+                <span x-text="playSpeed + 'x'"></span>
+              </button>
+
+              <button type="button" 
+                      @click="resetMapTimeline()"
+                      title="Torna all'inizio"
+                      class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-90 flex items-center justify-center border border-slate-700">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: VIEWER BIGLIETTI & VOUCHER PDF OFFLINE                             -->
+  <!-- ========================================================================= -->
+  <div x-show="activeViewerDoc" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md p-2 sm:p-4 flex flex-col items-center justify-center"
+       x-cloak>
+    
+    <div class="w-full max-w-2xl h-[92vh] bg-slate-900 border border-slate-700 rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+      <!-- Header Viewer -->
+      <div class="p-3 sm:p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between gap-2 flex-shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-display font-bold text-xs sm:text-sm text-white truncate" x-text="activeViewerDoc ? activeViewerDoc.targetTitle : 'Documento'"></h3>
+            <p class="text-[10px] text-slate-400 truncate font-mono" x-text="activeViewerDoc ? (activeViewerDoc.name + ' • ' + formatFileSize(activeViewerDoc.size)) : ''"></p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button type="button" 
+                  @click="downloadCurrentDoc()" 
+                  title="Scarica file"
+                  class="py-1 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1 border border-slate-700 active:scale-95 transition-all">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Scarica</span>
+          </button>
+          <button type="button" 
+                  @click="closeDocViewer()" 
+                  title="Chiudi viewer"
+                  class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Viewer (PDF or Image) -->
+      <div class="flex-1 w-full bg-slate-950 overflow-hidden relative flex items-center justify-center p-1 sm:p-2">
+        <template x-if="activeViewerDoc && activeViewerDoc.isPdf">
+          <iframe :src="activeViewerDoc.dataUrl" class="w-full h-full rounded-2xl bg-white border-0 shadow-inner"></iframe>
+        </template>
+        <template x-if="activeViewerDoc && !activeViewerDoc.isPdf">
+          <img :src="activeViewerDoc.dataUrl" class="max-w-full max-h-full object-contain rounded-2xl shadow-lg" alt="Documento">
+        </template>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="p-2.5 sm:p-3 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between gap-2 flex-shrink-0">
+        <span class="text-[10px] text-emerald-400 font-mono font-medium flex items-center gap-1">
+          <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+          <span>Salvato 100% Offline in IndexedDB</span>
+        </span>
+
+        <button type="button" 
+                @click="if(confirm('Vuoi davvero eliminare questo documento salvato offline?')) { deleteDocFor(activeViewerDoc.id); closeDocViewer(); }"
+                class="text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-1 py-1 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 transition-all">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Elimina Documento</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-center glass-nav border-t border-slate-800/90 shadow-2xl">
     <div class="w-full max-w-md px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] flex items-center justify-between">
       
@@ -3313,9 +3701,123 @@
   <!-- ALPINE.JS APPLICATION STATE & LOGIC                                       -->
   <!-- ========================================================================= -->
   <script>
-    function thaiApp() {
+    // ==========================================
+  // INDEXEDDB UTILITY PER VOUCHER & BIGLIETTI PDF OFFLINE
+  // ==========================================
+  const pwaDocsDB = {
+    dbName: 'thailand_docs_db',
+    dbVersion: 1,
+    db: null,
+
+    open() {
+      if (this.db) return Promise.resolve(this.db);
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          console.warn('IndexedDB non disponibile');
+          return resolve(null);
+        }
+        const req = indexedDB.open(this.dbName, this.dbVersion);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('vouchers')) {
+            db.createObjectStore('vouchers', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          this.db = e.target.result;
+          resolve(this.db);
+        };
+        req.onerror = (e) => {
+          console.error('IndexedDB open error', e);
+          resolve(null);
+        };
+      });
+    },
+
+    save(id, doc) {
+      return this.open().then(db => {
+        if (!db) return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('vouchers', 'readwrite');
+          const store = tx.objectStore('vouchers');
+          const record = { id, ...doc, updatedAt: Date.now() };
+          const req = store.put(record);
+          req.onsuccess = () => resolve(record);
+          req.onerror = (e) => reject(e);
+        });
+      });
+    },
+
+    get(id) {
+      return this.open().then(db => {
+        if (!db) return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('vouchers', 'readonly');
+          const store = tx.objectStore('vouchers');
+          const req = store.get(id);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = (e) => reject(e);
+        });
+      });
+    },
+
+    delete(id) {
+      return this.open().then(db => {
+        if (!db) return Promise.resolve(true);
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('vouchers', 'readwrite');
+          const store = tx.objectStore('vouchers');
+          const req = store.delete(id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = (e) => reject(e);
+        });
+      });
+    },
+
+    getAll() {
+      return this.open().then(db => {
+        if (!db) return Promise.resolve([]);
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('vouchers', 'readonly');
+          const store = tx.objectStore('vouchers');
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = (e) => reject(e);
+        });
+      });
+    }
+  };
+
+  function thaiApp() {
       return {
         activeTab: 'itinerary',
+        // Documenti & Voucher PDF
+        docsState: {},
+        activeViewerDoc: null,
+
+        // Mappa Dinamica & Timeline del Viaggio
+        mapModal: { show: false },
+        timelineDay: 1,
+        isPlaying: false,
+        playSpeed: 1,
+        currentStageInfo: {
+          dayNum: 1,
+          date: '26 Dic',
+          title: 'Partenza da Roma & Arrivo a Bangkok',
+          from: 'Roma FCO',
+          to: 'Bangkok BKK',
+          mode: 'flight',
+          modeIcon: '✈️',
+          transportBadge: 'Air India',
+          distance: '~9.100 km',
+          hotel: 'Sukhothai Residence Ruam Ruedi'
+        },
+        _leafletMap: null,
+        _vehicleMarker: null,
+        _routeLines: [],
+        _cityMarkers: [],
+        _mapSegments: [],
+        _playInterval: null,
         logisticsSubTab: 'hotels',
         cityFilter: 'all',
         allExpanded: false,
@@ -3819,6 +4321,7 @@
           this.initPwaPrompt();
           this.initSyncStatus();
           this.checkForUrlSync();
+          this.initDocs();
           // Allinea subito in background con Google Firebase all'avvio
           this.downloadFromCloud(true);
         },
@@ -5019,6 +5522,430 @@ Tel: ${h.phone || ''}`
         // ==========================================
         // MAP CHOOSER: GOOGLE MAPS vs MAPPE APPLE
         // ==========================================
+        // ==========================================
+        // GESTIONE VOUCHER & BIGLIETTI PDF (INDEXEDDB)
+        // ==========================================
+        async initDocs() {
+          try {
+            const allDocs = await pwaDocsDB.getAll();
+            const map = {};
+            (allDocs || []).forEach(d => {
+              map[d.id] = {
+                name: d.name,
+                type: d.type,
+                size: d.size,
+                targetType: d.targetType,
+                targetTitle: d.targetTitle,
+                dataUrl: d.dataUrl
+              };
+            });
+            this.docsState = map;
+          } catch(e) {
+            console.error('Error loading documents from IndexedDB', e);
+          }
+        },
+
+        handleFileUpload(event, targetId, targetType, targetTitle) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const dataUrl = e.target.result;
+            const doc = {
+              name: file.name,
+              type: file.type || 'application/pdf',
+              size: file.size,
+              targetType: targetType || 'other',
+              targetTitle: targetTitle || 'Documento',
+              dataUrl: dataUrl
+            };
+
+            await pwaDocsDB.save(targetId, doc);
+            this.docsState[targetId] = doc;
+            this.showToast('Documento "' + file.name + '" salvato offline!');
+            this.refreshIcons();
+          };
+          reader.readAsDataURL(file);
+        },
+
+        async deleteDocFor(targetId) {
+          if (!confirm('Sei sicuro di voler rimuovere questo documento salvato?')) return;
+          await pwaDocsDB.delete(targetId);
+          delete this.docsState[targetId];
+          this.showToast('Documento rimosso');
+          this.refreshIcons();
+        },
+
+        openDocViewer(targetId) {
+          const doc = this.docsState[targetId];
+          if (!doc) {
+            this.showToast('Documento non trovato');
+            return;
+          }
+          this.activeViewerDoc = doc;
+          this.refreshIcons();
+        },
+
+        closeDocViewer() {
+          this.activeViewerDoc = null;
+        },
+
+        downloadCurrentDoc() {
+          if (!this.activeViewerDoc) return;
+          const a = document.createElement('a');
+          a.href = this.activeViewerDoc.dataUrl;
+          a.download = this.activeViewerDoc.name || 'documento.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        },
+
+        formatFileSize(bytes) {
+          if (!bytes) return '0 KB';
+          if (bytes < 1024) return bytes + ' B';
+          if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+          return (bytes / 1048576).toFixed(1) + ' MB';
+        },
+
+        // ==========================================
+        // MAPPA INTERATTIVA DINAMICA & TIMELINE
+        // ==========================================
+        openInteractiveMap() {
+          this.mapModal.show = true;
+          this.refreshIcons();
+          setTimeout(() => {
+            this.initInteractiveMap();
+          }, 150);
+        },
+
+        closeInteractiveMap() {
+          this.mapModal.show = false;
+          this.pausePlayback();
+        },
+
+        initInteractiveMap() {
+          const container = document.getElementById('trip-map-container');
+          if (!container) return;
+
+          if (!this._leafletMap) {
+            this._leafletMap = L.map('trip-map-container', { 
+              zoomControl: false,
+              minZoom: 3,
+              maxZoom: 16
+            }).setView([13.7563, 100.5018], 5);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+              maxZoom: 16,
+              attribution: '© Esri Canvas World Dark'
+            }).addTo(this._leafletMap);
+
+            L.control.zoom({ position: 'topright' }).addTo(this._leafletMap);
+          } else {
+            this._leafletMap.invalidateSize();
+          }
+
+          this.buildDynamicMapRoutes();
+          this.updateVehiclePosition(this.timelineDay, true);
+        },
+
+        buildDynamicMapRoutes() {
+          if (!this._leafletMap) return;
+
+          // Clear previous layers
+          (this._routeLines || []).forEach(l => this._leafletMap.removeLayer(l));
+          (this._cityMarkers || []).forEach(m => this._leafletMap.removeLayer(m));
+          this._routeLines = [];
+          this._cityMarkers = [];
+
+          // Coordinate Geografiche di riferimento (Dizionario)
+          const COORDS = {
+            'roma': [41.9028, 12.4964],
+            'fco': [41.8003, 12.2389],
+            'bangkok': [13.7563, 100.5018],
+            'bkk': [13.6900, 100.7501],
+            'chiang mai': [18.7883, 98.9853],
+            'cnx': [18.7669, 98.9626],
+            'surat thani': [9.1382, 99.3215],
+            'urt': [9.1326, 99.1356],
+            'khao sok': [8.9133, 98.5306],
+            'krabi': [8.0863, 98.9063],
+            'railay': [8.0125, 98.8375],
+            'phi phi': [7.7407, 98.7784],
+            'phuket': [7.8804, 98.3923],
+            'koh samui': [9.5120, 100.0136],
+            'samui': [9.5120, 100.0136],
+            'delhi': [28.6139, 77.2090]
+          };
+
+          const getCoord = (str) => {
+            if (!str) return COORDS['bangkok'];
+            const s = str.toLowerCase();
+            for (const k in COORDS) {
+              if (s.includes(k)) return COORDS[k];
+            }
+            return COORDS['bangkok'];
+          };
+
+          // Genera i 14 segmenti leggendo dinamicamente itinerary, transports e hotels
+          const segments = [];
+          let lastCoord = COORDS['fco'];
+          let lastCityName = 'Roma FCO';
+
+          for (let d = 1; d <= 14; d++) {
+            const dayObj = (this.itinerary || []).find(i => i.dayNum === d) || {};
+            const city = dayObj.city || (d <= 3 ? 'Bangkok' : (d <= 5 ? 'Chiang Mai' : (d <= 7 ? 'Khao Sok' : (d === 14 ? 'Roma' : 'Isole Sud'))));
+            
+            // Cerca se esiste un trasporto abbinato a questa data/giorno
+            const matchingTransport = (this.transports || []).find(t => {
+              if (d === 1 && (t.depCode === 'FCO' || t.arrCode === 'BKK')) return true;
+              if (d === 6 && (t.depCode === 'CNX' || t.arrCode === 'URT')) return true;
+              if (d === 14 && (t.depCode === 'BKK' || t.arrCode === 'FCO')) return true;
+              return false;
+            });
+
+            let mode = 'local';
+            let modeIcon = '🛵';
+            let transportBadge = 'In Loco';
+            let targetCoord = getCoord(city);
+
+            if (matchingTransport) {
+              mode = matchingTransport.type || 'flight';
+              modeIcon = mode === 'flight' ? '✈️' : (mode === 'train' ? '🚆' : '🚤');
+              transportBadge = matchingTransport.flightNumber || matchingTransport.carrier || 'Volo';
+              targetCoord = getCoord(matchingTransport.arrCity || matchingTransport.arrCode || city);
+            } else if (d === 4) {
+              mode = 'train';
+              modeIcon = '🚆';
+              transportBadge = 'Treno Notturno / Transfer';
+              targetCoord = COORDS['chiang mai'];
+            } else if (d === 6) {
+              mode = 'flight';
+              modeIcon = '✈️';
+              transportBadge = 'Volo Thai AirAsia';
+              targetCoord = COORDS['khao sok'];
+            } else if (d === 14) {
+              mode = 'flight';
+              modeIcon = '✈️';
+              transportBadge = 'Volo Rientro Air India';
+              targetCoord = COORDS['fco'];
+            }
+
+            // Interpolazione punti rotta
+            const startPt = (d === 1) ? COORDS['fco'] : lastCoord;
+            const endPt = targetCoord;
+
+            // Se volo a lungo raggio o inter-città, calcola arco curvo
+            const points = [];
+            const isFlight = (mode === 'flight');
+            const numPts = isFlight ? 30 : 15;
+            const arcHeight = isFlight ? (Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]) > 20 ? 0.35 : 0.15) : 0.05;
+
+            const midLat = (startPt[0] + endPt[0]) / 2;
+            const midLon = (startPt[1] + endPt[1]) / 2;
+            const dist = Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]);
+            const ctrlLat = midLat + dist * arcHeight;
+            const ctrlLon = midLon;
+
+            for (let p = 0; p <= numPts; p++) {
+              const t = p / numPts;
+              const lat = (1 - t) * (1 - t) * startPt[0] + 2 * (1 - t) * t * ctrlLat + t * t * endPt[0];
+              const lon = (1 - t) * (1 - t) * startPt[1] + 2 * (1 - t) * t * ctrlLon + t * t * endPt[1];
+              points.push([lat, lon]);
+            }
+
+            // Distanza approssimata
+            const km = Math.round(dist * 111);
+
+            // Hotel associato a questa tappa
+            const hotelMatch = (this.hotels || []).find(h => {
+              if (city.toLowerCase().includes('bangkok') && h.city.toLowerCase().includes('bangkok')) return true;
+              if (city.toLowerCase().includes('chiang mai') && h.city.toLowerCase().includes('chiang mai')) return true;
+              if (city.toLowerCase().includes('khao sok') && h.name.toLowerCase().includes("art's")) return true;
+              return false;
+            });
+
+            segments.push({
+              dayNum: d,
+              date: dayObj.date || ('Giorno ' + d),
+              title: dayObj.title || ('Tappa Giorno ' + d + ' • ' + city),
+              from: lastCityName,
+              to: city,
+              mode: mode,
+              modeIcon: modeIcon,
+              transportBadge: transportBadge,
+              distance: (km > 50 ? '~' + km + ' km' : 'Giro città'),
+              hotel: hotelMatch ? hotelMatch.name : (dayObj.mainLocation || 'In programma'),
+              points: points,
+              endPt: endPt
+            });
+
+            // Disegna linea sulla mappa con colore neon
+            const lineColor = isFlight ? '#38bdf8' : (mode === 'train' ? '#fbbf24' : '#10b981');
+            const polyline = L.polyline(points, {
+              color: lineColor,
+              weight: isFlight ? 3 : 3.5,
+              opacity: 0.75,
+              dashArray: isFlight ? '6, 8' : null,
+              lineCap: 'round'
+            }).addTo(this._leafletMap);
+            this._routeLines.push(polyline);
+
+            // Pin città / tappa
+            const marker = L.circleMarker(endPt, {
+              radius: d === 1 || d === 14 ? 6 : 5,
+              fillColor: '#10b981',
+              color: '#ffffff',
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).addTo(this._leafletMap);
+            marker.bindPopup('<b>Giorno ' + d + ': ' + city + '</b><br>' + (hotelMatch ? hotelMatch.name : ''));
+            this._cityMarkers.push(marker);
+
+            lastCoord = endPt;
+            lastCityName = city;
+          }
+
+          this._mapSegments = segments;
+
+          // Crea Marker Veicolo Dinamico
+          if (!this._vehicleMarker) {
+            const vehicleHtml = `<div id="animated-vehicle-element" class="vehicle-marker-wrapper">
+              <div class="vehicle-marker-glow"></div>
+              <div class="vehicle-marker-icon">✈️</div>
+            </div>`;
+            const icon = L.divIcon({
+              className: 'custom-vehicle-icon',
+              html: vehicleHtml,
+              iconSize: [48, 48],
+              iconAnchor: [24, 24]
+            });
+            this._vehicleMarker = L.marker(segments[0].points[0], { icon: icon, zIndexOffset: 1000 }).addTo(this._leafletMap);
+          }
+        },
+
+        updateVehiclePosition(dayNum, fitBounds = false) {
+          if (!this._mapSegments || this._mapSegments.length === 0) return;
+
+          const clampedDay = Math.max(1, Math.min(14, dayNum));
+          const segIdx = Math.min(Math.floor(clampedDay - 1), this._mapSegments.length - 1);
+          const seg = this._mapSegments[segIdx];
+          const t = clampedDay - (segIdx + 1); // 0 .. 1 frazione del segmento
+
+          const pts = seg.points;
+          const ptIdx = Math.min(Math.floor(t * (pts.length - 1)), pts.length - 2);
+          const subT = (t * (pts.length - 1)) - ptIdx;
+
+          const p1 = pts[ptIdx];
+          const p2 = pts[ptIdx + 1] || p1;
+
+          // Posizione interpolata esatta
+          const curLat = p1[0] + (p2[0] - p1[0]) * subT;
+          const curLon = p1[1] + (p2[1] - p1[1]) * subT;
+          const currentPos = [curLat, curLon];
+
+          // Calcolo angolo rotazione (bearing)
+          const dLat = (p2[0] - p1[0]) * Math.PI / 180;
+          const dLon = (p2[1] - p1[1]) * Math.PI / 180;
+          const y = Math.sin(dLon) * Math.cos(p2[0] * Math.PI / 180);
+          const x = Math.cos(p1[0] * Math.PI / 180) * Math.sin(p2[0] * Math.PI / 180) - Math.sin(p1[0] * Math.PI / 180) * Math.cos(p2[0] * Math.PI / 180) * Math.cos(dLon);
+          let bearing = Math.atan2(y, x) * 180 / Math.PI;
+          bearing = (bearing + 360) % 360;
+
+          // Aggiorna marker sulla mappa
+          if (this._vehicleMarker) {
+            this._vehicleMarker.setLatLng(currentPos);
+            const el = document.getElementById('animated-vehicle-element');
+            if (el) {
+              el.style.transform = 'rotate(' + (bearing - 45) + 'deg)';
+              const iconEl = el.querySelector('.vehicle-marker-icon');
+              if (iconEl) iconEl.textContent = seg.modeIcon;
+            }
+          }
+
+          // Aggiorna card informativa in sovrimpressione
+          this.currentStageInfo = { ...seg };
+
+          // Panning della mappa
+          if (this._leafletMap) {
+            if (fitBounds) {
+              // Quando si apre per la prima volta, inquadra l'intera Thailandia o il segmento
+              if (clampedDay <= 1.2 || clampedDay >= 13.8) {
+                // Volo internazionale
+                this._leafletMap.setView(currentPos, 4);
+              } else {
+                // Inquadratura Thailandia
+                this._leafletMap.setView([13.5, 100.5], 6);
+              }
+            } else {
+              this._leafletMap.panTo(currentPos, { animate: true, duration: 0.1 });
+            }
+          }
+        },
+
+        onTimelineSliderInput() {
+          this.pausePlayback();
+          this.updateVehiclePosition(this.timelineDay, false);
+        },
+
+        togglePlay() {
+          if (this.isPlaying) {
+            this.pausePlayback();
+          } else {
+            this.startPlayback();
+          }
+        },
+
+        startPlayback() {
+          this.isPlaying = true;
+          if (this._playInterval) clearInterval(this._playInterval);
+
+          this._playInterval = setInterval(() => {
+            const step = 0.04 * this.playSpeed;
+            this.timelineDay += step;
+            if (this.timelineDay >= 14) {
+              this.timelineDay = 1;
+            }
+            this.updateVehiclePosition(this.timelineDay, false);
+          }, 40);
+        },
+
+        pausePlayback() {
+          this.isPlaying = false;
+          if (this._playInterval) {
+            clearInterval(this._playInterval);
+            this._playInterval = null;
+          }
+        },
+
+        stepMapDay(delta) {
+          this.pausePlayback();
+          let target = Math.floor(this.timelineDay) + delta;
+          if (target < 1) target = 1;
+          if (target > 14) target = 14;
+          this.timelineDay = target;
+          this.updateVehiclePosition(this.timelineDay, false);
+        },
+
+        jumpToMapDay(dayNum) {
+          this.pausePlayback();
+          this.timelineDay = dayNum;
+          this.updateVehiclePosition(this.timelineDay, true);
+        },
+
+        togglePlaySpeed() {
+          this.playSpeed = (this.playSpeed === 1) ? 2 : (this.playSpeed === 2 ? 3 : 1);
+          if (this.isPlaying) {
+            this.startPlayback();
+          }
+        },
+
+        recenterMap() {
+          if (!this._leafletMap || !this.currentStageInfo) return;
+          this.updateVehiclePosition(this.timelineDay, true);
+        },
+
         openMapChooser(title, query, address) {
           this.mapChooserModal = {
             show: true,
