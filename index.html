@@ -86,7 +86,7 @@
       margin-left: -24px;
       margin-top: -24px;
       pointer-events: none;
-      transition: transform 0.08s linear;
+      transition: transform 0.18s ease-out;
     }
     .vehicle-marker-icon {
       font-size: 28px;
@@ -5846,40 +5846,47 @@ Tel: ${h.phone || ''}`
           const currentPos = [curLat, curLon];
 
           // Calcolo angolo rotazione (bearing)
-          const dLat = (p2[0] - p1[0]) * Math.PI / 180;
           const dLon = (p2[1] - p1[1]) * Math.PI / 180;
           const y = Math.sin(dLon) * Math.cos(p2[0] * Math.PI / 180);
-          const x = Math.cos(p1[0] * Math.PI / 180) * Math.sin(p2[0] * Math.PI / 180) - Math.sin(p1[0] * Math.PI / 180) * Math.cos(p2[0] * Math.PI / 180) * Math.cos(dLon);
-          let bearing = Math.atan2(y, x) * 180 / Math.PI;
-          bearing = (bearing + 360) % 360;
+          const x = Math.cos(p1[0] * Math.PI / 180) * Math.sin(p2[0] * Math.PI / 180) -
+                    Math.sin(p1[0] * Math.PI / 180) * Math.cos(p2[0] * Math.PI / 180) * Math.cos(dLon);
+          let targetBearing = Math.atan2(y, x) * 180 / Math.PI;
+          targetBearing = (targetBearing + 360) % 360;
+
+          // Angular lerp: interpola l'angolo evitando salti bruschi (es. 350° -> 10°)
+          if (this._currentBearing === undefined) this._currentBearing = targetBearing;
+          let delta = ((targetBearing - this._currentBearing + 540) % 360) - 180;
+          this._currentBearing = (this._currentBearing + delta * 0.15 + 360) % 360;
 
           // Aggiorna marker sulla mappa
           if (this._vehicleMarker) {
             this._vehicleMarker.setLatLng(currentPos);
             const el = document.getElementById('animated-vehicle-element');
             if (el) {
-              el.style.transform = 'rotate(' + (bearing - 45) + 'deg)';
+              el.style.transform = 'rotate(' + (this._currentBearing - 45) + 'deg)';
               const iconEl = el.querySelector('.vehicle-marker-icon');
               if (iconEl) iconEl.textContent = seg.modeIcon;
             }
           }
 
-          // Aggiorna card informativa in sovrimpressione
-          this.currentStageInfo = { ...seg };
+          // Aggiorna card informativa in sovrimpressione (throttle: solo se cambia giorno intero)
+          const roundedDay = Math.floor(clampedDay);
+          if (!this._lastInfoDay || this._lastInfoDay !== roundedDay) {
+            this.currentStageInfo = { ...seg };
+            this._lastInfoDay = roundedDay;
+          }
 
           // Panning della mappa
           if (this._leafletMap) {
             if (fitBounds) {
-              // Quando si apre per la prima volta, inquadra l'intera Thailandia o il segmento
               if (clampedDay <= 1.2 || clampedDay >= 13.8) {
-                // Volo internazionale
-                this._leafletMap.setView(currentPos, 4);
+                this._leafletMap.setView(currentPos, 4, { animate: true, duration: 0.8 });
               } else {
-                // Inquadratura Thailandia
-                this._leafletMap.setView([13.5, 100.5], 6);
+                this._leafletMap.setView([13.5, 100.5], 6, { animate: true, duration: 0.8 });
               }
-            } else {
-              this._leafletMap.panTo(currentPos, { animate: true, duration: 0.1 });
+            } else if (!this.isPlaying) {
+              // Pan fluido solo durante lo scrub manuale, non durante la riproduzione
+              this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
             }
           }
         },
@@ -5899,23 +5906,34 @@ Tel: ${h.phone || ''}`
 
         startPlayback() {
           this.isPlaying = true;
-          if (this._playInterval) clearInterval(this._playInterval);
+          if (this._rafId) cancelAnimationFrame(this._rafId);
 
-          this._playInterval = setInterval(() => {
-            const step = 0.04 * this.playSpeed;
-            this.timelineDay += step;
-            if (this.timelineDay >= 14) {
-              this.timelineDay = 1;
+          // Usa requestAnimationFrame per animazione a 60fps sincronizzata al monitor
+          let lastTs = null;
+          const loop = (ts) => {
+            if (!this.isPlaying) return;
+            if (lastTs !== null) {
+              const dt = Math.min(ts - lastTs, 100); // cap a 100ms per evitare salti se tab in background
+              // 1x speed = 1 giorno ogni ~3 secondi; 2x = ogni 1.5s; 3x = ogni 1s
+              const daysPerSec = 0.33 * this.playSpeed;
+              this.timelineDay += daysPerSec * (dt / 1000);
+              if (this.timelineDay >= 14) {
+                this.timelineDay = 1;
+                this._currentBearing = undefined; // reset bearing sul loop
+              }
+              this.updateVehiclePosition(this.timelineDay, false);
             }
-            this.updateVehiclePosition(this.timelineDay, false);
-          }, 40);
+            lastTs = ts;
+            this._rafId = requestAnimationFrame(loop);
+          };
+          this._rafId = requestAnimationFrame(loop);
         },
 
         pausePlayback() {
           this.isPlaying = false;
-          if (this._playInterval) {
-            clearInterval(this._playInterval);
-            this._playInterval = null;
+          if (this._rafId) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = null;
           }
         },
 
