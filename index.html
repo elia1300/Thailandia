@@ -108,6 +108,28 @@
       50% { transform: scale(1.35); opacity: 1; }
       100% { transform: scale(0.85); opacity: 0.6; }
     }
+        /* Modal Header safe-area spacing for iPhone Dynamic Island, Notch & iOS Status Bar */
+    .modal-map-header {
+      padding-top: max(58px, calc(env(safe-area-inset-top, 0px) + 16px));
+    }
+    @media (min-width: 640px) {
+      .modal-map-header {
+        padding-top: 0.875rem !important;
+      }
+    }
+    .modal-map-bottom-controls {
+      bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+    }
+    .modal-doc-overlay {
+      padding-top: max(56px, calc(env(safe-area-inset-top, 0px) + 14px));
+      padding-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+    }
+    @media (min-width: 640px) {
+      .modal-doc-overlay {
+        padding: 1rem !important;
+      }
+    }
+
     .leaflet-container {
       background-color: #030712 !important;
       font-family: inherit;
@@ -3440,11 +3462,11 @@
        class="fixed inset-0 z-[140] bg-slate-950 flex flex-col overflow-hidden"
        x-cloak>
     
-    <!-- Top Bar -->
-    <header class="flex-shrink-0 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between z-10">
+    <!-- Top Bar (Lowered & Protected for iPhone Dynamic Island / Notch) -->
+    <header class="flex-shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-4 pb-3 flex items-center justify-between z-10 modal-map-header">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
-          <i data-lucide="compass" class="w-4 h-4"></i>
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+          <i data-lucide="compass" class="w-4.5 h-4.5"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
@@ -3459,14 +3481,16 @@
         <button type="button" 
                 @click="recenterMap()"
                 title="Centra rotta completa"
-                class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700">
+                class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 text-slate-200 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700 shadow-sm"
+                aria-label="Centra rotta completa">
           <i data-lucide="crosshair" class="w-4 h-4"></i>
         </button>
         <button type="button" 
                 @click="closeInteractiveMap()" 
                 title="Chiudi mappa"
-                class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700">
-          <i data-lucide="x" class="w-4 h-4"></i>
+                class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-rose-500/20 active:bg-rose-500/30 text-slate-200 hover:text-rose-400 active:scale-90 transition-all border border-slate-700 hover:border-rose-500/40 shadow-sm flex items-center justify-center"
+                aria-label="Chiudi mappa">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
     </header>
@@ -3506,7 +3530,7 @@
       </div>
 
       <!-- Floating Bottom Controller: Scrubber & Playback -->
-      <div class="absolute bottom-4 left-3 right-3 sm:max-w-md sm:mx-auto pointer-events-none z-[500]">
+      <div class="absolute left-3 right-3 sm:max-w-md sm:mx-auto pointer-events-none z-[500] modal-map-bottom-controls">
         <div class="glass-card rounded-2xl border border-slate-700/80 p-3 shadow-2xl bg-slate-900/95 backdrop-blur-md pointer-events-auto space-y-2.5">
           <!-- Timeline Slider -->
           <div class="space-y-1">
@@ -3583,7 +3607,7 @@
        x-transition:leave="transition ease-in duration-150"
        x-transition:leave-start="opacity-100 scale-100"
        x-transition:leave-end="opacity-0 scale-95"
-       class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md p-2 sm:p-4 flex flex-col items-center justify-center"
+       class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md px-2 sm:p-4 flex flex-col items-center justify-center modal-doc-overlay"
        x-cloak>
     
     <div class="w-full max-w-2xl h-[92vh] bg-slate-900 border border-slate-700 rounded-3xl flex flex-col overflow-hidden shadow-2xl">
