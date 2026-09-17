@@ -5885,8 +5885,16 @@ Tel: ${h.phone || ''}`
                 this._leafletMap.setView([13.5, 100.5], 6, { animate: true, duration: 0.8 });
               }
             } else if (!this.isPlaying) {
-              // Pan fluido solo durante lo scrub manuale, non durante la riproduzione
+              // Scrub manuale: pan immediato e preciso
               this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
+            } else {
+              // Riproduzione automatica: pan throttled ogni 800ms per seguire il veicolo
+              // senza causare micro-tremolii ad ogni frame
+              const now = performance.now();
+              if (!this._lastPanTs || (now - this._lastPanTs) > 800) {
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.75, easeLinearity: 0.5 });
+                this._lastPanTs = now;
+              }
             }
           }
         },
