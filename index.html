@@ -5888,11 +5888,10 @@ Tel: ${h.phone || ''}`
               // Scrub manuale: pan immediato e preciso
               this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
             } else {
-              // Riproduzione automatica: pan throttled ogni 800ms per seguire il veicolo
-              // senza causare micro-tremolii ad ogni frame
+              // Riproduzione automatica: pan throttled ogni 150ms — segue il veicolo in quasi real-time
               const now = performance.now();
-              if (!this._lastPanTs || (now - this._lastPanTs) > 800) {
-                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.75, easeLinearity: 0.5 });
+              if (!this._lastPanTs || (now - this._lastPanTs) > 150) {
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.2, easeLinearity: 0.8 });
                 this._lastPanTs = now;
               }
             }
