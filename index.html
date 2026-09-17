@@ -5655,9 +5655,11 @@ Tel: ${h.phone || ''}`
           if (!this._leafletMap) {
             this._leafletMap = L.map('trip-map-container', { 
               zoomControl: false,
+              zoomSnap: 0.25,
+              zoomDelta: 0.5,
               minZoom: 3,
               maxZoom: 16
-            }).setView([13.7563, 100.5018], 5);
+            }).setView([13.3, 100.0], 5.5);
 
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
               maxZoom: 16,
@@ -5900,22 +5902,36 @@ Tel: ${h.phone || ''}`
             this._lastInfoDay = roundedDay;
           }
 
-          // Panning della mappa
+          // Panning e Zoom dinamico della mappa
           if (this._leafletMap) {
+            const inThailand = (clampedDay > 1.3 && clampedDay < 13.7);
+            const targetZoom = inThailand ? 5.5 : 4.8;
+
             if (fitBounds) {
-              if (clampedDay <= 1.2 || clampedDay >= 13.8) {
-                this._leafletMap.setView(currentPos, 4, { animate: true, duration: 0.8 });
+              if (inThailand) {
+                this._leafletMap.setView([13.3, 100.0], 5.5, { animate: true, duration: 0.8 });
               } else {
-                this._leafletMap.setView([13.5, 100.5], 6, { animate: true, duration: 0.8 });
+                this._leafletMap.setView(currentPos, 5, { animate: true, duration: 0.8 });
               }
             } else if (!this.isPlaying) {
-              // Scrub manuale: pan immediato e preciso
-              this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
+              // Scrub manuale: aggiorna zoom se si passa tra volo internazionale e permanenza in Thailandia
+              const curZoom = this._leafletMap.getZoom();
+              if (Math.abs(curZoom - targetZoom) >= 0.8) {
+                this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.5 });
+              } else {
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
+              }
             } else {
-              // Riproduzione automatica: pan throttled ogni 150ms — segue il veicolo in quasi real-time
+              // Riproduzione automatica: pan throttled ogni 150ms — segue il veicolo a 60fps
               const now = performance.now();
               if (!this._lastPanTs || (now - this._lastPanTs) > 150) {
-                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.2, easeLinearity: 0.8 });
+                const curZoom = this._leafletMap.getZoom();
+                // Transizione di zoom fluida quando il volo atterra o riparte dalla Thailandia
+                if (Math.abs(curZoom - targetZoom) >= 0.8) {
+                  this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.8 });
+                } else {
+                  this._leafletMap.panTo(currentPos, { animate: true, duration: 0.2, easeLinearity: 0.8 });
+                }
                 this._lastPanTs = now;
               }
             }
@@ -5991,8 +6007,13 @@ Tel: ${h.phone || ''}`
         },
 
         recenterMap() {
-          if (!this._leafletMap || !this.currentStageInfo) return;
-          this.updateVehiclePosition(this.timelineDay, true);
+          if (!this._leafletMap) return;
+          const inThailand = (this.timelineDay > 1.3 && this.timelineDay < 13.7);
+          if (inThailand) {
+            this._leafletMap.setView([13.3, 100.0], 5.5, { animate: true, duration: 0.8 });
+          } else {
+            this.updateVehiclePosition(this.timelineDay, true);
+          }
         },
 
         openMapChooser(title, query, address) {
