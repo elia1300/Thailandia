@@ -2178,7 +2178,192 @@
 
     </main>
 
+    <!-- ========================================================================= -->
+    <!-- TAB 5: CASSAFORTE BIGLIETTI & DOCUMENTI OFFLINE                           -->
+    <!-- ========================================================================= -->
+    <main x-show="activeTab === 'docs'" 
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0 translate-y-2"
+          x-transition:enter-end="opacity-100 translate-y-0"
+          class="flex-1 px-4 pt-3 space-y-4"
+          x-cloak>
+
+      <!-- HERO HEADER CASSAFORTE -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 p-4 shadow-xl">
+        <div class="absolute -right-8 -top-8 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="relative z-10 flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0 shadow-lg shadow-emerald-950/40">
+              <i data-lucide="folder-archive" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="font-display font-black text-lg text-white">Biglietti & Documenti</h2>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[10px] border border-emerald-500/30" x-text="Object.keys(docsState).length + ' Salvati'"></span>
+              </div>
+              <p class="text-xs text-slate-400 leading-tight mt-0.5">Voli, voucher, polizze, parcheggi e passaporti 100% offline.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+            <span>Archivio Locale IndexedDB</span>
+          </div>
+          <button type="button" 
+                  @click="openUploadDocModal()" 
+                  class="py-2 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/50 flex items-center gap-1.5 transition-all">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Carica Documento</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- FILTRI CATEGORIE A CHIPS ORIZZONTALI (SCROLLABILI) -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
+        <button type="button" 
+                @click="docsCategoryFilter = 'all'; refreshIcons()" 
+                class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
+                :class="docsCategoryFilter === 'all' ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-950/40' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800'">
+          <span>Tutti</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono"
+                :class="docsCategoryFilter === 'all' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'"
+                x-text="getDocsCountForCategory('all')"></span>
+        </button>
+
+        <template x-for="cat in [
+          { key: 'flight', label: 'Voli & Imbarco', emoji: '✈️' },
+          { key: 'hotel', label: 'Hotel & Voucher', emoji: '🏨' },
+          { key: 'insurance', label: 'Assicurazione', emoji: '🛡️' },
+          { key: 'transport', label: 'Trasporti & Parcheggi', emoji: '🚗' },
+          { key: 'passport', label: 'Passaporti & ID', emoji: '🪪' },
+          { key: 'ticket', label: 'Escursioni & Attività', emoji: '🎟️' },
+          { key: 'other', label: 'Altro & Varie', emoji: '📄' }
+        ]" :key="cat.key">
+          <button type="button" 
+                  @click="docsCategoryFilter = cat.key; refreshIcons()" 
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
+                  :class="docsCategoryFilter === cat.key ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-950/40' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800'">
+            <span x-text="cat.emoji"></span>
+            <span x-text="cat.label"></span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono"
+                  :class="docsCategoryFilter === cat.key ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'"
+                  x-text="getDocsCountForCategory(cat.key)"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- BARRA DI RICERCA DOCUMENTI -->
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+        <input type="text" 
+               x-model="docsSearchQuery" 
+               placeholder="Cerca biglietto, polizza, hotel, viaggiatore..."
+               class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 shadow-inner">
+        <button type="button" 
+                x-show="docsSearchQuery" 
+                @click="docsSearchQuery = ''" 
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- LISTA DOCUMENTI SALVATI -->
+      <div class="space-y-3 pb-8">
+        <template x-for="doc in getFilteredDocsList()" :key="doc.id">
+          <div class="glass-card rounded-2xl border border-slate-800 hover:border-slate-700/90 p-3.5 space-y-2.5 shadow-xl transition-all">
+            <!-- Header Card Documento -->
+            <div class="flex items-start justify-between gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
+                     :class="getCategoryMeta(doc.category || doc.targetType).bg">
+                  <span class="text-base" x-text="getCategoryMeta(doc.category || doc.targetType).emoji"></span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded border"
+                          :class="getCategoryMeta(doc.category || doc.targetType).bg"
+                          x-text="getCategoryMeta(doc.category || doc.targetType).label"></span>
+                    <span x-show="doc.traveler && doc.traveler !== 'Tutto il gruppo'" 
+                          class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-amber-300 border border-amber-500/30"
+                          x-text="'👤 ' + doc.traveler"></span>
+                    <span x-show="!doc.traveler || doc.traveler === 'Tutto il gruppo'" 
+                          class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700"
+                          x-text="'👥 Gruppo'"></span>
+                  </div>
+                  <h3 class="font-display font-bold text-sm text-white truncate mt-0.5" x-text="doc.targetTitle || doc.name"></h3>
+                </div>
+              </div>
+
+              <!-- Badge Tipo File (PDF vs FOTO/SCREEN) -->
+              <span class="flex-shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-mono font-black uppercase border"
+                    :class="(doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'))) ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'"
+                    x-text="(doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'))) ? 'PDF' : 'FOTO / SCREEN'"></span>
+            </div>
+
+            <!-- Dettaglio Nome File Originale & Peso -->
+            <div class="flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/60 rounded-xl px-2.5 py-1.5 border border-slate-800/60">
+              <span class="truncate pr-2 font-mono text-[10px]" x-text="doc.name"></span>
+              <span class="font-mono text-[10px] text-slate-300 flex-shrink-0" x-text="formatFileSize(doc.size)"></span>
+            </div>
+
+            <!-- Bottoni Azione -->
+            <div class="flex items-center justify-between pt-1 gap-2">
+              <button type="button" 
+                      @click="openDocViewer(doc.id)" 
+                      class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Visualizza</span>
+              </button>
+
+              <button type="button" 
+                      @click="downloadDoc(doc)" 
+                      title="Scarica file"
+                      class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700 active:scale-95 transition-all">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Scarica</span>
+              </button>
+
+              <button type="button" 
+                      @click="deleteDocFor(doc.id)" 
+                      title="Elimina documento"
+                      class="py-2 px-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 active:scale-95 transition-all flex items-center justify-center">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- EMPTY STATE QUANDO NON CI SONO DOCUMENTI -->
+        <div x-show="getFilteredDocsList().length === 0" 
+             class="p-8 text-center bg-slate-900/60 border border-slate-800/80 rounded-3xl space-y-3">
+          <div class="w-14 h-14 rounded-2xl bg-slate-800/80 text-slate-400 flex items-center justify-center mx-auto border border-slate-700/60">
+            <i data-lucide="folder-open" class="w-7 h-7 text-emerald-400/60"></i>
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-display font-bold text-white text-sm">Nessun documento trovato</h4>
+            <p class="text-xs text-slate-400 max-w-xs mx-auto">
+              <span x-show="docsCategoryFilter !== 'all'">Nessun file caricato per questa categoria.</span>
+              <span x-show="docsCategoryFilter === 'all'">Non hai ancora caricato biglietti o voucher. Carica subito carte d'imbarco, polizze o screenshot!</span>
+            </p>
+          </div>
+          <button type="button" 
+                  @click="openUploadDocModal(docsCategoryFilter !== 'all' ? docsCategoryFilter : 'flight')" 
+                  class="py-2 px-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs inline-flex items-center gap-1.5 active:scale-95 transition-all">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Carica Documento Ora</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
   </div>
+
+  
+
+  
 
   <!-- ========================================================================= -->
   <!-- MODAL: MOSTRA AL TASSISTA (IN CARATTERI THAI GIGANTI)                      -->
@@ -3598,6 +3783,148 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL: CARICA DOCUMENTO / SCREENSHOT CON DROPDOWN CATEGORIE               -->
+  <!-- ========================================================================= -->
+  <div x-show="uploadDocModal.show" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="fixed inset-0 z-[160] bg-black/90 backdrop-blur-md p-4 flex flex-col items-center justify-center modal-doc-overlay overflow-y-auto"
+       x-cloak>
+    
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl relative my-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-black text-sm text-white">Carica Documento</h3>
+            <p class="text-[10px] text-slate-400">Salvataggio offline sicuro su iPhone</p>
+          </div>
+        </div>
+        <button type="button" 
+                @click="closeUploadDocModal()" 
+                class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center active:scale-90 transition-all">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <div class="space-y-3.5 text-left">
+        
+        <!-- DROPDOWN CATEGORIA (Richiesto esplicitamente) -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-300">
+            Categoria Documento <span class="text-emerald-400">*</span>
+          </label>
+          <div class="relative">
+            <select x-model="uploadDocModal.category" 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white appearance-none focus:outline-none focus:border-emerald-400 pr-8 cursor-pointer font-medium">
+              <option value="flight">✈️ Voli & Carte d'Imbarco</option>
+              <option value="hotel">🏨 Hotel & Voucher Alloggi</option>
+              <option value="insurance">🛡️ Assicurazione & Salute</option>
+              <option value="transport">🚗 Trasporti, Parcheggi & Noleggi</option>
+              <option value="passport">🪪 Passaporti & Documenti Personali</option>
+              <option value="ticket">🎟️ Escursioni & Biglietti Attività</option>
+              <option value="other">📄 Altro / Varie</option>
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- Titolo / Nome Descrittivo -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-300">
+            Titolo Documento <span class="text-emerald-400">*</span>
+          </label>
+          <input type="text" 
+                 x-model="uploadDocModal.title" 
+                 placeholder="Es. Carta imbarco FCO-BKK, Polizza Steff..." 
+                 class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+        </div>
+
+        <!-- DROPDOWN VIAGGIATORE -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-300">
+            Riferito a
+          </label>
+          <div class="relative">
+            <select x-model="uploadDocModal.traveler" 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white appearance-none focus:outline-none focus:border-emerald-400 pr-8 cursor-pointer font-medium">
+              <option value="Tutto il gruppo">👥 Tutto il gruppo</option>
+              <template x-for="t in travelers" :key="t.name">
+                <option :value="t.name" x-text="'👤 ' + t.name"></option>
+              </template>
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- SELEZIONE FILE (PDF O IMMAGINE/SCREENSHOT) -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-300">
+            File o Screenshot <span class="text-emerald-400">*</span>
+          </label>
+          
+          <label class="block w-full border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all"
+                 :class="uploadDocModal.fileName ? 'border-emerald-500/60 bg-emerald-950/20' : 'border-slate-700 hover:border-slate-600 bg-slate-950/60'">
+            <input type="file" 
+                   accept="application/pdf,image/*" 
+                   @change="handleUploadModalFileSelect($event)" 
+                   class="hidden">
+            
+            <div x-show="!uploadDocModal.fileName" class="space-y-1.5">
+              <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center mx-auto">
+                <i data-lucide="file-up" class="w-5 h-5 text-emerald-400"></i>
+              </div>
+              <p class="text-xs font-bold text-white">Tocca per scegliere file o foto</p>
+              <p class="text-[10px] text-slate-400">PDF, JPG, PNG o screenshot da iPhone</p>
+            </div>
+
+            <div x-show="uploadDocModal.fileName" class="flex items-center justify-between text-left gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                     :class="uploadDocModal.fileType === 'application/pdf' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'">
+                  <i :data-lucide="uploadDocModal.fileType === 'application/pdf' ? 'file-text' : 'image'" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-white truncate" x-text="uploadDocModal.fileName"></p>
+                  <p class="text-[10px] text-slate-400 font-mono" x-text="formatFileSize(uploadDocModal.fileSize)"></p>
+                </div>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-bold flex-shrink-0">Cambia</span>
+            </div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2 pt-1">
+        <button type="button" 
+                @click="saveUploadedDocument()" 
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Salva Documento</span>
+        </button>
+
+        <button type="button" 
+                @click="closeUploadDocModal()" 
+                class="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold">
+          Annulla
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- MODAL: VIEWER BIGLIETTI & VOUCHER PDF OFFLINE                             -->
   <!-- ========================================================================= -->
   <div x-show="activeViewerDoc" 
@@ -3607,7 +3934,7 @@
        x-transition:leave="transition ease-in duration-150"
        x-transition:leave-start="opacity-100 scale-100"
        x-transition:leave-end="opacity-0 scale-95"
-       class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md px-2 sm:p-4 flex flex-col items-center justify-center modal-doc-overlay"
+       class="fixed inset-0 z-[170] bg-black/95 backdrop-blur-md px-2 sm:p-4 flex flex-col items-center justify-center modal-doc-overlay"
        x-cloak>
     
     <div class="w-full max-w-2xl h-[92vh] bg-slate-900 border border-slate-700 rounded-3xl flex flex-col overflow-hidden shadow-2xl">
@@ -3718,6 +4045,22 @@
         <span x-show="activeTab === 'checklist'" class="w-1 h-1 rounded-full bg-emerald-400 absolute -bottom-0.5"></span>
       </button>
 
+      <!-- Tab 5: Documenti & Biglietti -->
+      <button type="button"
+              @click="activeTab = 'docs'; refreshIcons()"
+              class="flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all relative group cursor-pointer"
+              style="touch-action: manipulation;"
+              :class="activeTab === 'docs' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'">
+        <div class="relative">
+          <i data-lucide="folder-archive" class="w-5 h-5 transition-transform group-active:scale-90" :class="activeTab === 'docs' ? 'stroke-[2.5]' : ''"></i>
+          <span x-show="Object.keys(docsState).length > 0"
+                class="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] flex items-center justify-center leading-none shadow-sm"
+                x-text="Object.keys(docsState).length"></span>
+        </div>
+        <span class="text-[10px] font-bold tracking-tight">Documenti</span>
+        <span x-show="activeTab === 'docs'" class="w-1 h-1 rounded-full bg-emerald-400 absolute -bottom-0.5"></span>
+      </button>
+
     </div>
   </nav>
 
@@ -3818,6 +4161,18 @@
         // Documenti & Voucher PDF
         docsState: {},
         activeViewerDoc: null,
+        docsCategoryFilter: 'all',
+        docsSearchQuery: '',
+        uploadDocModal: {
+          show: false,
+          title: '',
+          category: 'flight',
+          traveler: 'Tutto il gruppo',
+          fileName: '',
+          fileSize: 0,
+          fileType: '',
+          dataUrl: null
+        },
 
         // Mappa Dinamica & Timeline del Viaggio
         mapModal: { show: false },
@@ -5607,7 +5962,8 @@ Tel: ${h.phone || ''}`
             this.showToast('Documento non trovato');
             return;
           }
-          this.activeViewerDoc = doc;
+          const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
+          this.activeViewerDoc = { ...doc, isPdf };
           this.refreshIcons();
         },
 
@@ -5630,6 +5986,117 @@ Tel: ${h.phone || ''}`
           if (bytes < 1024) return bytes + ' B';
           if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
           return (bytes / 1048576).toFixed(1) + ' MB';
+        },
+
+        openUploadDocModal(defaultCategory, defaultTitle) {
+          this.uploadDocModal = {
+            show: true,
+            title: defaultTitle || '',
+            category: defaultCategory || 'flight',
+            traveler: 'Tutto il gruppo',
+            fileName: '',
+            fileSize: 0,
+            fileType: '',
+            dataUrl: null
+          };
+          this.refreshIcons();
+        },
+
+        closeUploadDocModal() {
+          this.uploadDocModal.show = false;
+        },
+
+        handleUploadModalFileSelect(event) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+          this.uploadDocModal.fileName = file.name;
+          this.uploadDocModal.fileSize = file.size;
+          this.uploadDocModal.fileType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          if (!this.uploadDocModal.title) {
+            this.uploadDocModal.title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.uploadDocModal.dataUrl = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
+
+        async saveUploadedDocument() {
+          if (!this.uploadDocModal.dataUrl) {
+            this.showToast('Seleziona prima un file (PDF o immagine)!');
+            return;
+          }
+          const title = (this.uploadDocModal.title || '').trim() || this.uploadDocModal.fileName || 'Documento';
+          const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          const doc = {
+            id: id,
+            name: this.uploadDocModal.fileName,
+            type: this.uploadDocModal.fileType,
+            size: this.uploadDocModal.fileSize,
+            targetType: 'doc',
+            category: this.uploadDocModal.category || 'other',
+            targetTitle: title,
+            traveler: this.uploadDocModal.traveler || 'Tutto il gruppo',
+            createdAt: Date.now(),
+            dataUrl: this.uploadDocModal.dataUrl
+          };
+
+          await pwaDocsDB.save(id, doc);
+          this.docsState[id] = doc;
+          this.showToast('"' + title + '" salvato nei Documenti!');
+          this.closeUploadDocModal();
+          this.refreshIcons();
+        },
+
+        downloadDoc(doc) {
+          if (!doc || !doc.dataUrl) return;
+          const a = document.createElement('a');
+          a.href = doc.dataUrl;
+          a.download = doc.name || 'documento';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        },
+
+        getFilteredDocsList() {
+          const list = Object.values(this.docsState || {});
+          return list.filter(d => {
+            if (this.docsCategoryFilter !== 'all') {
+              const cat = d.category || (d.targetType === 'hotel' ? 'hotel' : (d.targetType === 'transport' ? 'transport' : 'other'));
+              if (cat !== this.docsCategoryFilter) return false;
+            }
+            if (this.docsSearchQuery && this.docsSearchQuery.trim()) {
+              const q = this.docsSearchQuery.toLowerCase().trim();
+              const title = (d.targetTitle || '').toLowerCase();
+              const name = (d.name || '').toLowerCase();
+              const traveler = (d.traveler || '').toLowerCase();
+              return title.includes(q) || name.includes(q) || traveler.includes(q);
+            }
+            return true;
+          }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        },
+
+        getDocsCountForCategory(cat) {
+          const list = Object.values(this.docsState || {});
+          if (cat === 'all') return list.length;
+          return list.filter(d => {
+            const c = d.category || (d.targetType === 'hotel' ? 'hotel' : (d.targetType === 'transport' ? 'transport' : 'other'));
+            return c === cat;
+          }).length;
+        },
+
+        getCategoryMeta(cat) {
+          const meta = {
+            flight: { label: "Voli & Imbarco", emoji: "✈️", color: "sky", bg: "bg-sky-500/20 text-sky-400 border-sky-500/30" },
+            hotel: { label: "Hotel & Voucher", emoji: "🏨", color: "emerald", bg: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+            insurance: { label: "Assicurazione", emoji: "🛡️", color: "amber", bg: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+            transport: { label: "Trasporti & Parcheggi", emoji: "🚗", color: "indigo", bg: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" },
+            passport: { label: "Passaporti & ID", emoji: "🪪", color: "rose", bg: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
+            ticket: { label: "Escursioni & Attività", emoji: "🎟️", color: "teal", bg: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
+            other: { label: "Altro & Varie", emoji: "📄", color: "slate", bg: "bg-slate-500/20 text-slate-400 border-slate-500/30" }
+          };
+          return meta[cat] || meta.other;
         },
 
         // ==========================================
