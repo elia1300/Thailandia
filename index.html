@@ -72,11 +72,89 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Alpine.js Plugins (Collapse) & Core CDN -->
+  <!-- SortableJS CDN (Drag & Drop Card) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 
   <style>
     /* Map Vehicle Marker & Leaflet Dark Mode Customization */
+    
+    /* Permanent Visited City Label & Pin on Map */
+    .city-label-icon-wrapper {
+      background: transparent !important;
+      border: none !important;
+    }
+    
+    /* Drag and Drop Card Styles (SortableJS) */
+    .sortable-card-ghost {
+      opacity: 0.35 !important;
+      border: 2px dashed rgba(16, 185, 129, 0.8) !important;
+      background: rgba(16, 185, 129, 0.08) !important;
+      transform: scale(0.98);
+    }
+    .sortable-card-chosen {
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 24px rgba(16, 185, 129, 0.35) !important;
+      border-color: rgba(52, 211, 153, 0.85) !important;
+      transform: scale(1.02);
+      z-index: 999 !important;
+    }
+    .sortable-card-drag {
+      opacity: 1 !important;
+      cursor: grabbing !important;
+    }
+    .hotel-drag-handle, .transport-drag-handle {
+      touch-action: none !important;
+      -webkit-touch-callout: none !important;
+      user-select: none !important;
+    }
+
+    .city-map-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      border-radius: 9999px;
+      padding: 3px 9px 3px 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(16, 185, 129, 0.25);
+      white-space: nowrap;
+      pointer-events: auto;
+      backdrop-filter: blur(6px);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      user-select: none;
+      transform: translate(-50%, -50%);
+    }
+    .city-map-badge:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      border-color: rgba(52, 211, 153, 0.9);
+    }
+    .city-map-badge .city-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      flex-shrink: 0;
+    }
+    .city-map-badge .city-name {
+      color: #f8fafc;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      font-family: inherit;
+      line-height: 1.2;
+    }
+    .city-map-badge.hub-rome {
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(56, 189, 248, 0.35);
+    }
+    .city-map-badge.hub-rome .city-dot {
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
     .vehicle-marker-wrapper {
       display: flex;
       align-items: center;
@@ -687,13 +765,13 @@
 
       <!-- Segmented Control Switcher -->
       <div class="flex p-1 rounded-xl bg-slate-900 border border-slate-800">
-        <button @click="logisticsSubTab = 'hotels'" 
+        <button @click="logisticsSubTab = 'hotels'; $nextTick(() => { initSortable(); refreshIcons(); })" 
                 :class="logisticsSubTab === 'hotels' ? 'bg-slate-800 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
                 class="flex-1 py-1.5 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5">
           <i data-lucide="hotel" class="w-3.5 h-3.5"></i>
           <span>Hotel & Alloggi (<span x-text="hotels.length"></span>)</span>
         </button>
-        <button @click="logisticsSubTab = 'transports'" 
+        <button @click="logisticsSubTab = 'transports'; $nextTick(() => { initSortable(); refreshIcons(); })" 
                 :class="logisticsSubTab === 'transports' ? 'bg-slate-800 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
                 class="flex-1 py-1.5 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5">
           <i data-lucide="plane" class="w-3.5 h-3.5"></i>
@@ -730,27 +808,37 @@
             </button>
           </div>
         </template>
-        <template x-for="hotel in hotels" :key="hotel.id">
-          <div class="glass-card rounded-2xl border border-slate-800/90 overflow-hidden shadow-lg p-4 space-y-3.5">
-            
-            <!-- Top Hotel: Nome, Città, Notti -->
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
-                        :class="getCityBadgeStyle(hotel.city)"
-                        x-text="hotel.city"></span>
-                  <span class="text-xs text-slate-400" x-text="hotel.dates"></span>
-                </div>
-                <h3 class="font-display font-bold text-base text-white leading-tight" x-text="hotel.name"></h3>
-              </div>
-              <div class="text-right">
-                <span class="text-[11px] font-bold text-emerald-400 block" x-text="hotel.nights + ' Notti'"></span>
-                <span class="text-[10px] text-slate-400">4 Ospiti (2 Camere)</span>
-              </div>
-            </div>
+        <div id="hotels-sortable-list" class="space-y-4">
+          <template x-for="(hotel, index) in hotels" :key="hotel.id">
+            <div class="glass-card rounded-2xl border border-slate-800/90 overflow-hidden shadow-lg p-4 space-y-3.5 hotel-card-item">
+              
+              <!-- Top Hotel: 6 Puntini Drag Handle, Nome, Città, Notti -->
+              <div class="flex items-start justify-between gap-2.5">
+                <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                  <!-- Tasto 6 Puntini per Trascinare (Drag & Drop) -->
+                  <div class="hotel-drag-handle touch-none flex items-center justify-center w-8 h-8 rounded-xl bg-slate-900/90 border border-slate-800/90 text-slate-400 hover:text-emerald-400 active:text-emerald-300 hover:border-emerald-500/40 active:bg-emerald-500/20 active:scale-95 cursor-grab active:cursor-grabbing transition-all flex-shrink-0 shadow-sm mt-0.5"
+                       title="Tieni premuto e trascina su/giù per riordinare">
+                    <i data-lucide="grip-vertical" class="w-4.5 h-4.5"></i>
+                  </div>
 
-            <!-- Box Check-in / Check-out & Prenotazione -->
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                            :class="getCityBadgeStyle(hotel.city)"
+                            x-text="hotel.city"></span>
+                      <span class="text-xs text-slate-400" x-text="hotel.dates"></span>
+                    </div>
+                    <h3 class="font-display font-bold text-base text-white leading-tight" x-text="hotel.name"></h3>
+                  </div>
+                </div>
+
+                <div class="text-right flex-shrink-0">
+                  <span class="text-[11px] font-bold text-emerald-400 block" x-text="hotel.nights + ' Notti'"></span>
+                  <span class="text-[10px] text-slate-400">4 Ospiti (2 Camere)</span>
+                </div>
+              </div>
+
+              <!-- Box Check-in / Check-out & Prenotazione -->
             <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
               <div>
                 <span class="text-[10px] text-slate-500 block uppercase font-bold">Check-in / Out</span>
@@ -851,6 +939,7 @@
           </div>
         </template>
       </div>
+      </div>
 
       <!-- SOTTO-SEZIONE: VOLI & TRAGHETTI -->
       <div x-show="logisticsSubTab === 'transports'" class="space-y-3.5">
@@ -883,12 +972,19 @@
           </div>
         </template>
 
-        <template x-for="item in transports" :key="item.id">
-          <div class="glass-card rounded-2xl border border-slate-800/90 p-3.5 sm:p-4 space-y-3 shadow-lg overflow-hidden w-full">
+        <div id="transports-sortable-list" class="space-y-3.5">
+        <template x-for="(item, index) in transports" :key="item.id">
+          <div class="glass-card rounded-2xl border border-slate-800/90 p-3.5 sm:p-4 space-y-3 shadow-lg overflow-hidden w-full transport-card-item">
             
-            <!-- Header Tratta (anti-overflow) -->
-            <div class="flex items-start justify-between gap-2 min-w-0">
-              <div class="flex items-start gap-2.5 min-w-0 flex-1">
+            <!-- Header Tratta & Drag Handle (6 puntini) -->
+            <div class="flex items-start justify-between gap-2.5 min-w-0">
+              <div class="flex items-start gap-2 min-w-0 flex-1">
+                <!-- Tasto 6 Puntini per Trascinare (Drag & Drop) -->
+                <div class="transport-drag-handle touch-none flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900/90 border border-slate-800/90 text-slate-400 hover:text-emerald-400 active:text-emerald-300 hover:border-emerald-500/40 active:bg-emerald-500/20 active:scale-95 cursor-grab active:cursor-grabbing transition-all flex-shrink-0 mt-0.5 shadow-sm"
+                     title="Tieni premuto e trascina su/giù per riordinare">
+                  <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+                </div>
+
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
                      :class="getTransportBadgeClass(item.type)">
                   <i :data-lucide="getTransportIcon(item.type)" class="w-4 h-4"></i>
@@ -1042,6 +1138,7 @@
 
           </div>
         </template>
+      </div>
       </div>
 
     </main>
@@ -3710,7 +3807,7 @@
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <span class="px-2 py-0.5 rounded-lg bg-emerald-500 text-slate-950 font-black font-mono text-[10px] uppercase shadow-sm">
-                Day <span x-text="Math.round(timelineDay)"></span> / 14
+                Day <span x-text="Math.min(14, Math.floor(timelineDay))"></span> / 14
               </span>
               <span class="text-xs font-bold text-white truncate" x-text="currentStageInfo ? currentStageInfo.city : 'In Viaggio'"></span>
             </div>
@@ -3740,14 +3837,17 @@
           <!-- Timeline Slider -->
           <div class="space-y-1">
             <div class="flex items-center justify-between text-[10px] font-mono font-bold text-slate-400">
-              <span>25 DIC (DAY 1)</span>
-              <span class="text-emerald-400 font-black">GIORNO <span x-text="Math.round(timelineDay)"></span></span>
-              <span>08 GEN (DAY 14)</span>
+              <span>25 DIC (ROMA)</span>
+              <span class="text-emerald-400 font-black">
+                <span x-show="timelineDay < 14.95">GIORNO <span x-text="Math.min(14, Math.floor(timelineDay))"></span></span>
+                <span x-show="timelineDay >= 14.95" class="text-amber-400">ARRIVO A ROMA 🇮🇹</span>
+              </span>
+              <span>08 GEN (ROMA)</span>
             </div>
             <input type="range" 
                    min="1" 
-                   max="14" 
-                   step="0.05" 
+                   max="15" 
+                   step="0.02" 
                    x-model.number="timelineDay" 
                    @input="onTimelineSliderInput()" 
                    class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none">
@@ -4030,7 +4130,7 @@
 
       <!-- Tab 2: Logistica -->
       <button type="button"
-              @click="activeTab = 'logistics'; refreshIcons()" 
+              @click="activeTab = 'logistics'; refreshIcons(); $nextTick(() => { initSortable(); })" 
               class="flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all relative group cursor-pointer"
               style="touch-action: manipulation;"
               :class="activeTab === 'logistics' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'">
@@ -4725,6 +4825,7 @@
           this.initDocs();
           // Allinea subito in background con Google Firebase all'avvio
           this.downloadFromCloud(true);
+          setTimeout(() => { this.initSortable(); }, 350);
         },
 
         get currentRegion() {
@@ -5559,6 +5660,134 @@
         },
 
         // ==========================================
+        // ORDINAMENTO CARD HOTEL & TRASPORTI
+        // ==========================================
+        
+        // ==========================================
+        // DRAG & DROP CARD CON PUNTINI (SORTABLEJS)
+        // ==========================================
+        initSortable() {
+          if (typeof Sortable === 'undefined') return;
+
+          // 1. Alloggi / Hotels Sortable
+          const hotelsEl = document.getElementById('hotels-sortable-list');
+          if (hotelsEl && !hotelsEl._sortableInstance) {
+            hotelsEl._sortableInstance = new Sortable(hotelsEl, {
+              handle: '.hotel-drag-handle',
+              draggable: '.hotel-card-item',
+              animation: 250,
+              touchStartThreshold: 3,
+              ghostClass: 'sortable-card-ghost',
+              chosenClass: 'sortable-card-chosen',
+              dragClass: 'sortable-card-drag',
+              onEnd: (evt) => {
+                const { oldIndex, newIndex } = evt;
+                if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return;
+
+                // Revert Sortable DOM mutation before updating Alpine state
+                const parent = evt.from;
+                const itemEl = evt.item;
+                parent.removeChild(itemEl);
+                if (parent.children[oldIndex]) {
+                  parent.insertBefore(itemEl, parent.children[oldIndex]);
+                } else {
+                  parent.appendChild(itemEl);
+                }
+
+                // Update Alpine data model
+                const moved = this.hotels.splice(oldIndex, 1)[0];
+                this.hotels.splice(newIndex, 0, moved);
+                this.saveHotels();
+                this.uploadToCloud(true);
+                this.showToast('Alloggio "' + moved.name + '" riordinato!');
+                this.refreshIcons();
+              }
+            });
+          }
+
+          // 2. Voli / Trasporti Sortable
+          const transportsEl = document.getElementById('transports-sortable-list');
+          if (transportsEl && !transportsEl._sortableInstance) {
+            transportsEl._sortableInstance = new Sortable(transportsEl, {
+              handle: '.transport-drag-handle',
+              draggable: '.transport-card-item',
+              animation: 250,
+              touchStartThreshold: 3,
+              ghostClass: 'sortable-card-ghost',
+              chosenClass: 'sortable-card-chosen',
+              dragClass: 'sortable-card-drag',
+              onEnd: (evt) => {
+                const { oldIndex, newIndex } = evt;
+                if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return;
+
+                // Revert Sortable DOM mutation before updating Alpine state
+                const parent = evt.from;
+                const itemEl = evt.item;
+                parent.removeChild(itemEl);
+                if (parent.children[oldIndex]) {
+                  parent.insertBefore(itemEl, parent.children[oldIndex]);
+                } else {
+                  parent.appendChild(itemEl);
+                }
+
+                // Update Alpine data model
+                const moved = this.transports.splice(oldIndex, 1)[0];
+                this.transports.splice(newIndex, 0, moved);
+                this.saveTransports();
+                this.uploadToCloud(true);
+                this.showToast('Tratta "' + moved.carrier + '" riordinata!');
+                this.refreshIcons();
+              }
+            });
+          }
+        },
+
+        moveHotelUp(index) {
+          if (index <= 0 || index >= this.hotels.length) return;
+          const temp = this.hotels[index];
+          this.hotels.splice(index, 1);
+          this.hotels.splice(index - 1, 0, temp);
+          this.saveHotels();
+          this.uploadToCloud(true);
+          this.showToast('Alloggio "' + temp.name + '" spostato su');
+          this.refreshIcons();
+        },
+
+        moveHotelDown(index) {
+          if (index < 0 || index >= this.hotels.length - 1) return;
+          const temp = this.hotels[index];
+          this.hotels.splice(index, 1);
+          this.hotels.splice(index + 1, 0, temp);
+          this.saveHotels();
+          this.uploadToCloud(true);
+          this.showToast('Alloggio "' + temp.name + '" spostato giù');
+          this.refreshIcons();
+        },
+
+        moveTransportUp(index) {
+          if (index <= 0 || index >= this.transports.length) return;
+          const temp = this.transports[index];
+          this.transports.splice(index, 1);
+          this.transports.splice(index - 1, 0, temp);
+          this.saveTransports();
+          this.uploadToCloud(true);
+          this.showToast('Tratta "' + temp.carrier + '" spostata su');
+          this.refreshIcons();
+        },
+
+        moveTransportDown(index) {
+          if (index < 0 || index >= this.transports.length - 1) return;
+          const temp = this.transports[index];
+          this.transports.splice(index, 1);
+          this.transports.splice(index + 1, 0, temp);
+          this.saveTransports();
+          this.uploadToCloud(true);
+          this.showToast('Tratta "' + temp.carrier + '" spostata giù');
+          this.refreshIcons();
+        },
+
+
+        // ==========================================
         // GESTIONE TRASPORTI & VOLI (CRUD COMPLETO)
         // ==========================================
         loadTransports() {
@@ -6270,7 +6499,7 @@ Tel: ${h.phone || ''}`
           }
         },
 
-        // ==========================================
+                // ==========================================
         // MAPPA INTERATTIVA DINAMICA & TIMELINE
         // ==========================================
         openInteractiveMap() {
@@ -6297,7 +6526,7 @@ Tel: ${h.phone || ''}`
               zoomDelta: 0.5,
               minZoom: 3,
               maxZoom: 16
-            }).setView([13.3, 100.0], 5.5);
+            }).setView([13.75, 100.5], 7.2);
 
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
               maxZoom: 16,
@@ -6322,14 +6551,15 @@ Tel: ${h.phone || ''}`
           this._routeLines = [];
           this._cityMarkers = [];
 
-          // Coordinate Geografiche di riferimento (Dizionario)
+          // Coordinate Geografiche di riferimento (Città e Hub)
           const COORDS = {
-            'roma': [41.9028, 12.4964],
+            'roma': [41.8003, 12.2389],
             'fco': [41.8003, 12.2389],
             'bangkok': [13.7563, 100.5018],
             'bkk': [13.6900, 100.7501],
             'chiang mai': [18.7883, 98.9853],
             'cnx': [18.7669, 98.9626],
+            'chiang rai': [19.9105, 99.8406],
             'surat thani': [9.1382, 99.3215],
             'urt': [9.1326, 99.1356],
             'khao sok': [8.9133, 98.5306],
@@ -6337,143 +6567,210 @@ Tel: ${h.phone || ''}`
             'railay': [8.0125, 98.8375],
             'phi phi': [7.7407, 98.7784],
             'phuket': [7.8804, 98.3923],
+            'hkt': [8.1132, 98.3169],
             'koh samui': [9.5120, 100.0136],
             'samui': [9.5120, 100.0136],
             'delhi': [28.6139, 77.2090]
           };
 
-          const getCoord = (str) => {
+          // Helper per archi curvi Bezier
+          const createBezierArc = (start, end, numPts = 30, arcHeight = 0.12) => {
+            const midLat = (start[0] + end[0]) / 2;
+            const midLon = (start[1] + end[1]) / 2;
+            const dist = Math.hypot(end[0] - start[0], end[1] - start[1]);
+            const ctrlLat = midLat + dist * arcHeight;
+            const ctrlLon = midLon;
+            const pts = [];
+            for (let p = 0; p <= numPts; p++) {
+              const t = p / numPts;
+              const lat = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * ctrlLat + t * t * end[0];
+              const lon = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * ctrlLon + t * t * end[1];
+              pts.push([lat, lon]);
+            }
+            return pts;
+          };
+
+          // Helper estrazione coordinate città
+          const parseCityCoord = (str) => {
             if (!str) return COORDS['bangkok'];
             const s = str.toLowerCase();
-            for (const k in COORDS) {
-              if (s.includes(k)) return COORDS[k];
-            }
+            if (s.includes('roma') || s.includes('fco')) return COORDS['fco'];
+            if (s.includes('chiang rai')) return COORDS['chiang rai'];
+            if (s.includes('chiang mai') || s.includes('cnx')) return COORDS['chiang mai'];
+            if (s.includes('khao sok') || s.includes('cheow')) return COORDS['khao sok'];
+            if (s.includes('krabi') || s.includes('railay')) return COORDS['krabi'];
+            if (s.includes('phuket') || s.includes('hkt')) return COORDS['phuket'];
+            if (s.includes('samui')) return COORDS['koh samui'];
+            if (s.includes('surat')) return COORDS['surat thani'];
+            if (s.includes('bangkok') || s.includes('bkk')) return COORDS['bangkok'];
             return COORDS['bangkok'];
           };
 
-          // Genera i 14 segmenti leggendo dinamicamente itinerary, transports e hotels
+          // 1. PIN PERMANENTI CON NOMI DELLE CITTÀ VISITATE
+          const VISITED_CITIES = [
+            { name: 'Roma FCO', coord: COORDS['fco'], isRome: true, note: 'Partenza (25 Dic) & Rientro (08 Gen)' },
+            { name: 'Bangkok', coord: COORDS['bangkok'], isRome: false, note: 'Giorni 1–3 e 13 • Capitale' },
+            { name: 'Chiang Mai', coord: COORDS['chiang mai'], isRome: false, note: 'Giorni 4–6 • Templi & Elefanti' },
+            { name: 'Chiang Rai', coord: COORDS['chiang rai'], isRome: false, note: 'Giorno 5 • Tempio Bianco & Blu' },
+            { name: 'Khao Sok', coord: COORDS['khao sok'], isRome: false, note: 'Giorni 6–8 • Giungla & Lago Cheow Lan' },
+            { name: 'Krabi / Railay', coord: COORDS['krabi'], isRome: false, note: 'Giorni 8–11 • Isole & Falesie' },
+            { name: 'Phuket', coord: COORDS['phuket'], isRome: false, note: 'Giorni 11–13 • Spiagge & Mare' }
+          ];
+
+          VISITED_CITIES.forEach(c => {
+            const icon = L.divIcon({
+              className: 'city-label-icon-wrapper',
+              html: `<div class="city-map-badge ${c.isRome ? 'hub-rome' : ''}" title="${c.note}">
+                       <span class="city-dot"></span>
+                       <span class="city-name">${c.name}</span>
+                     </div>`,
+              iconSize: [0, 0],
+              iconAnchor: [0, 0]
+            });
+            const m = L.marker(c.coord, { icon: icon, zIndexOffset: 300 }).addTo(this._leafletMap);
+            m.bindPopup(`<div style="font-family: inherit; padding: 4px;">
+              <b style="color: #10b981; font-size: 13px;">${c.name}</b><br>
+              <span style="color: #94a3b8; font-size: 11px;">${c.note}</span>
+            </div>`);
+            this._cityMarkers.push(m);
+          });
+
+          // 2. COSTRUZIONE DEI 14 SEGMENTI GIORNALIERI
           const segments = [];
-          let lastCoord = COORDS['fco'];
-          let lastCityName = 'Roma FCO';
+          let currentCoord = COORDS['fco'];
+          let currentCityName = 'Roma FCO';
 
           for (let d = 1; d <= 14; d++) {
             const dayObj = (this.itinerary || []).find(i => i.dayNum === d) || {};
-            const city = dayObj.city || (d <= 3 ? 'Bangkok' : (d <= 5 ? 'Chiang Mai' : (d <= 7 ? 'Khao Sok' : (d === 14 ? 'Roma' : 'Isole Sud'))));
-            
-            // Cerca se esiste un trasporto abbinato a questa data/giorno
-            const matchingTransport = (this.transports || []).find(t => {
-              if (d === 1 && (t.depCode === 'FCO' || t.arrCode === 'BKK')) return true;
-              if (d === 6 && (t.depCode === 'CNX' || t.arrCode === 'URT')) return true;
-              if (d === 14 && (t.depCode === 'BKK' || t.arrCode === 'FCO')) return true;
-              return false;
-            });
+            const rawCity = dayObj.city || '';
 
+            let startPt = currentCoord;
+            let endPt = currentCoord;
+            let fromCity = currentCityName;
+            let toCity = rawCity;
             let mode = 'local';
             let modeIcon = '🛵';
             let transportBadge = 'In Loco';
-            let targetCoord = getCoord(city);
+            let points = [];
+            let distanceLabel = 'In programma';
 
-            if (matchingTransport) {
-              mode = matchingTransport.type || 'flight';
-              modeIcon = mode === 'flight' ? '✈️' : (mode === 'train' ? '🚆' : '🚤');
-              transportBadge = matchingTransport.flightNumber || matchingTransport.carrier || 'Volo';
-              targetCoord = getCoord(matchingTransport.arrCity || matchingTransport.arrCode || city);
-            } else if (d === 4) {
-              mode = 'train';
-              modeIcon = '🚆';
-              transportBadge = 'Treno Notturno / Transfer';
-              targetCoord = COORDS['chiang mai'];
-            } else if (d === 6) {
+            if (d === 1) {
+              // Giorno 1: Volo di andata Roma FCO ➔ DEL ➔ Bangkok BKK
+              startPt = COORDS['fco'];
+              endPt = COORDS['bangkok'];
+              fromCity = 'Roma FCO';
+              toCity = 'Bangkok';
               mode = 'flight';
               modeIcon = '✈️';
-              transportBadge = 'Volo Thai AirAsia';
-              targetCoord = COORDS['khao sok'];
+              transportBadge = 'Air India · FCO ➔ DEL ➔ BKK';
+              distanceLabel = '~9.100 km (Volo)';
+              const leg1 = createBezierArc(COORDS['fco'], COORDS['delhi'], 25, 0.10);
+              const leg2 = createBezierArc(COORDS['delhi'], COORDS['bangkok'], 25, 0.08);
+              points = leg1.concat(leg2.slice(1));
             } else if (d === 14) {
+              // Giorno 14: Volo di RIENTRO Bangkok BKK ➔ DEL ➔ Roma FCO (INTERO VIAGGIO)
+              startPt = COORDS['bangkok'];
+              endPt = COORDS['fco'];
+              fromCity = 'Bangkok BKK';
+              toCity = 'Roma FCO';
               mode = 'flight';
               modeIcon = '✈️';
-              transportBadge = 'Volo Rientro Air India';
-              targetCoord = COORDS['fco'];
+              transportBadge = 'Air India · BKK ➔ DEL ➔ FCO';
+              distanceLabel = '~9.100 km (Rientro)';
+              const leg1 = createBezierArc(COORDS['bkk'], COORDS['delhi'], 25, 0.08);
+              const leg2 = createBezierArc(COORDS['delhi'], COORDS['fco'], 30, 0.10);
+              points = leg1.concat(leg2.slice(1));
+            } else if (rawCity.includes('➔') || rawCity.includes('->') || rawCity.includes(' - ')) {
+              // Tappe di trasferimento con freccia o trattino
+              const sep = rawCity.includes('➔') ? '➔' : (rawCity.includes('->') ? '->' : ' - ');
+              const parts = rawCity.split(sep).map(s => s.trim());
+              fromCity = parts[0] || currentCityName;
+              toCity = parts[1] || parts[0];
+              startPt = parseCityCoord(fromCity);
+              endPt = parseCityCoord(toCity);
+
+              if (d === 4) {
+                mode = 'train';
+                modeIcon = '🚆';
+                transportBadge = 'Treno Notturno / Transfer';
+              } else if (d === 6) {
+                mode = 'flight';
+                modeIcon = '✈️';
+                transportBadge = 'Thai AirAsia · FD 5420';
+              } else if (d === 11) {
+                mode = 'boat';
+                modeIcon = '🚤';
+                transportBadge = 'Motoscafo Andamane';
+              } else if (d === 13) {
+                mode = 'flight';
+                modeIcon = '✈️';
+                transportBadge = 'Volo Phuket ➔ Bangkok';
+              } else {
+                mode = 'transfer';
+                modeIcon = '🚐';
+                transportBadge = 'Transfer via terra';
+              }
+
+              const dist = Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]);
+              const km = Math.round(dist * 111);
+              distanceLabel = '~' + km + ' km';
+              points = createBezierArc(startPt, endPt, mode === 'flight' ? 30 : 20, mode === 'flight' ? 0.12 : 0.04);
+            } else {
+              // Giornata in loco nella stessa città
+              toCity = rawCity || currentCityName;
+              startPt = parseCityCoord(toCity);
+              endPt = startPt;
+              mode = 'local';
+              modeIcon = toCity.toLowerCase().includes('krabi') || toCity.toLowerCase().includes('phuket') ? '🚤' : '🛵';
+              transportBadge = 'Giro città & Escursioni';
+              distanceLabel = 'Attrazioni locali';
+
+              // Piccolo loop scenico intorno alla città per dare vita alla mappa
+              const radius = 0.032;
+              points = [];
+              for (let p = 0; p <= 16; p++) {
+                const angle = (p / 16) * Math.PI * 2;
+                const lat = startPt[0] + Math.sin(angle) * radius * 0.7;
+                const lon = startPt[1] + Math.cos(angle) * radius;
+                points.push([lat, lon]);
+              }
             }
-
-            // Interpolazione punti rotta
-            const startPt = (d === 1) ? COORDS['fco'] : lastCoord;
-            const endPt = targetCoord;
-
-            // Se volo a lungo raggio o inter-città, calcola arco curvo
-            const points = [];
-            const isFlight = (mode === 'flight');
-            const numPts = isFlight ? 30 : 15;
-            const arcHeight = isFlight ? (Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]) > 20 ? 0.35 : 0.15) : 0.05;
-
-            const midLat = (startPt[0] + endPt[0]) / 2;
-            const midLon = (startPt[1] + endPt[1]) / 2;
-            const dist = Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]);
-            const ctrlLat = midLat + dist * arcHeight;
-            const ctrlLon = midLon;
-
-            for (let p = 0; p <= numPts; p++) {
-              const t = p / numPts;
-              const lat = (1 - t) * (1 - t) * startPt[0] + 2 * (1 - t) * t * ctrlLat + t * t * endPt[0];
-              const lon = (1 - t) * (1 - t) * startPt[1] + 2 * (1 - t) * t * ctrlLon + t * t * endPt[1];
-              points.push([lat, lon]);
-            }
-
-            // Distanza approssimata
-            const km = Math.round(dist * 111);
-
-            // Hotel associato a questa tappa
-            const hotelMatch = (this.hotels || []).find(h => {
-              if (city.toLowerCase().includes('bangkok') && h.city.toLowerCase().includes('bangkok')) return true;
-              if (city.toLowerCase().includes('chiang mai') && h.city.toLowerCase().includes('chiang mai')) return true;
-              if (city.toLowerCase().includes('khao sok') && h.name.toLowerCase().includes("art's")) return true;
-              return false;
-            });
 
             segments.push({
               dayNum: d,
               date: dayObj.date || ('Giorno ' + d),
-              title: dayObj.title || ('Tappa Giorno ' + d + ' • ' + city),
-              from: lastCityName,
-              to: city,
+              title: dayObj.title || ('Tappa Giorno ' + d + ' • ' + toCity),
+              from: fromCity,
+              to: toCity,
+              city: toCity,
               mode: mode,
               modeIcon: modeIcon,
               transportBadge: transportBadge,
-              distance: (km > 50 ? '~' + km + ' km' : 'Giro città'),
-              hotel: hotelMatch ? hotelMatch.name : (dayObj.mainLocation || 'In programma'),
+              distance: distanceLabel,
+              hotel: dayObj.mainLocation || 'In programma',
               points: points,
               endPt: endPt
             });
 
             // Disegna linea sulla mappa con colore neon
-            const lineColor = isFlight ? '#38bdf8' : (mode === 'train' ? '#fbbf24' : '#10b981');
+            const lineColor = (mode === 'flight') ? '#38bdf8' : (mode === 'train' ? '#fbbf24' : (mode === 'boat' ? '#06b6d4' : '#10b981'));
+            const isFlight = (mode === 'flight');
             const polyline = L.polyline(points, {
               color: lineColor,
               weight: isFlight ? 3 : 3.5,
-              opacity: 0.75,
+              opacity: 0.8,
               dashArray: isFlight ? '6, 8' : null,
               lineCap: 'round'
             }).addTo(this._leafletMap);
             this._routeLines.push(polyline);
 
-            // Pin città / tappa
-            const marker = L.circleMarker(endPt, {
-              radius: d === 1 || d === 14 ? 6 : 5,
-              fillColor: '#10b981',
-              color: '#ffffff',
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.9
-            }).addTo(this._leafletMap);
-            marker.bindPopup('<b>Giorno ' + d + ': ' + city + '</b><br>' + (hotelMatch ? hotelMatch.name : ''));
-            this._cityMarkers.push(marker);
-
-            lastCoord = endPt;
-            lastCityName = city;
+            currentCoord = endPt;
+            currentCityName = toCity;
           }
 
           this._mapSegments = segments;
 
-          // Crea Marker Veicolo Dinamico
+          // 3. CREA O AGGIORNA IL MARKER VEICOLO DINAMICO
           if (!this._vehicleMarker) {
             const vehicleHtml = `<div id="animated-vehicle-element" class="vehicle-marker-wrapper">
               <div class="vehicle-marker-glow"></div>
@@ -6492,11 +6789,21 @@ Tel: ${h.phone || ''}`
         updateVehiclePosition(dayNum, fitBounds = false) {
           if (!this._mapSegments || this._mapSegments.length === 0) return;
 
-          const clampedDay = Math.max(1, Math.min(14, dayNum));
-          const segIdx = Math.min(Math.floor(clampedDay - 1), this._mapSegments.length - 1);
-          const seg = this._mapSegments[segIdx];
-          const t = clampedDay - (segIdx + 1); // 0 .. 1 frazione del segmento
+          // clampedDay va da 1.0 a 15.0 (permettere al Giorno 14 di completare il volo BKK ➔ Roma FCO)
+          const clampedDay = Math.max(1, Math.min(15, dayNum));
+          let segIdx;
+          let t;
 
+          if (clampedDay >= 15.0) {
+            segIdx = this._mapSegments.length - 1; // Segmento 13 (Giorno 14)
+            t = 1.0; // Touchdown a Roma FCO!
+          } else {
+            segIdx = Math.min(Math.floor(clampedDay - 1), this._mapSegments.length - 1);
+            t = clampedDay - (segIdx + 1);
+            t = Math.max(0, Math.min(1, t));
+          }
+
+          const seg = this._mapSegments[segIdx];
           const pts = seg.points;
           const ptIdx = Math.min(Math.floor(t * (pts.length - 1)), pts.length - 2);
           const subT = (t * (pts.length - 1)) - ptIdx;
@@ -6504,7 +6811,7 @@ Tel: ${h.phone || ''}`
           const p1 = pts[ptIdx];
           const p2 = pts[ptIdx + 1] || p1;
 
-          // Posizione interpolata esatta
+          // Posizione interpolata esatta del veicolo
           const curLat = p1[0] + (p2[0] - p1[0]) * subT;
           const curLon = p1[1] + (p2[1] - p1[1]) * subT;
           const currentPos = [curLat, curLon];
@@ -6517,10 +6824,10 @@ Tel: ${h.phone || ''}`
           let targetBearing = Math.atan2(y, x) * 180 / Math.PI;
           targetBearing = (targetBearing + 360) % 360;
 
-          // Angular lerp: interpola l'angolo evitando salti bruschi (es. 350° -> 10°)
+          // Interpolazione angolare fluida
           if (this._currentBearing === undefined) this._currentBearing = targetBearing;
           let delta = ((targetBearing - this._currentBearing + 540) % 360) - 180;
-          this._currentBearing = (this._currentBearing + delta * 0.15 + 360) % 360;
+          this._currentBearing = (this._currentBearing + delta * 0.18 + 360) % 360;
 
           // Aggiorna marker sulla mappa
           if (this._vehicleMarker) {
@@ -6533,42 +6840,60 @@ Tel: ${h.phone || ''}`
             }
           }
 
-          // Aggiorna card informativa in sovrimpressione (throttle: solo se cambia giorno intero)
-          const roundedDay = Math.floor(clampedDay);
-          if (!this._lastInfoDay || this._lastInfoDay !== roundedDay) {
-            this.currentStageInfo = { ...seg };
-            this._lastInfoDay = roundedDay;
+          // Aggiorna card informativa in sovrimpressione
+          const displayDay = Math.min(14, Math.floor(clampedDay));
+          if (!this._lastInfoDay || this._lastInfoDay !== displayDay || clampedDay >= 14.95) {
+            this.currentStageInfo = { ...this._mapSegments[Math.min(displayDay - 1, this._mapSegments.length - 1)] };
+            if (clampedDay >= 14.95) {
+              this.currentStageInfo.title = 'Atterraggio a Roma FCO • Viaggio Concluso! 🇮🇹';
+            }
+            this._lastInfoDay = displayDay;
           }
 
-          // Panning e Zoom dinamico della mappa
+          // LIVELLO DI ZOOM OTTIMIZZATO E PIÙ RAVVICINATO SUL VEICOLO
           if (this._leafletMap) {
-            const inThailand = (clampedDay > 1.3 && clampedDay < 13.7);
-            const targetZoom = inThailand ? 5.5 : 4.8;
+            let targetZoom;
+            if (clampedDay < 1.35) {
+              // Decollo da Roma FCO
+              targetZoom = 6.2;
+            } else if (clampedDay < 1.7) {
+              // Volo intercontinentale andata
+              targetZoom = 5.0;
+            } else if (clampedDay < 1.95) {
+              // Avvicinamento e atterraggio a Bangkok
+              targetZoom = 6.8;
+            } else if (clampedDay <= 14.05) {
+              // IN THAILANDIA: ZOOM PIÙ RAVVICINATO (7.5) per vedere chiaramente veicolo e città!
+              targetZoom = 7.5;
+            } else if (clampedDay < 14.3) {
+              // Decollo da Bangkok per rientro
+              targetZoom = 6.8;
+            } else if (clampedDay < 14.75) {
+              // Volo intercontinentale rientro
+              targetZoom = 5.0;
+            } else {
+              // Avvicinamento e atterraggio a Roma FCO
+              targetZoom = 6.5;
+            }
 
             if (fitBounds) {
-              if (inThailand) {
-                this._leafletMap.setView([13.3, 100.0], 5.5, { animate: true, duration: 0.8 });
-              } else {
-                this._leafletMap.setView(currentPos, 5, { animate: true, duration: 0.8 });
-              }
+              this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.8 });
             } else if (!this.isPlaying) {
-              // Scrub manuale: aggiorna zoom se si passa tra volo internazionale e permanenza in Thailandia
               const curZoom = this._leafletMap.getZoom();
-              if (Math.abs(curZoom - targetZoom) >= 0.8) {
+              if (Math.abs(curZoom - targetZoom) >= 0.6) {
                 this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.5 });
               } else {
-                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.4 });
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.35 });
               }
             } else {
-              // Riproduzione automatica: pan throttled ogni 150ms — segue il veicolo a 60fps
+              // Durante il playback: segue continuamente il veicolo
               const now = performance.now();
-              if (!this._lastPanTs || (now - this._lastPanTs) > 150) {
+              if (!this._lastPanTs || (now - this._lastPanTs) > 120) {
                 const curZoom = this._leafletMap.getZoom();
-                // Transizione di zoom fluida quando il volo atterra o riparte dalla Thailandia
                 if (Math.abs(curZoom - targetZoom) >= 0.8) {
-                  this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.8 });
+                  this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.6 });
                 } else {
-                  this._leafletMap.panTo(currentPos, { animate: true, duration: 0.2, easeLinearity: 0.8 });
+                  this._leafletMap.panTo(currentPos, { animate: true, duration: 0.15, easeLinearity: 0.8 });
                 }
                 this._lastPanTs = now;
               }
@@ -6578,6 +6903,10 @@ Tel: ${h.phone || ''}`
 
         onTimelineSliderInput() {
           this.pausePlayback();
+          if (this._endPauseTimer) {
+            clearTimeout(this._endPauseTimer);
+            this._endPauseTimer = null;
+          }
           this.updateVehiclePosition(this.timelineDay, false);
         },
 
@@ -6591,20 +6920,43 @@ Tel: ${h.phone || ''}`
 
         startPlayback() {
           this.isPlaying = true;
+          if (this._endPauseTimer) {
+            clearTimeout(this._endPauseTimer);
+            this._endPauseTimer = null;
+          }
           if (this._rafId) cancelAnimationFrame(this._rafId);
 
-          // Usa requestAnimationFrame per animazione a 60fps sincronizzata al monitor
+          // Se eravamo alla fine (Giorno 14 atterrato a Roma), riparte da Giorno 1
+          if (this.timelineDay >= 14.98) {
+            this.timelineDay = 1.0;
+            this._currentBearing = undefined;
+          }
+
           let lastTs = null;
           const loop = (ts) => {
             if (!this.isPlaying) return;
             if (lastTs !== null) {
-              const dt = Math.min(ts - lastTs, 100); // cap a 100ms per evitare salti se tab in background
-              // 1x speed = 1 giorno ogni ~3 secondi; 2x = ogni 1.5s; 3x = ogni 1s
+              const dt = Math.min(ts - lastTs, 100);
+              // 1x speed: ~3 secondi a tappa
               const daysPerSec = 0.33 * this.playSpeed;
               this.timelineDay += daysPerSec * (dt / 1000);
-              if (this.timelineDay >= 14) {
-                this.timelineDay = 1;
-                this._currentBearing = undefined; // reset bearing sul loop
+
+              // L'animazione comprende il Giorno 14 intero fino al rientro a Roma (15.0)
+              if (this.timelineDay >= 15.0) {
+                this.timelineDay = 15.0;
+                this.updateVehiclePosition(this.timelineDay, false);
+                // Pausa celebrativa di 1.8 secondi a Roma prima del loop
+                if (!this._endPauseTimer) {
+                  this._endPauseTimer = setTimeout(() => {
+                    if (this.isPlaying) {
+                      this.timelineDay = 1.0;
+                      this._currentBearing = undefined;
+                      this.updateVehiclePosition(this.timelineDay, true);
+                    }
+                    this._endPauseTimer = null;
+                  }, 1800);
+                }
+                return;
               }
               this.updateVehiclePosition(this.timelineDay, false);
             }
@@ -6616,6 +6968,10 @@ Tel: ${h.phone || ''}`
 
         pausePlayback() {
           this.isPlaying = false;
+          if (this._endPauseTimer) {
+            clearTimeout(this._endPauseTimer);
+            this._endPauseTimer = null;
+          }
           if (this._rafId) {
             cancelAnimationFrame(this._rafId);
             this._rafId = null;
@@ -6624,16 +6980,18 @@ Tel: ${h.phone || ''}`
 
         stepMapDay(delta) {
           this.pausePlayback();
-          let target = Math.floor(this.timelineDay) + delta;
-          if (target < 1) target = 1;
-          if (target > 14) target = 14;
-          this.timelineDay = target;
+          let cur = Math.floor(this.timelineDay);
+          if (delta > 0) {
+            this.timelineDay = Math.min(15, cur + 1);
+          } else {
+            this.timelineDay = Math.max(1, Math.ceil(this.timelineDay) - 1);
+          }
           this.updateVehiclePosition(this.timelineDay, false);
         },
 
         jumpToMapDay(dayNum) {
           this.pausePlayback();
-          this.timelineDay = dayNum;
+          this.timelineDay = Math.max(1, Math.min(15, dayNum));
           this.updateVehiclePosition(this.timelineDay, true);
         },
 
@@ -6646,12 +7004,7 @@ Tel: ${h.phone || ''}`
 
         recenterMap() {
           if (!this._leafletMap) return;
-          const inThailand = (this.timelineDay > 1.3 && this.timelineDay < 13.7);
-          if (inThailand) {
-            this._leafletMap.setView([13.3, 100.0], 5.5, { animate: true, duration: 0.8 });
-          } else {
-            this.updateVehiclePosition(this.timelineDay, true);
-          }
+          this.updateVehiclePosition(this.timelineDay, true);
         },
 
         openMapChooser(title, query, address) {
