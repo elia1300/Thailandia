@@ -2207,16 +2207,36 @@
         </div>
 
         <div class="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
-            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-            <span>Archivio Locale IndexedDB</span>
+          <div class="flex items-center gap-1.5 text-[11px] font-mono">
+            <template x-if="docsSyncStatus === 'syncing'">
+              <span class="flex items-center gap-1.5 text-amber-400">
+                <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+                <span class="text-[10px]">Sincronizzo Cloud...</span>
+              </span>
+            </template>
+            <template x-if="docsSyncStatus !== 'syncing'">
+              <span class="flex items-center gap-1.5 text-emerald-400">
+                <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+                <span class="text-[10px]">Cloud & Offline DB</span>
+              </span>
+            </template>
           </div>
-          <button type="button" 
-                  @click="openUploadDocModal()" 
-                  class="py-2 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/50 flex items-center gap-1.5 transition-all">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Carica Documento</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" 
+                    @click="syncDocsWithCloud()" 
+                    :disabled="docsSyncStatus === 'syncing'"
+                    title="Sincronizza documenti con Firebase Cloud"
+                    class="py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 active:scale-95 text-slate-200 font-bold text-xs border border-slate-700/80 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-emerald-400" :class="docsSyncStatus === 'syncing' ? 'animate-spin' : ''"></i>
+              <span class="hidden sm:inline">Sincronizza</span>
+            </button>
+            <button type="button" 
+                    @click="openUploadDocModal()" 
+                    class="py-2 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/50 flex items-center gap-1.5 transition-all cursor-pointer">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Carica</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -4160,6 +4180,8 @@
         activeTab: 'itinerary',
         // Documenti & Voucher PDF
         docsState: {},
+        docsSyncStatus: 'idle',
+        cloudDocsEndpoint: 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/documents.json',
         activeViewerDoc: null,
         docsCategoryFilter: 'all',
         docsSearchQuery: '',
@@ -5902,23 +5924,32 @@ Tel: ${h.phone || ''}`
         // MAP CHOOSER: GOOGLE MAPS vs MAPPE APPLE
         // ==========================================
         // ==========================================
-        // GESTIONE VOUCHER & BIGLIETTI PDF (INDEXEDDB)
+        // GESTIONE VOUCHER & BIGLIETTI PDF (INDEXEDDB & FIREBASE CLOUD)
         // ==========================================
         async initDocs() {
           try {
             const allDocs = await pwaDocsDB.getAll();
             const map = {};
             (allDocs || []).forEach(d => {
-              map[d.id] = {
-                name: d.name,
-                type: d.type,
-                size: d.size,
-                targetType: d.targetType,
-                targetTitle: d.targetTitle,
+              if (!d) return;
+              const docId = d.id || ('doc_' + Math.random().toString(36).substr(2, 9));
+              map[docId] = {
+                id: docId,
+                name: d.name || 'documento',
+                type: d.type || 'application/pdf',
+                size: d.size || 0,
+                targetType: d.targetType || 'doc',
+                category: d.category || (d.targetType === 'hotel' ? 'hotel' : (d.targetType === 'transport' ? 'transport' : 'other')),
+                targetTitle: d.targetTitle || d.name || 'Documento',
+                traveler: d.traveler || 'Tutto il gruppo',
+                createdAt: d.createdAt || d.updatedAt || Date.now(),
                 dataUrl: d.dataUrl
               };
             });
             this.docsState = map;
+            this.refreshIcons();
+            // Allinea automaticamente con Firebase Cloud Database in background
+            this.syncDocsWithCloud(true);
           } catch(e) {
             console.error('Error loading documents from IndexedDB', e);
           }
@@ -5932,28 +5963,36 @@ Tel: ${h.phone || ''}`
           reader.onload = async (e) => {
             const dataUrl = e.target.result;
             const doc = {
+              id: targetId,
               name: file.name,
               type: file.type || 'application/pdf',
               size: file.size,
               targetType: targetType || 'other',
-              targetTitle: targetTitle || 'Documento',
+              category: (targetType === 'hotel' ? 'hotel' : (targetType === 'transport' ? 'transport' : 'other')),
+              targetTitle: targetTitle || file.name || 'Documento',
+              traveler: 'Tutto il gruppo',
+              createdAt: Date.now(),
               dataUrl: dataUrl
             };
 
             await pwaDocsDB.save(targetId, doc);
             this.docsState[targetId] = doc;
-            this.showToast('Documento "' + file.name + '" salvato offline!');
+            this.showToast('Documento "' + file.name + '" salvato offline e sul Cloud!');
             this.refreshIcons();
+            // Salva nel cloud per tutti gli utenti
+            this.uploadDocToCloud(doc);
           };
           reader.readAsDataURL(file);
         },
 
         async deleteDocFor(targetId) {
-          if (!confirm('Sei sicuro di voler rimuovere questo documento salvato?')) return;
+          if (!confirm('Sei sicuro di voler rimuovere questo documento? Verrà rimosso anche dal Cloud per il gruppo.')) return;
           await pwaDocsDB.delete(targetId);
           delete this.docsState[targetId];
           this.showToast('Documento rimosso');
           this.refreshIcons();
+          // Rimuove dal cloud Firebase
+          this.deleteDocFromCloud(targetId);
         },
 
         openDocViewer(targetId) {
@@ -5963,7 +6002,7 @@ Tel: ${h.phone || ''}`
             return;
           }
           const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
-          this.activeViewerDoc = { ...doc, isPdf };
+          this.activeViewerDoc = { ...doc, id: doc.id || targetId, isPdf };
           this.refreshIcons();
         },
 
@@ -6044,9 +6083,11 @@ Tel: ${h.phone || ''}`
 
           await pwaDocsDB.save(id, doc);
           this.docsState[id] = doc;
-          this.showToast('"' + title + '" salvato nei Documenti!');
+          this.showToast('"' + title + '" salvato offline e sul Cloud!');
           this.closeUploadDocModal();
           this.refreshIcons();
+          // Carica subito su Firebase Cloud per il gruppo
+          this.uploadDocToCloud(doc);
         },
 
         downloadDoc(doc) {
@@ -6060,11 +6101,23 @@ Tel: ${h.phone || ''}`
         },
 
         getFilteredDocsList() {
-          const list = Object.values(this.docsState || {});
-          return list.filter(d => {
+          const entries = Object.entries(this.docsState || {});
+          return entries.map(([key, d]) => {
+            return {
+              id: d.id || key,
+              name: d.name || 'documento',
+              type: d.type || 'application/pdf',
+              size: d.size || 0,
+              targetType: d.targetType || 'doc',
+              category: d.category || (d.targetType === 'hotel' ? 'hotel' : (d.targetType === 'transport' ? 'transport' : 'other')),
+              targetTitle: d.targetTitle || d.name || 'Documento',
+              traveler: d.traveler || 'Tutto il gruppo',
+              createdAt: d.createdAt || d.updatedAt || 0,
+              dataUrl: d.dataUrl
+            };
+          }).filter(d => {
             if (this.docsCategoryFilter !== 'all') {
-              const cat = d.category || (d.targetType === 'hotel' ? 'hotel' : (d.targetType === 'transport' ? 'transport' : 'other'));
-              if (cat !== this.docsCategoryFilter) return false;
+              if (d.category !== this.docsCategoryFilter) return false;
             }
             if (this.docsSearchQuery && this.docsSearchQuery.trim()) {
               const q = this.docsSearchQuery.toLowerCase().trim();
@@ -6096,7 +6149,125 @@ Tel: ${h.phone || ''}`
             ticket: { label: "Escursioni & Attività", emoji: "🎟️", color: "teal", bg: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
             other: { label: "Altro & Varie", emoji: "📄", color: "slate", bg: "bg-slate-500/20 text-slate-400 border-slate-500/30" }
           };
+          if (!cat) return meta.other;
           return meta[cat] || meta.other;
+        },
+
+        // ==========================================
+        // SINCRONIZZAZIONE DOCUMENTI CLOUD (FIREBASE REALTIME DB)
+        // ==========================================
+        async uploadDocToCloud(doc) {
+          if (!doc || !doc.id) return;
+          try {
+            const url = 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/documents/' + encodeURIComponent(doc.id) + '.json';
+            await fetch(url, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(doc)
+            });
+            this.docsSyncStatus = 'synced';
+          } catch(e) {
+            console.error('Failed to upload document to Firebase cloud', e);
+          }
+        },
+
+        async deleteDocFromCloud(id) {
+          if (!id) return;
+          try {
+            const url = 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/documents/' + encodeURIComponent(id) + '.json';
+            await fetch(url, { method: 'DELETE' });
+          } catch(e) {
+            console.error('Failed to delete document from Firebase cloud', e);
+          }
+        },
+
+        async syncDocsWithCloud(silent = false) {
+          this.docsSyncStatus = 'syncing';
+          this.refreshIcons();
+          try {
+            // 1. Scarica tutti i documenti attualmente presenti su Firebase RTDB
+            const res = await fetch(this.cloudDocsEndpoint, { cache: 'no-store' });
+            let cloudDocs = null;
+            if (res.ok) {
+              cloudDocs = await res.json();
+            }
+
+            // 2. Legge tutti i documenti locali salvati in IndexedDB
+            const localDocs = (await pwaDocsDB.getAll()) || [];
+            const localMap = {};
+            localDocs.forEach(d => {
+              if (d && d.id) localMap[d.id] = d;
+            });
+
+            let newFromCloud = 0;
+            let uploadedToCloud = 0;
+
+            // 3. Integra i documenti del Cloud nel DB locale IndexedDB e nello stato Alpine
+            if (cloudDocs && typeof cloudDocs === 'object') {
+              for (const [key, cDoc] of Object.entries(cloudDocs)) {
+                if (cDoc && typeof cDoc === 'object') {
+                  const docId = cDoc.id || key;
+                  const normalized = {
+                    ...cDoc,
+                    id: docId,
+                    category: cDoc.category || (cDoc.targetType === 'hotel' ? 'hotel' : (cDoc.targetType === 'transport' ? 'transport' : 'other')),
+                    traveler: cDoc.traveler || 'Tutto il gruppo',
+                    targetTitle: cDoc.targetTitle || cDoc.name || 'Documento',
+                    createdAt: cDoc.createdAt || cDoc.updatedAt || Date.now()
+                  };
+                  const localDoc = localMap[docId];
+                  if (!localDoc || !localDoc.dataUrl || (normalized.createdAt > (localDoc.createdAt || 0))) {
+                    await pwaDocsDB.save(docId, normalized);
+                    if (!localDoc) newFromCloud++;
+                  }
+                  this.docsState[docId] = normalized;
+                }
+              }
+            }
+
+            // 4. Carica su Firebase Cloud eventuali documenti locali non ancora presenti sul cloud
+            // (inclusi i file già caricati in precedenza dall'utente)
+            for (const lDoc of localDocs) {
+              if (lDoc && lDoc.id) {
+                const isAlreadyInCloud = cloudDocs && cloudDocs[lDoc.id];
+                if (!isAlreadyInCloud) {
+                  const docToUpload = {
+                    ...lDoc,
+                    id: lDoc.id,
+                    category: lDoc.category || (lDoc.targetType === 'hotel' ? 'hotel' : (lDoc.targetType === 'transport' ? 'transport' : 'other')),
+                    traveler: lDoc.traveler || 'Tutto il gruppo',
+                    targetTitle: lDoc.targetTitle || lDoc.name || 'Documento',
+                    createdAt: lDoc.createdAt || lDoc.updatedAt || Date.now()
+                  };
+                  await this.uploadDocToCloud(docToUpload);
+                  uploadedToCloud++;
+                }
+              }
+            }
+
+            this.docsSyncStatus = 'synced';
+            if (!silent) {
+              let msg = '☁️ Documenti sincronizzati con il Cloud!';
+              if (uploadedToCloud > 0 && newFromCloud > 0) {
+                msg = `☁️ Sincronizzati: ${uploadedToCloud} caricati sul Cloud, ${newFromCloud} scaricati!`;
+              } else if (uploadedToCloud > 0) {
+                msg = `☁️ ${uploadedToCloud} documenti locali salvati sul Cloud per tutti!`;
+              } else if (newFromCloud > 0) {
+                msg = `☁️ ${newFromCloud} nuovi documenti scaricati dal Cloud!`;
+              } else {
+                msg = '☁️ Tutti i documenti sono allineati sul database!';
+              }
+              this.showToast(msg);
+            }
+          } catch(e) {
+            console.error('Document cloud sync error', e);
+            this.docsSyncStatus = 'error';
+            if (!silent) {
+              this.showToast('Errore sincronizzazione documenti cloud');
+            }
+          } finally {
+            this.refreshIcons();
+          }
         },
 
         // ==========================================
