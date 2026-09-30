@@ -72,8 +72,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Alpine.js Plugins (Collapse) & Core CDN -->
-  <!-- SortableJS CDN (Drag & Drop Card) -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 
@@ -84,29 +82,6 @@
     .city-label-icon-wrapper {
       background: transparent !important;
       border: none !important;
-    }
-    
-    /* Drag and Drop Card Styles (SortableJS) */
-    .sortable-card-ghost {
-      opacity: 0.35 !important;
-      border: 2px dashed rgba(16, 185, 129, 0.8) !important;
-      background: rgba(16, 185, 129, 0.08) !important;
-      transform: scale(0.98);
-    }
-    .sortable-card-chosen {
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 24px rgba(16, 185, 129, 0.35) !important;
-      border-color: rgba(52, 211, 153, 0.85) !important;
-      transform: scale(1.02);
-      z-index: 999 !important;
-    }
-    .sortable-card-drag {
-      opacity: 1 !important;
-      cursor: grabbing !important;
-    }
-    .hotel-drag-handle, .transport-drag-handle {
-      touch-action: none !important;
-      -webkit-touch-callout: none !important;
-      user-select: none !important;
     }
 
     .city-map-badge {
@@ -628,6 +603,17 @@
                       <span x-text="getDayWeatherBadge(day.dayNum).icon"></span>
                       <span x-text="getDayWeatherBadge(day.dayNum).temp"></span>
                     </button>
+
+                    <!-- Mini Pill Dress Code Templi -->
+                    <template x-if="isTempleDay(day)">
+                      <button type="button"
+                              @click.stop="openTempleModal(day)"
+                              class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 hover:bg-amber-900/60 hover:text-white active:scale-95 transition-all shadow-sm"
+                              title="Tappa con templi sacri: tocca per Dress Code ed Etichetta">
+                        <span>🛕</span>
+                        <span>Dress Code</span>
+                      </button>
+                    </template>
                   </div>
                   <h3 class="font-display font-bold text-sm text-slate-100 leading-snug" x-text="day.title"></h3>
                 </div>
@@ -665,6 +651,25 @@
                  x-collapse
                  class="px-3.5 pb-4 pt-1 space-y-3.5 border-t border-slate-800/60 bg-slate-900/40">
               
+              <!-- Banner Dress Code Templi se è giorno templi -->
+              <template x-if="isTempleDay(day)">
+                <div class="rounded-xl p-2.5 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/35 text-amber-200 flex items-center justify-between gap-2.5 shadow-sm">
+                  <div class="flex items-start gap-2">
+                    <span class="text-base flex-shrink-0 mt-0.5">🛕</span>
+                    <div class="text-xs leading-relaxed">
+                      <span class="font-bold text-amber-300 block">Tappa con Templi Sacri:</span>
+                      <span class="text-slate-300 text-[11px]">Spalle e ginocchia coperte, calzini per marmo rovente, scarpe slip-on.</span>
+                    </div>
+                  </div>
+                  <button type="button"
+                          @click.stop="openTempleModal(day)"
+                          class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] whitespace-nowrap active:scale-95 transition-all flex items-center gap-1 shadow flex-shrink-0">
+                    <span>Checklist & Regole</span>
+                    <span>➜</span>
+                  </button>
+                </div>
+              </template>
+
               <!-- Cosa mettere nello Zaino / Note Tattiche -->
               <div class="rounded-xl p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-200 flex items-start gap-2.5">
                 <i data-lucide="backpack" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
@@ -765,13 +770,13 @@
 
       <!-- Segmented Control Switcher -->
       <div class="flex p-1 rounded-xl bg-slate-900 border border-slate-800">
-        <button @click="logisticsSubTab = 'hotels'; $nextTick(() => { initSortable(); refreshIcons(); })" 
+        <button @click="logisticsSubTab = 'hotels'; $nextTick(() => { refreshIcons(); })" 
                 :class="logisticsSubTab === 'hotels' ? 'bg-slate-800 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
                 class="flex-1 py-1.5 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5">
           <i data-lucide="hotel" class="w-3.5 h-3.5"></i>
           <span>Hotel & Alloggi (<span x-text="hotels.length"></span>)</span>
         </button>
-        <button @click="logisticsSubTab = 'transports'; $nextTick(() => { initSortable(); refreshIcons(); })" 
+        <button @click="logisticsSubTab = 'transports'; $nextTick(() => { refreshIcons(); })" 
                 :class="logisticsSubTab === 'transports' ? 'bg-slate-800 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
                 class="flex-1 py-1.5 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5">
           <i data-lucide="plane" class="w-3.5 h-3.5"></i>
@@ -783,6 +788,44 @@
       <div x-show="logisticsSubTab === 'hotels'" class="space-y-4">
         <div class="flex items-center justify-between px-1 gap-2 flex-wrap">
           <span class="text-[11px] text-slate-400"><span x-text="hotels.length"></span> alloggi configurati</span>
+        </div>
+
+        <!-- Barra Ordinamento Hotel (Data / Alfabetico, Crescente / Decrescente) -->
+        <div class="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+          <div class="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] pl-1">
+            <i data-lucide="arrow-down-up" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Ordina:</span>
+          </div>
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button type="button" 
+                    @click="sortHotels('date-asc')" 
+                    :class="hotelSortOrder === 'date-asc' ? 'bg-amber-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Data crescente (dal primo all'ultimo)">
+              📅 Data ↑
+            </button>
+            <button type="button" 
+                    @click="sortHotels('date-desc')" 
+                    :class="hotelSortOrder === 'date-desc' ? 'bg-amber-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Data decrescente (dal più recente)">
+              📅 Data ↓
+            </button>
+            <button type="button" 
+                    @click="sortHotels('name-asc')" 
+                    :class="hotelSortOrder === 'name-asc' ? 'bg-amber-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Alfabetico per nome A-Z">
+              🔤 A-Z
+            </button>
+            <button type="button" 
+                    @click="sortHotels('name-desc')" 
+                    :class="hotelSortOrder === 'name-desc' ? 'bg-amber-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Alfabetico per nome Z-A">
+              🔤 Z-A
+            </button>
+          </div>
           <div class="flex items-center gap-1.5">
             <button @click="openAddHotelModal()" 
                     class="text-[11px] text-slate-950 font-extrabold flex items-center gap-1 py-1.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all shadow-md shadow-amber-950/40">
@@ -812,24 +855,16 @@
           <template x-for="(hotel, index) in hotels" :key="hotel.id">
             <div class="glass-card rounded-2xl border border-slate-800/90 overflow-hidden shadow-lg p-4 space-y-3.5 hotel-card-item">
               
-              <!-- Top Hotel: 6 Puntini Drag Handle, Nome, Città, Notti -->
+              <!-- Top Hotel: Nome, Città, Notti -->
               <div class="flex items-start justify-between gap-2.5">
-                <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                  <!-- Tasto 6 Puntini per Trascinare (Drag & Drop) -->
-                  <div class="hotel-drag-handle touch-none flex items-center justify-center w-8 h-8 rounded-xl bg-slate-900/90 border border-slate-800/90 text-slate-400 hover:text-emerald-400 active:text-emerald-300 hover:border-emerald-500/40 active:bg-emerald-500/20 active:scale-95 cursor-grab active:cursor-grabbing transition-all flex-shrink-0 shadow-sm mt-0.5"
-                       title="Tieni premuto e trascina su/giù per riordinare">
-                    <i data-lucide="grip-vertical" class="w-4.5 h-4.5"></i>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                          :class="getCityBadgeStyle(hotel.city)"
+                          x-text="hotel.city"></span>
+                    <span class="text-xs text-slate-400" x-text="hotel.dates"></span>
                   </div>
-
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
-                            :class="getCityBadgeStyle(hotel.city)"
-                            x-text="hotel.city"></span>
-                      <span class="text-xs text-slate-400" x-text="hotel.dates"></span>
-                    </div>
-                    <h3 class="font-display font-bold text-base text-white leading-tight" x-text="hotel.name"></h3>
-                  </div>
+                  <h3 class="font-display font-bold text-base text-white leading-tight" x-text="hotel.name"></h3>
                 </div>
 
                 <div class="text-right flex-shrink-0">
@@ -946,6 +981,44 @@
         
         <div class="flex items-center justify-between px-1 gap-2 flex-wrap">
           <span class="text-[11px] text-slate-400"><span x-text="transports.length"></span> trasferimenti e voli</span>
+        </div>
+
+        <!-- Barra Ordinamento Trasporti (Data / Alfabetico, Crescente / Decrescente) -->
+        <div class="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+          <div class="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] pl-1">
+            <i data-lucide="arrow-down-up" class="w-3.5 h-3.5 text-sky-400"></i>
+            <span>Ordina:</span>
+          </div>
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button type="button" 
+                    @click="sortTransports('date-asc')" 
+                    :class="transportSortOrder === 'date-asc' ? 'bg-sky-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Data crescente (cronologico)">
+              📅 Data ↑
+            </button>
+            <button type="button" 
+                    @click="sortTransports('date-desc')" 
+                    :class="transportSortOrder === 'date-desc' ? 'bg-sky-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Data decrescente">
+              📅 Data ↓
+            </button>
+            <button type="button" 
+                    @click="sortTransports('carrier-asc')" 
+                    :class="transportSortOrder === 'carrier-asc' ? 'bg-sky-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Alfabetico per vettore A-Z">
+              🔤 A-Z
+            </button>
+            <button type="button" 
+                    @click="sortTransports('carrier-desc')" 
+                    :class="transportSortOrder === 'carrier-desc' ? 'bg-sky-400 text-slate-950 font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'"
+                    class="py-1 px-2 rounded-lg text-[10px] font-semibold transition-all active:scale-95 whitespace-nowrap"
+                    title="Alfabetico per vettore Z-A">
+              🔤 Z-A
+            </button>
+          </div>
           <div class="flex items-center gap-1.5">
             <button @click="openAddTransportModal()" 
                     class="text-[11px] text-slate-950 font-extrabold flex items-center gap-1 py-1.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 active:scale-95 transition-all shadow-md shadow-sky-950/40">
@@ -976,15 +1049,9 @@
         <template x-for="(item, index) in transports" :key="item.id">
           <div class="glass-card rounded-2xl border border-slate-800/90 p-3.5 sm:p-4 space-y-3 shadow-lg overflow-hidden w-full transport-card-item">
             
-            <!-- Header Tratta & Drag Handle (6 puntini) -->
+            <!-- Header Tratta & Dettagli Vettore -->
             <div class="flex items-start justify-between gap-2.5 min-w-0">
               <div class="flex items-start gap-2 min-w-0 flex-1">
-                <!-- Tasto 6 Puntini per Trascinare (Drag & Drop) -->
-                <div class="transport-drag-handle touch-none flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900/90 border border-slate-800/90 text-slate-400 hover:text-emerald-400 active:text-emerald-300 hover:border-emerald-500/40 active:bg-emerald-500/20 active:scale-95 cursor-grab active:cursor-grabbing transition-all flex-shrink-0 mt-0.5 shadow-sm"
-                     title="Tieni premuto e trascina su/giù per riordinare">
-                  <i data-lucide="grip-vertical" class="w-4 h-4"></i>
-                </div>
-
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
                      :class="getTransportBadgeClass(item.type)">
                   <i :data-lucide="getTransportIcon(item.type)" class="w-4 h-4"></i>
@@ -1162,35 +1229,7 @@
       </div>
 
       <!-- ========================================================== -->
-      <!-- 1. APP IPHONE SCHERMATA HOME (1° POSTO)                    -->
-      <!-- ========================================================== -->
-      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
-              <i data-lucide="smartphone" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-display font-bold text-sm text-white">App iPhone Schermata Home</h3>
-              <span class="text-[10px]" :class="isStandalone() ? 'text-emerald-400 font-bold' : 'text-slate-400'">
-                <span x-text="isStandalone() ? '● Attiva in modalità Standalone / Home' : '○ Aperta nel browser Safari'"></span>
-              </span>
-            </div>
-          </div>
-
-          <button @click="openPwaGuide()" 
-                  class="px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-xs font-bold active:scale-95 transition-all flex items-center gap-1">
-            <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-            <span>Guida Home</span>
-          </button>
-        </div>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          I 4 partecipanti possono salvare l'app su iPhone con <em>Condividi → Aggiungi alla schermata Home</em> per usarla a schermo intero senza barre e consultare itinerario e traduzioni anche offline.
-        </p>
-      </div>
-
-      <!-- ========================================================== -->
-      <!-- 2. CAMBIO VALUTA & CASSA COMUNE (2° POSTO)                -->
+      <!-- 1. CAMBIO VALUTA & CASSA COMUNE (2° POSTO)                -->
       <!-- ========================================================== -->
       <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg">
         <div class="flex items-center justify-between">
@@ -1718,6 +1757,15 @@
                   <p class="text-slate-300 text-[11px] leading-relaxed">Non puntare mai la pianta dei piedi verso statue del Buddha o persone: siediti con le gambe ripiegate all'indietro.</p>
                 </div>
               </div>
+
+              <!-- Tasto Apri Checklist & Galateo Completo -->
+              <button type="button"
+                      @click="openTempleModal()"
+                      class="w-full py-2 px-3 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/35 text-teal-300 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+                <span>🛕</span>
+                <span>Apri Guida Completa, Checklist Outfit & Severità</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
 
             <!-- VISTA 2: LEGGI E TOLLERANZA ZERO -->
@@ -1752,6 +1800,321 @@
                 class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-teal-500/40 text-teal-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
           <span x-text="phrasesCardExpanded ? 'Comprimi frasario e galateo ▴' : 'Espandi tutte le 11 frasi utili e galateo templi ▾'"></span>
           <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="phrasesCardExpanded ? 'rotate-180' : ''"></i>
+        </button>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- CALCOLATORE MANCE & GUIDA ALLA CONTRATTAZIONE               -->
+      <!-- ========================================================== -->
+      <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3.5 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <i data-lucide="coins" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-sm text-white">Calcolatore Mance & Contrattazione</h3>
+              <span class="text-[10px] text-emerald-400 font-medium">Standard mance locali & simulatore sconti mercati</span>
+            </div>
+          </div>
+
+          <button type="button" 
+                  @click="tippingCardExpanded = !tippingCardExpanded; refreshIcons()"
+                  class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-emerald-400 active:scale-95 transition-all"
+                  :title="tippingCardExpanded ? 'Comprimi calcolatore' : 'Espandi calcolatore'">
+            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="tippingCardExpanded ? 'rotate-180 text-emerald-400' : ''"></i>
+          </button>
+        </div>
+
+        <!-- Sezione Card Contenuto -->
+        <div x-show="tippingCardExpanded" x-collapse class="space-y-3.5">
+          <!-- Sub-Tab Switcher: [🪙 Calcolatore Mance] vs [🏷️ Contrattazione Mercati] -->
+          <div class="grid grid-cols-2 p-1 bg-slate-950/90 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button type="button"
+                    @click="toolboxTippingTab = 'tipping'; refreshIcons()"
+                    :class="toolboxTippingTab === 'tipping' ? 'bg-emerald-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+              <span>🪙</span>
+              <span>Calcolatore Mance</span>
+            </button>
+            <button type="button"
+                    @click="toolboxTippingTab = 'bargaining'; refreshIcons()"
+                    :class="toolboxTippingTab === 'bargaining' ? 'bg-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+              <span>🏷️</span>
+              <span>Guida Contrattazione</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: CALCOLATORE MANCE -->
+          <div x-show="toolboxTippingTab === 'tipping'" class="space-y-3">
+            <!-- Categorie Mance -->
+            <div class="space-y-1.5">
+              <label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Seleziona Servizio:</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" 
+                        @click="setTipCategory('massage')"
+                        :class="tipCategory === 'massage' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">💆‍♂️</span>
+                  <span class="text-[11px] font-bold mt-1">Massaggi</span>
+                  <span class="text-[9px] text-slate-400">50-100฿ / persona</span>
+                </button>
+                <button type="button" 
+                        @click="setTipCategory('restaurant')"
+                        :class="tipCategory === 'restaurant' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">🍽️</span>
+                  <span class="text-[11px] font-bold mt-1">Ristoranti</span>
+                  <span class="text-[9px] text-slate-400">10% sul conto</span>
+                </button>
+                <button type="button" 
+                        @click="setTipCategory('taxi')"
+                        :class="tipCategory === 'taxi' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">🚕</span>
+                  <span class="text-[11px] font-bold mt-1">Taxi / Grab</span>
+                  <span class="text-[9px] text-slate-400">Resto +10-20฿</span>
+                </button>
+                <button type="button" 
+                        @click="setTipCategory('boat')"
+                        :class="tipCategory === 'boat' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">🛶</span>
+                  <span class="text-[11px] font-bold mt-1">Barche / Tour</span>
+                  <span class="text-[9px] text-slate-400">100-300฿ gruppo</span>
+                </button>
+                <button type="button" 
+                        @click="setTipCategory('porter')"
+                        :class="tipCategory === 'porter' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">🏨</span>
+                  <span class="text-[11px] font-bold mt-1">Facchini Hotel</span>
+                  <span class="text-[9px] text-slate-400">20-40฿ / valigia</span>
+                </button>
+                <button type="button" 
+                        @click="setTipCategory('custom')"
+                        :class="tipCategory === 'custom' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'"
+                        class="p-2 rounded-xl border text-left flex flex-col justify-between transition-all">
+                  <span class="text-base">⚙️</span>
+                  <span class="text-[11px] font-bold mt-1">Personalizzata</span>
+                  <span class="text-[9px] text-slate-400">Percentuale libera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Input Conto Base -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Totale Conto o Corsa:</label>
+                <span class="text-[10px] text-slate-400" x-text="'~ € ' + ((tipBillThb || 0) / (exchangeRate || 38.5)).toFixed(2)"></span>
+              </div>
+              <div class="relative">
+                <input type="number" 
+                       x-model.number="tipBillThb" 
+                       min="0" 
+                       step="10" 
+                       placeholder="Importo in Baht"
+                       class="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2 px-3 pl-8 text-white font-mono text-sm placeholder:text-slate-600 outline-none">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">฿</span>
+              </div>
+
+              <!-- Quick Chips Incremento -->
+              <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <button type="button" @click="tipBillThb = 300" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">300฿ (Massaggio)</button>
+                <button type="button" @click="tipBillThb = 600" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">600฿</button>
+                <button type="button" @click="tipBillThb = 1000" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">1000฿ (Cena 4p)</button>
+                <button type="button" @click="tipBillThb = 1500" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">1500฿</button>
+              </div>
+            </div>
+
+            <!-- Percentuale personalizzata (se custom) -->
+            <template x-if="tipCategory === 'custom'">
+              <div class="space-y-1 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                <div class="flex items-center justify-between text-xs font-medium">
+                  <span class="text-slate-300">Percentuale mancia:</span>
+                  <span class="text-emerald-400 font-mono font-bold" x-text="(tipCustomPercent || 10) + '%'"></span>
+                </div>
+                <input type="range" min="5" max="25" step="1" x-model.number="tipCustomPercent" class="w-full accent-emerald-500 cursor-pointer">
+              </div>
+            </template>
+
+            <!-- Risultato Calcolo Mancia Live -->
+            <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 to-slate-950/80 border border-emerald-500/30 space-y-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-emerald-400 uppercase font-bold tracking-wider block">Mancia Consigliata:</span>
+                  <div class="flex items-baseline gap-1.5 mt-0.5">
+                    <span class="font-mono text-lg font-black text-emerald-300" x-text="getCalculatedTip().tipThb + ' ฿'"></span>
+                    <span class="font-mono text-xs text-slate-400" x-text="'(~ € ' + getCalculatedTip().tipEur + ')'"></span>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Totale con Mancia:</span>
+                  <div class="flex items-baseline gap-1.5 justify-end mt-0.5">
+                    <span class="font-mono text-base font-extrabold text-white" x-text="getCalculatedTip().totalThb + ' ฿'"></span>
+                    <span class="font-mono text-xs text-emerald-400" x-text="'(~ € ' + getCalculatedTip().totalEur + ')'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-slate-800/80 flex items-start gap-1.5 text-[11px] text-slate-300">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                <span x-text="getCalculatedTip().tipDesc"></span>
+              </div>
+            </div>
+
+            <!-- Avvertenza Service Charge Scontrini -->
+            <div class="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-200/90 leading-relaxed">
+              <span class="text-sm">⚠️</span>
+              <div>
+                <strong class="text-amber-300 font-semibold block">Attenzione allo scontrino nei ristoranti:</strong>
+                <span>Se noti la voce <em>"Service Charge 10%"</em> o <em>"VAT 7% + Service 10%"</em>, la mancia per lo staff è già conteggiata. In questo caso puoi lasciare giusto il resto degli spiccioli o nulla in più.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: GUIDA & SIMULATORE CONTRATTAZIONE -->
+          <div x-show="toolboxTippingTab === 'bargaining'" class="space-y-3.5">
+            <!-- Simulatore di Controfferta -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="text-[10px] text-amber-400 uppercase font-bold tracking-wider">Prezzo sparato dal venditore:</label>
+                <span class="text-[10px] text-slate-400" x-text="'~ € ' + ((bargainAskingThb || 0) / (exchangeRate || 38.5)).toFixed(2)"></span>
+              </div>
+
+              <div class="relative">
+                <input type="number" 
+                       x-model.number="bargainAskingThb" 
+                       min="0" 
+                       step="50" 
+                       placeholder="Es. 500"
+                       class="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl py-2 px-3 pl-8 text-white font-mono text-sm placeholder:text-slate-600 outline-none">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">฿</span>
+              </div>
+
+              <!-- Preset chips mercato -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" @click="bargainAskingThb = 300" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">300฿ (Souvenir)</button>
+                <button type="button" @click="bargainAskingThb = 500" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">500฿ (T-shirt/Pantaloni)</button>
+                <button type="button" @click="bargainAskingThb = 800" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">800฿</button>
+                <button type="button" @click="bargainAskingThb = 1500" class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-[10px] text-slate-300 hover:text-white font-mono active:scale-95 transition-all">1500฿ (Longtail/Borsa)</button>
+              </div>
+            </div>
+
+            <!-- Griglia Strategia 3 Step -->
+            <div class="grid grid-cols-3 gap-2">
+              <!-- Step 1: Prima controfferta (-40%) -->
+              <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between text-left">
+                <span class="text-[9px] uppercase font-bold text-amber-400 tracking-wider">1. Prima Offerta (-40%)</span>
+                <div class="mt-1">
+                  <span class="font-mono text-sm font-black text-white" x-text="getBargainingTargets().firstOfferThb + ' ฿'"></span>
+                  <span class="text-[9px] text-slate-400 block font-mono" x-text="'~ € ' + getBargainingTargets().firstOfferEur"></span>
+                </div>
+                <span class="text-[9px] text-slate-400 mt-1 leading-tight">Punto di partenza col sorriso</span>
+              </div>
+
+              <!-- Step 2: Target equo (-25/30%) -->
+              <div class="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex flex-col justify-between text-left shadow-sm">
+                <span class="text-[9px] uppercase font-bold text-emerald-400 tracking-wider">2. Target Equo ✨</span>
+                <div class="mt-1">
+                  <span class="font-mono text-sm font-black text-emerald-300" x-text="getBargainingTargets().fairDealThb + ' ฿'"></span>
+                  <span class="text-[9px] text-emerald-400/70 block font-mono" x-text="'~ € ' + getBargainingTargets().fairDealEur"></span>
+                </div>
+                <span class="text-[9px] text-emerald-300/80 mt-1 leading-tight">Prezzo ideale da chiudere</span>
+              </div>
+
+              <!-- Step 3: Massimo soffitto (-15%) -->
+              <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between text-left">
+                <span class="text-[9px] uppercase font-bold text-rose-400 tracking-wider">3. Soffitto Max</span>
+                <div class="mt-1">
+                  <span class="font-mono text-sm font-black text-white" x-text="getBargainingTargets().maxCeilingThb + ' ฿'"></span>
+                  <span class="text-[9px] text-slate-400 block font-mono" x-text="'~ € ' + getBargainingTargets().maxCeilingEur"></span>
+                </div>
+                <span class="text-[9px] text-slate-400 mt-1 leading-tight">Oltre, ringrazia e vai via</span>
+              </div>
+            </div>
+
+            <!-- Frasi Audio per Contrattare (con speaker) -->
+            <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+              <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Frasi Tattiche da Pronunciare:</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                
+                <!-- Frase 1 -->
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/90 flex items-center justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <span class="text-xs font-bold text-white block">Puoi farmi uno sconto?</span>
+                    <span class="font-mono text-[11px] text-amber-400 block">Lot dai mai khráp?</span>
+                  </div>
+                  <button type="button" @click="speakPhrase('ลดได้ไหมครับ')" title="Pronuncia in Thai" class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-300 hover:text-amber-400 flex items-center justify-center active:scale-95 transition-all">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <!-- Frase 2 -->
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/90 flex items-center justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <span class="text-xs font-bold text-white block">È un po' troppo caro!</span>
+                    <span class="font-mono text-[11px] text-amber-400 block">Phang pai noi khráp</span>
+                  </div>
+                  <button type="button" @click="speakPhrase('แพงไปหน่อยครับ')" title="Pronuncia in Thai" class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-300 hover:text-amber-400 flex items-center justify-center active:scale-95 transition-all">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <!-- Frase 3 -->
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/90 flex items-center justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <span class="text-xs font-bold text-white block">Se ne prendo 2, quanto fai?</span>
+                    <span class="font-mono text-[11px] text-amber-400 block">Tha sue 2 tua, thao rai?</span>
+                  </div>
+                  <button type="button" @click="speakPhrase('ถ้าซื้อ 2 ตัว เท่าไหร่')" title="Pronuncia in Thai" class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-300 hover:text-amber-400 flex items-center justify-center active:scale-95 transition-all">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <!-- Frase 4 -->
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/90 flex items-center justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <span class="text-xs font-bold text-white block">Non fa niente, grazie!</span>
+                    <span class="font-mono text-[11px] text-emerald-400 block">Mai pen rai, khòp khun khráp</span>
+                  </div>
+                  <button type="button" @click="speakPhrase('ไม่เป็นไร ขอบคุณครับ')" title="Pronuncia in Thai" class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 flex items-center justify-center active:scale-95 transition-all">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Regole d'Oro Contrattazione -->
+            <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs">
+              <span class="text-[10px] text-amber-400 uppercase font-bold tracking-wider block">Regole d'Oro della Trattativa:</span>
+              <ul class="space-y-1.5 text-slate-300 text-[11px] leading-relaxed">
+                <li class="flex items-start gap-1.5">
+                  <span class="text-emerald-400 font-bold">1.</span>
+                  <span><strong>Sorridi sempre (Sanuk & Sabai):</strong> In Thailandia la trattativa è un gioco allegro e rilassato. Se ti mostri rigido o alzi la voce, la negoziazione fallisce.</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <span class="text-emerald-400 font-bold">2.</span>
+                  <span><strong>La tecnica del "Walk Away":</strong> Se non accettano l'offerta target, ringrazia con un sorriso e allontanati lentamente. Nel 70% dei casi ti richiameranno!</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <span class="text-emerald-400 font-bold">3.</span>
+                  <span><strong>Dove contrattare:</strong> Mercati notturni, bancarelle souvenir, longtail private, tuk-tuk (sempre PRIMA di salire!). <strong>NON si contratta:</strong> nei 7-Eleven, centri commerciali, ristoranti o farmacie.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasto Espandi / Comprimi Bottom -->
+        <button type="button" 
+                @click="tippingCardExpanded = !tippingCardExpanded; refreshIcons()"
+                class="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+          <span x-text="tippingCardExpanded ? 'Comprimi calcolatore mance ▴' : 'Espandi calcolatore mance & contrattazione ▾'"></span>
+          <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" :class="tippingCardExpanded ? 'rotate-180' : ''"></i>
         </button>
       </div>
 
@@ -1865,52 +2228,6 @@
             <p class="text-[10px] text-slate-400">Tocca "Dati Hotel Dogana TM6" in alto per copiare negli appunti nome e indirizzo completi da presentare all'ufficiale immigrazione.</p>
           </div>
         </div>
-
-        <!-- Archivio Voucher & Biglietti Offline (Caricati dall'utente) -->
-          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <i data-lucide="folder-archive" class="w-4 h-4 text-emerald-400"></i>
-                <span class="text-xs font-bold text-white">Archivio Biglietti & Voucher Offline</span>
-              </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400 font-bold"
-                    x-text="Object.keys(docsState).length + ' File Salvati'"></span>
-            </div>
-
-            <template x-if="Object.keys(docsState).length === 0">
-              <p class="text-[11px] text-slate-500 leading-relaxed italic">
-                Nessun file o biglietto ancora caricato. Puoi caricare i voucher e le carte d'imbarco PDF direttamente dalle schede in <em>Logistica → Hotel</em> e <em>Voli</em> per averli sempre a portata di mano anche senza connessione.
-              </p>
-            </template>
-
-            <template x-if="Object.keys(docsState).length > 0">
-              <div class="space-y-1.5 pt-1">
-                <template x-for="(doc, dKey) in docsState" :key="dKey">
-                  <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2">
-                    <div class="min-w-0 flex items-center gap-2">
-                      <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"></i>
-                      <div class="min-w-0">
-                        <span class="text-xs font-bold text-slate-200 block truncate" x-text="doc.targetTitle"></span>
-                        <span class="text-[9px] text-slate-400 font-mono block truncate" x-text="doc.name + ' (' + formatFileSize(doc.size) + ')'"></span>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <button type="button" 
-                              @click="openDocViewer(dKey)"
-                              class="py-1 px-2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold active:scale-95">
-                        Apri
-                      </button>
-                      <button type="button" 
-                              @click="deleteDocFor(dKey)"
-                              class="p-1 rounded-md text-slate-500 hover:text-rose-400 active:scale-95">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i>
-                      </button>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </template>
-          </div>
 
         <!-- Tasto Espandi / Comprimi Bottom -->
         <button type="button" 
@@ -4045,6 +4362,286 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL: DRESS CODE & ETICHETTA TEMPLI SACRI                 -->
+  <!-- ========================================================== -->
+  <div x-show="templeModal.show" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-[150] bg-black/85 backdrop-blur-md p-3 sm:p-4 flex flex-col items-center justify-center"
+       style="display: none;"
+       @click.self="closeTempleModal()">
+
+    <div class="w-full max-w-lg bg-slate-900 border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Header -->
+      <div class="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+            <span class="text-base">🛕</span>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-sm sm:text-base text-white">Dress Code & Etichetta Templi</h3>
+            <span class="text-[10px] sm:text-xs text-amber-400/90 font-medium">Norme buddhiste & checklist per i 4 amici</span>
+          </div>
+        </div>
+
+        <button type="button" 
+                @click="closeTempleModal()" 
+                class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Selettore Tab Interno al Modal -->
+      <div class="grid grid-cols-3 p-1.5 bg-slate-950 border-b border-slate-800 text-xs font-semibold">
+        <button type="button"
+                @click="templeModal.activeTab = 'checklist'; refreshIcons()"
+                :class="templeModal.activeTab === 'checklist' ? 'bg-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1">
+          <span>📋</span>
+          <span class="truncate">Checklist Outfit</span>
+        </button>
+        <button type="button"
+                @click="templeModal.activeTab = 'etiquette'; refreshIcons()"
+                :class="templeModal.activeTab === 'etiquette' ? 'bg-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1">
+          <span>🧘</span>
+          <span class="truncate">Galateo Sacro</span>
+        </button>
+        <button type="button"
+                @click="templeModal.activeTab = 'temples'; refreshIcons()"
+                :class="templeModal.activeTab === 'temples' ? 'bg-amber-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-slate-200'"
+                class="py-1.5 px-2 rounded-lg transition-all flex items-center justify-center gap-1">
+          <span>🏛️</span>
+          <span class="truncate">Severità Tappe</span>
+        </button>
+      </div>
+
+      <!-- Modal Body con scroll -->
+      <div class="p-3.5 sm:p-4 overflow-y-auto space-y-3.5 text-xs">
+        
+        <!-- VISTA 1: CHECKLIST OUTFIT INTERATTIVA -->
+        <div x-show="templeModal.activeTab === 'checklist'" class="space-y-3">
+          <!-- Barra di Completamento -->
+          <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-slate-300">Stato conformità abbigliamento:</span>
+              <span class="font-mono font-bold text-amber-400" x-text="templeChecklistCount + ' di 5 pronti'"></span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div class="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full transition-all duration-300"
+                   :style="'width: ' + ((templeChecklistCount / 5) * 100) + '%'"></div>
+            </div>
+            <template x-if="templeChecklistCount === 5">
+              <span class="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                <span>🎉</span> Perfetto! Siete al 100% in regola per qualsiasi tempio o palazzo reale!
+              </span>
+            </template>
+          </div>
+
+          <!-- Voci Checklist Cliccabili -->
+          <div class="space-y-2">
+            <!-- Item 1: Spalle coperte -->
+            <div @click="toggleTempleCheck('shoulders')" 
+                 class="p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-start gap-2.5"
+                 :class="templeChecklist.shoulders ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'">
+              <div class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5"
+                   :class="templeChecklist.shoulders ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-700 bg-slate-900'">
+                <i x-show="templeChecklist.shoulders" data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+              </div>
+              <div class="space-y-0.5">
+                <span class="font-bold text-white block">👕 Spalle Rigorosamente Coperte</span>
+                <p class="text-slate-300 text-[11px] leading-relaxed">T-shirt o camicia a maniche corte. No canottiere, smanicati o top a fascia. <em>Nota: al Grand Palace gli scialli sopra le canottiere NON sono ammessi!</em></p>
+              </div>
+            </div>
+
+            <!-- Item 2: Ginocchia coperte -->
+            <div @click="toggleTempleCheck('knees')" 
+                 class="p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-start gap-2.5"
+                 :class="templeChecklist.knees ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'">
+              <div class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5"
+                   :class="templeChecklist.knees ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-700 bg-slate-900'">
+                <i x-show="templeChecklist.knees" data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+              </div>
+              <div class="space-y-0.5">
+                <span class="font-bold text-white block">👖 Gambe e Ginocchia Coperte</span>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Pantaloni lunghi leggeri (lino o cotone fresco) oppure gonne/sarong sotto il ginocchio per entrambi i sessi. Niente shorts o bermuda.</p>
+              </div>
+            </div>
+
+            <!-- Item 3: No strappi o trasparenze -->
+            <div @click="toggleTempleCheck('notorn')" 
+                 class="p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-start gap-2.5"
+                 :class="templeChecklist.notorn ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'">
+              <div class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5"
+                   :class="templeChecklist.notorn ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-700 bg-slate-900'">
+                <i x-show="templeChecklist.notorn" data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+              </div>
+              <div class="space-y-0.5">
+                <span class="font-bold text-white block">🚫 No Strappi, Leggings o Trasparenze</span>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Jeans con tagli/strappi (anche di moda) e leggings attillati non passano i controlli del Grand Palace e dei templi primari.</p>
+              </div>
+            </div>
+
+            <!-- Item 4: Calzini nello zaino -->
+            <div @click="toggleTempleCheck('socks')" 
+                 class="p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-start gap-2.5"
+                 :class="templeChecklist.socks ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'">
+              <div class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5"
+                   :class="templeChecklist.socks ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-700 bg-slate-900'">
+                <i x-show="templeChecklist.socks" data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+              </div>
+              <div class="space-y-0.5">
+                <span class="font-bold text-amber-300 block">🧦 Calzini di Scorta Nello Zaino (Cruciale!)</span>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Nelle corti dei templi si cammina a piedi nudi: a mezzogiorno il marmo e le piastrelle sotto 35°C sono roventi! I calzini evitano dolorose scottature.</p>
+              </div>
+            </div>
+
+            <!-- Item 5: Scarpe slip-on facili -->
+            <div @click="toggleTempleCheck('slipon')" 
+                 class="p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-start gap-2.5"
+                 :class="templeChecklist.slipon ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'">
+              <div class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5"
+                   :class="templeChecklist.slipon ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-700 bg-slate-900'">
+                <i x-show="templeChecklist.slipon" data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+              </div>
+              <div class="space-y-0.5">
+                <span class="font-bold text-white block">👟 Scarpe Facili da Sfilare</span>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Slip-on, sandali con chiusura rapida o sneakers senza lacci complessi: vi scalzerete e rimetterete le scarpe a ogni singolo edificio.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-1 flex items-center justify-between">
+            <button type="button" 
+                    @click="resetTempleChecklist()"
+                    class="text-xs text-slate-400 hover:text-amber-400 transition-colors">
+              ↺ Azzera checklist
+            </button>
+            <span class="text-[10px] text-slate-500">Salvataggio automatico sul dispositivo</span>
+          </div>
+        </div>
+
+        <!-- VISTA 2: REGOLE DI GALATEO SACRO -->
+        <div x-show="templeModal.activeTab === 'etiquette'" class="space-y-2.5">
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="flex items-center gap-1.5 text-amber-300 font-bold">
+              <span>🧘</span>
+              <span>1. La Regola Sacra dei Piedi</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Nel Buddhismo i piedi sono la parte più impura del corpo. Non puntare <strong>mai</strong> la pianta dei piedi verso una statua del Buddha o un monaco. Quando ti siedi per terra, piega le gambe all'indietro o lateralmente ("posizione della sirena").
+            </p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="flex items-center gap-1.5 text-rose-300 font-bold">
+              <span>🛑</span>
+              <span>2. Donne e Monaci: Nessun Contatto Fisico</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              I monaci osservano voti rigorosissimi. Una donna non deve <strong>mai toccare un monaco</strong> o sfiorare la sua veste arancione. Se devi dare un'offerta, appoggiala su un tavolo o sull'apposito panno cerimoniale steso dal monaco.
+            </p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="flex items-center gap-1.5 text-teal-300 font-bold">
+              <span>📸</span>
+              <span>3. Fotografie & Rispetto del Luogo Sacro</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Guarda sempre i cartelli: in alcune sale sacre (es. l'Emerald Buddha al Grand Palace) fotografare è severamente vietato. Non arrampicarti mai su basamenti o statue per scattare selfie e non metterti in pose buffe davanti al Buddha.
+            </p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="flex items-center gap-1.5 text-sky-300 font-bold">
+              <span>🤫</span>
+              <span>4. Silenzio e la Soglia d'Ingresso</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              All'ingresso dei templi c'è un gradino rialzato in legno: per tradizione buddhista ospita lo spirito custode dell'edificio, quindi <strong>scavalcalo senza mai calpestarlo</strong>! Silenzia il cellulare e parla a voce bassa.
+            </p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="flex items-center gap-1.5 text-emerald-300 font-bold">
+              <span>🙏</span>
+              <span>5. Il Saluto Tradizionale "Wai"</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Unisci le mani davanti al petto o al viso con un leggero inchino della testa per mostrare devozione o ringraziare. Per salutare un monaco, le punte dei pollici dovrebbero sfiorare la fronte tra le sopracciglia.
+            </p>
+          </div>
+        </div>
+
+        <!-- VISTA 3: SEVERITÀ PER TAPPA DEL NOSTRO ITINERARIO -->
+        <div x-show="templeModal.activeTab === 'temples'" class="space-y-2.5">
+          <!-- Grand Palace & Wat Phra Kaew (Bangkok Day 2) -->
+          <div class="p-2.5 rounded-xl bg-rose-950/20 border border-rose-500/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">👑 Grand Palace & Wat Phra Kaew (Bangkok)</span>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-500 text-slate-950 uppercase">Severità 10/10</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Il luogo più severo di tutta la Thailandia. Nessun compromesso: controlli fisici all'ingresso. Scialli sopra le canottiere respinti; no jeans strappati; no pantaloncini. Se non sei a norma, devi acquistare i pantaloni con elefanti dai venditori esterni. Foto vietate dentro l'Ubosot dell'Emerald Buddha.
+            </p>
+          </div>
+
+          <!-- Wat Pho & Wat Arun (Bangkok Day 3) -->
+          <div class="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">🛕 Wat Pho & Wat Arun (Bangkok)</span>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 uppercase">Severità 8/10</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Tempio del Buddha Sdraiato e Tempio dell'Alba. Spalle e ginocchia coperte obbligatorie. Scalini del Prang centrale di Wat Arun molto ripidi: scarpe con buona aderenza consigliate. Si tolgono le scarpe all'ingresso della navata.
+            </p>
+          </div>
+
+          <!-- Doi Suthep & Wat Chedi Luang (Chiang Mai Days 4-5) -->
+          <div class="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">⛰️ Doi Suthep & Templi Old City (Chiang Mai)</span>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 uppercase">Severità 8/10</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Atmosfera monastica mistica. Terrazza dorata di Doi Suthep all'aperto: calzini indispensabili per non scottarsi i piedi sotto il sole. A Wat Chedi Luang possibile incontro di "Monk Chat" (chiacchiere culturali coi monaci).
+            </p>
+          </div>
+
+          <!-- Tiger Cave Temple (Krabi Day 10) -->
+          <div class="p-2.5 rounded-xl bg-sky-950/20 border border-sky-500/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">🐅 Wat Tham Suea / Tiger Cave (Krabi)</span>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-sky-400 text-slate-950 uppercase">9/10 + Trekking</span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Tempio in vetta con <strong>1.237 gradini ripidissimi</strong>. Abbigliamento traspirante ma rispettoso (portare sarong/t-shirt cambio per la vetta). Scarpe sportive comode. <em>Attenzione: scimmie molto aggressive lungo i gradini; chiudere bottigliette d'acqua e occhiali dentro lo zaino!</em>
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between">
+        <button type="button" 
+                @click="closeTempleModal()" 
+                class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-98 transition-all shadow-lg">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Chiudi e Torna all'App</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
   <!-- MODAL: VIEWER BIGLIETTI & VOUCHER PDF OFFLINE                             -->
   <!-- ========================================================================= -->
   <div x-show="activeViewerDoc" 
@@ -4130,7 +4727,7 @@
 
       <!-- Tab 2: Logistica -->
       <button type="button"
-              @click="activeTab = 'logistics'; refreshIcons(); $nextTick(() => { initSortable(); })" 
+              @click="activeTab = 'logistics'; refreshIcons();" 
               class="flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition-all relative group cursor-pointer"
               style="touch-action: manipulation;"
               :class="activeTab === 'logistics' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'">
@@ -4187,312 +4784,337 @@
   <!-- ========================================================================= -->
   <!-- ALPINE.JS APPLICATION STATE & LOGIC                                       -->
   <!-- ========================================================================= -->
-  <script>
+    <script>
     // ==========================================
-  // INDEXEDDB UTILITY PER VOUCHER & BIGLIETTI PDF OFFLINE
-  // ==========================================
-  const pwaDocsDB = {
-    dbName: 'thailand_docs_db',
-    dbVersion: 1,
-    db: null,
+    // INDEXEDDB UTILITY PER VOUCHER & BIGLIETTI PDF OFFLINE
+    // ==========================================
+const pwaDocsDB = {
+dbName: 'thailand_docs_db',
+dbVersion: 1,
+db: null,
 
-    open() {
-      if (this.db) return Promise.resolve(this.db);
-      return new Promise((resolve, reject) => {
-        if (!window.indexedDB) {
-          console.warn('IndexedDB non disponibile');
-          return resolve(null);
-        }
-        const req = indexedDB.open(this.dbName, this.dbVersion);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('vouchers')) {
-            db.createObjectStore('vouchers', { keyPath: 'id' });
-          }
-        };
-        req.onsuccess = (e) => {
-          this.db = e.target.result;
-          resolve(this.db);
-        };
-        req.onerror = (e) => {
-          console.error('IndexedDB open error', e);
-          resolve(null);
-        };
-      });
-    },
+open() {
+if (this.db) return Promise.resolve(this.db);
+return new Promise((resolve, reject) => {
+if (!window.indexedDB) {
+console.warn('IndexedDB non disponibile');
+return resolve(null);
+}
+const req = indexedDB.open(this.dbName, this.dbVersion);
+req.onupgradeneeded = (e) => {
+const db = e.target.result;
+if (!db.objectStoreNames.contains('vouchers')) {
+db.createObjectStore('vouchers', { keyPath: 'id' });
+}
+};
+req.onsuccess = (e) => {
+this.db = e.target.result;
+resolve(this.db);
+};
+req.onerror = (e) => {
+console.error('IndexedDB open error', e);
+resolve(null);
+};
+});
+},
 
-    save(id, doc) {
-      return this.open().then(db => {
-        if (!db) return Promise.resolve(null);
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction('vouchers', 'readwrite');
-          const store = tx.objectStore('vouchers');
-          const record = { id, ...doc, updatedAt: Date.now() };
-          const req = store.put(record);
-          req.onsuccess = () => resolve(record);
-          req.onerror = (e) => reject(e);
-        });
-      });
-    },
+save(id, doc) {
+return this.open().then(db => {
+if (!db) return Promise.resolve(null);
+return new Promise((resolve, reject) => {
+const tx = db.transaction('vouchers', 'readwrite');
+const store = tx.objectStore('vouchers');
+const record = { id, ...doc, updatedAt: Date.now() };
+const req = store.put(record);
+req.onsuccess = () => resolve(record);
+req.onerror = (e) => reject(e);
+});
+});
+},
 
-    get(id) {
-      return this.open().then(db => {
-        if (!db) return Promise.resolve(null);
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction('vouchers', 'readonly');
-          const store = tx.objectStore('vouchers');
-          const req = store.get(id);
-          req.onsuccess = () => resolve(req.result || null);
-          req.onerror = (e) => reject(e);
-        });
-      });
-    },
+get(id) {
+return this.open().then(db => {
+if (!db) return Promise.resolve(null);
+return new Promise((resolve, reject) => {
+const tx = db.transaction('vouchers', 'readonly');
+const store = tx.objectStore('vouchers');
+const req = store.get(id);
+req.onsuccess = () => resolve(req.result || null);
+req.onerror = (e) => reject(e);
+});
+});
+},
 
-    delete(id) {
-      return this.open().then(db => {
-        if (!db) return Promise.resolve(true);
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction('vouchers', 'readwrite');
-          const store = tx.objectStore('vouchers');
-          const req = store.delete(id);
-          req.onsuccess = () => resolve(true);
-          req.onerror = (e) => reject(e);
-        });
-      });
-    },
+delete(id) {
+return this.open().then(db => {
+if (!db) return Promise.resolve(true);
+return new Promise((resolve, reject) => {
+const tx = db.transaction('vouchers', 'readwrite');
+const store = tx.objectStore('vouchers');
+const req = store.delete(id);
+req.onsuccess = () => resolve(true);
+req.onerror = (e) => reject(e);
+});
+});
+},
 
-    getAll() {
-      return this.open().then(db => {
-        if (!db) return Promise.resolve([]);
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction('vouchers', 'readonly');
-          const store = tx.objectStore('vouchers');
-          const req = store.getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = (e) => reject(e);
-        });
-      });
-    }
-  };
+getAll() {
+return this.open().then(db => {
+if (!db) return Promise.resolve([]);
+return new Promise((resolve, reject) => {
+const tx = db.transaction('vouchers', 'readonly');
+const store = tx.objectStore('vouchers');
+const req = store.getAll();
+req.onsuccess = () => resolve(req.result || []);
+req.onerror = (e) => reject(e);
+});
+});
+}
+};
 
-  function thaiApp() {
-      return {
-        activeTab: 'itinerary',
-        // Documenti & Voucher PDF
-        docsState: {},
+function thaiApp() {
+return {
+activeTab: 'itinerary',
+// Documenti & Voucher PDF
+docsState: {},
         docsSyncStatus: 'idle',
         cloudDocsEndpoint: 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/documents.json',
-        activeViewerDoc: null,
-        docsCategoryFilter: 'all',
-        docsSearchQuery: '',
-        uploadDocModal: {
-          show: false,
-          title: '',
-          category: 'flight',
-          traveler: 'Tutto il gruppo',
-          fileName: '',
-          fileSize: 0,
-          fileType: '',
-          dataUrl: null
-        },
-
-        // Mappa Dinamica & Timeline del Viaggio
-        mapModal: { show: false },
-        timelineDay: 1,
-        isPlaying: false,
-        playSpeed: 1,
-        currentStageInfo: {
-          dayNum: 1,
-          date: '26 Dic',
-          title: 'Partenza da Roma & Arrivo a Bangkok',
-          from: 'Roma FCO',
-          to: 'Bangkok BKK',
-          mode: 'flight',
-          modeIcon: '✈️',
-          transportBadge: 'Air India',
-          distance: '~9.100 km',
-          hotel: 'Sukhothai Residence Ruam Ruedi'
-        },
-        _leafletMap: null,
-        _vehicleMarker: null,
-        _routeLines: [],
-        _cityMarkers: [],
-        _mapSegments: [],
-        _playInterval: null,
         logisticsSubTab: 'hotels',
-        cityFilter: 'all',
-        allExpanded: false,
-        currentDayIndex: 1,
-        
-        // Convertitore
-        exchangeRate: 38.5,
-        thbAmount: 1000,
-        eurAmount: 25.97,
+        hotelSortOrder: 'date-asc',
+        transportSortOrder: 'date-asc',
+activeViewerDoc: null,
+docsCategoryFilter: 'all',
+docsSearchQuery: '',
+uploadDocModal: {
+show: false,
+title: '',
+category: 'flight',
+traveler: 'Tutto il gruppo',
+fileName: '',
+fileSize: 0,
+fileType: '',
+dataUrl: null
+},
 
-        // Cassa comune
-        splitTotalThb: 1400,
+// Mappa Dinamica & Timeline del Viaggio
+mapModal: { show: false },
+timelineDay: 1,
+isPlaying: false,
+playSpeed: 1,
+currentStageInfo: {
+dayNum: 1,
+date: '26 Dic',
+title: 'Partenza da Roma & Arrivo a Bangkok',
+from: 'Roma FCO',
+to: 'Bangkok BKK',
+mode: 'flight',
+modeIcon: '✈️',
+transportBadge: 'Air India',
+distance: '~9.100 km',
+hotel: 'Sukhothai Residence Ruam Ruedi'
+},
+_leafletMap: null,
+_vehicleMarker: null,
+_routeLines: [],
+_cityMarkers: [],
+_mapSegments: [],
+_playInterval: null,
+logisticsSubTab: 'hotels',
+cityFilter: 'all',
+allExpanded: false,
+currentDayIndex: 1,
 
-        // Toast
-        toast: { show: false, message: '' },
+// Convertitore
+exchangeRate: 38.5,
+thbAmount: 1000,
+eurAmount: 25.97,
 
-        // Taxi Modal
-        taxiModal: {
-          show: false,
-          hotelName: '',
-          thaiName: '',
-          thaiAddress: '',
-          mapsQuery: ''
-        },
+// Cassa comune
+splitTotalThb: 1400,
 
-        // Nuova voce checklist
-        newCheckItem: '',
+// Calcolatore Mance & Contrattazione (Toolbox)
+tippingCardExpanded: true,
+toolboxTippingTab: 'tipping', // 'tipping' | 'bargaining'
+tipCategory: 'massage', // 'massage' | 'restaurant' | 'taxi' | 'boat' | 'porter' | 'custom'
+tipBillThb: 400,
+tipCustomPercent: 10,
+bargainAskingThb: 500,
 
-        // Countdown Partenza
-        countdown: {
-          days: '00',
-          hours: '00',
-          minutes: '00',
-          seconds: '00',
-          isStarted: false,
-          label: '25 Dic 2026 • 21:00 (Volo per Bangkok)'
-        },
-        countdownTimer: null,
+// Dress Code & Etichetta Templi
+templeModal: {
+  show: false,
+  day: null,
+  activeTab: 'checklist' // 'checklist' | 'etiquette' | 'temples'
+},
+templeChecklist: {
+  shoulders: false,
+  knees: false,
+  notorn: false,
+  socks: false,
+  slipon: false
+},
 
-        // I 4 Viaggiatori
-        travelers: [],
-        defaultTravelers: [
-          { id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', fullName: 'Edoardo Fabbri', passportNo: '', passportExp: '', nationality: 'Italiana' },
-          { id: 2, name: 'Marco', role: 'Tesoriere & Cassa', avatarEmoji: '💰', avatarBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
-          { id: 3, name: 'Ale', role: 'Food & Street Gourmet', avatarEmoji: '🍜', avatarBg: 'bg-teal-500/20 text-teal-300 border border-teal-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
-          { id: 4, name: 'Luca', role: 'Fotografo & Vibe Master', avatarEmoji: '📸', avatarBg: 'bg-sky-500/20 text-sky-300 border border-sky-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' }
-        ],
+// Toast
+toast: { show: false, message: '' },
 
-        // Modals & PWA
-        travelerModal: {
-          show: false,
-          id: null,
-          name: '',
-          role: '',
-          avatarEmoji: '🗺️'
-        },
+// Taxi Modal
+taxiModal: {
+show: false,
+hotelName: '',
+thaiName: '',
+thaiAddress: '',
+mapsQuery: ''
+},
 
-        lightboxModal: {
-          show: false,
-          src: 'cover.jpg'
-        },
+// Nuova voce checklist
+newCheckItem: '',
 
-        editDayModal: {
-          show: false,
-          dayId: '',
-          dayNum: 1,
-          city: '',
-          date: '',
-          title: '',
-          backpackNotes: '',
-          mainLocation: '',
-          stops: []
-        },
+// Countdown Partenza
+countdown: {
+days: '00',
+hours: '00',
+minutes: '00',
+seconds: '00',
+isStarted: false,
+label: '25 Dic 2026 • 21:00 (Volo per Bangkok)'
+},
+countdownTimer: null,
 
-        editHotelModal: {
-          show: false,
-          isNew: false,
-          id: '',
-          name: '',
-          nameThai: '',
-          city: '',
-          addressEn: '',
-          addressThai: '',
-          dates: '',
-          nights: 1,
-          checkIn: '',
-          checkOut: '',
-          bookingRef: '',
-          phone: '',
-          mapsQuery: ''
-        },
+// I 4 Viaggiatori
+travelers: [],
+defaultTravelers: [
+{ id: 1, name: 'Steff', role: 'Organizzatore & Rotte', avatarEmoji: '🗺️', avatarBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', fullName: 'Edoardo Fabbri', passportNo: '', passportExp: '', nationality: 'Italiana' },
+{ id: 2, name: 'Marco', role: 'Tesoriere & Cassa', avatarEmoji: '💰', avatarBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+{ id: 3, name: 'Ale', role: 'Food & Street Gourmet', avatarEmoji: '🍜', avatarBg: 'bg-teal-500/20 text-teal-300 border border-teal-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' },
+{ id: 4, name: 'Luca', role: 'Fotografo & Vibe Master', avatarEmoji: '📸', avatarBg: 'bg-sky-500/20 text-sky-300 border border-sky-500/30', fullName: '', passportNo: '', passportExp: '', nationality: 'Italiana' }
+],
 
-        editTransportModal: {
-          show: false,
-          isNew: false,
-          id: '',
-          type: 'flight',
-          carrier: '',
-          flightNumber: '',
-          date: '',
-          depCode: '',
-          depCity: '',
-          depTime: '',
-          arrCode: '',
-          arrCity: '',
-          arrTime: '',
-          duration: '',
-          stops: 0,
-          stopsInfo: '',
-          pnr: '',
-          baggage: ''
-        },
+// Modals & PWA
+travelerModal: {
+show: false,
+id: null,
+name: '',
+role: '',
+avatarEmoji: '🗺️'
+},
 
-        mapChooserModal: {
-          show: false,
-          title: '',
-          query: ''
-        },
+lightboxModal: {
+show: false,
+src: 'cover.jpg'
+},
 
-        // Doppio Fuso Orario ITA ⇄ THA
-        timeBangkok: '',
-        timeRome: '',
-        dateBangkok: '',
-        dateRome: '',
-        hourRome: 12,
-        hourBangkok: 18,
-        simulatedHourBkk: 18,
-        clockInterval: null,
+editDayModal: {
+show: false,
+dayId: '',
+dayNum: 1,
+city: '',
+date: '',
+title: '',
+backpackNotes: '',
+mainLocation: '',
+stops: []
+},
 
-        // Cassaforte Passaporti & Check-in
-        showPassportsPrivacy: false,
-        editPassportModal: {
-          show: false,
-          travelerId: null,
-          name: '',
-          fullName: '',
-          passportNo: '',
-          passportExp: '',
-          nationality: 'Italiana'
-        },
+editHotelModal: {
+show: false,
+isNew: false,
+id: '',
+name: '',
+nameThai: '',
+city: '',
+addressEn: '',
+addressThai: '',
+dates: '',
+nights: 1,
+checkIn: '',
+checkOut: '',
+bookingRef: '',
+phone: '',
+mapsQuery: ''
+},
 
-        // Guida Galateo Templi & Normative
-        templeGuideTab: 'temples',
+editTransportModal: {
+show: false,
+isNew: false,
+id: '',
+type: 'flight',
+carrier: '',
+flightNumber: '',
+date: '',
+depCode: '',
+depCity: '',
+depTime: '',
+arrCode: '',
+arrCity: '',
+arrTime: '',
+duration: '',
+stops: 0,
+stopsInfo: '',
+pnr: '',
+baggage: ''
+},
 
-        showPwaPrompt: false,
+mapChooserModal: {
+show: false,
+title: '',
+query: ''
+},
 
-        // Sincronizzazione Gruppo
-        syncStatus: 'idle',
-        lastSyncTime: '',
-        lastCloudTimestamp: '',
-        autoSyncInterval: null,
-        autoSyncPending: false,
-        autoSyncAuthor: '',
-        cloudEndpoint: 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/trip.json',
-        realtimeEventSource: null,
-        syncModal: {
-          show: false,
-          copySuccess: false
-        },
-        incomingSyncModal: {
-          show: false,
-          author: '',
-          time: '',
-          payload: null
-        },
+// Doppio Fuso Orario ITA ⇄ THA
+timeBangkok: '',
+timeRome: '',
+dateBangkok: '',
+dateRome: '',
+hourRome: 12,
+hourBangkok: 18,
+simulatedHourBkk: 18,
+clockInterval: null,
 
-        // Meteo State
-        weatherCardExpanded: false,
-        dualClockCardExpanded: false,
-        phrasesCardExpanded: false,
-        vaultCardExpanded: false,
-        selectedWeatherId: 'bangkok',
-        weatherViewMode: 'tripDays', // 'tripDays' (i giorni in cui siamo lì) oppure 'liveToday' (in diretta oggi)
-        weatherLoading: false,
+// Cassaforte Passaporti & Check-in
+showPassportsPrivacy: false,
+editPassportModal: {
+show: false,
+travelerId: null,
+name: '',
+fullName: '',
+passportNo: '',
+passportExp: '',
+nationality: 'Italiana'
+},
+
+// Guida Galateo Templi & Normative
+templeGuideTab: 'temples',
+
+showPwaPrompt: false,
+
+// Sincronizzazione Gruppo
+syncStatus: 'idle',
+lastSyncTime: '',
+lastCloudTimestamp: '',
+autoSyncInterval: null,
+autoSyncPending: false,
+autoSyncAuthor: '',
+cloudEndpoint: 'https://thailandia-2026-default-rtdb.europe-west1.firebasedatabase.app/trip.json',
+realtimeEventSource: null,
+syncModal: {
+show: false,
+copySuccess: false
+},
+incomingSyncModal: {
+show: false,
+author: '',
+time: '',
+payload: null
+},
+
+// Meteo State
+weatherCardExpanded: false,
+dualClockCardExpanded: false,
+phrasesCardExpanded: false,
+vaultCardExpanded: false,
+selectedWeatherId: 'bangkok',
+weatherViewMode: 'tripDays', // 'tripDays' (i giorni in cui siamo lì) oppure 'liveToday' (in diretta oggi)
+weatherLoading: false,
         weatherRegions: [
           {
             id: 'bangkok',
@@ -4522,7 +5144,7 @@
                 humidity: '58%',
                 rainChance: '5%',
                 wind: '12 km/h',
-                dayAdvice: 'Atterraggio a Suvarnabhumi alle 20:55. Serata a 25-26°C tra i vicoli illuminati dai neon di Yaowarat Road: clima ottimo per mangiare noodles e spiedini all\'aperto senza afa.',
+                dayAdvice: 'Atterraggio alle 16:30. Serata a 26°C tra i vicoli illuminati dai neon di Yaowarat Road: clima ottimo per mangiare noodles e spiedini all\'aperto senza afa.',
                 outfitTip: 'T-shirt traspirante di cotone o lino, scarpe comode per camminare tra i banchi di street food.'
               },
               {
@@ -4809,23 +5431,22 @@
         // Inizializzazione Completa dell'Applicazione
         initApp() {
           this.loadChecklist();
+          this.loadTempleChecklist();
           this.loadTravelers();
           this.loadHotels();
           this.loadTransports();
           this.loadItinerary();
-          this.syncTransportsToItinerary(false);
           this.initCountdown();
           this.initWeather();
           this.initDualClock();
+          this.initDocs();
           this.refreshIcons();
           this.convertFromThb();
           this.initPwaPrompt();
           this.initSyncStatus();
           this.checkForUrlSync();
-          this.initDocs();
           // Allinea subito in background con Google Firebase all'avvio
           this.downloadFromCloud(true);
-          setTimeout(() => { this.initSortable(); }, 350);
         },
 
         get currentRegion() {
@@ -4886,262 +5507,15 @@
           this.refreshIcons();
         },
 
-        // =========================================================================
-        // MOTORE REATTIVO CONSIGLI & METEO DINAMICO (TEMPO REALE)
-        // Ricalcola consigli, temperature e outfit quando cambiano orari e trasporti
-        // =========================================================================
-        parseTimeHour(timeStr) {
-          if (!timeStr || typeof timeStr !== 'string') return null;
-          const clean = timeStr.replace(/\s*\(\+\d+\)/i, '').trim();
-          const m = clean.match(/(\d{1,2})[:.hH](\d{2})/) || clean.match(/^(\d{1,2})$/);
-          if (m) {
-            const h = parseInt(m[1], 10);
-            const min = m[2] !== undefined ? parseInt(m[2], 10) : 0;
-            if (!isNaN(h) && !isNaN(min) && h >= 0 && h <= 23 && min >= 0 && min <= 59) {
-              return {
-                hour: h,
-                minute: min,
-                formatted: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
-                cleanTime: clean
-              };
-            }
-          }
-          return null;
-        },
-
-        getDayPrimaryTransport(dayNum) {
-          if (!this.transports || !Array.isArray(this.transports)) return null;
-          if (dayNum === 1) {
-            return this.transports.find(t => t.id === 't1') || 
-                   this.transports.find(t => t.type === 'flight' && (t.arrCode === 'BKK' || (t.arrCity && t.arrCity.toLowerCase().includes('bangkok')))) || 
-                   this.transports[0] || null;
-          }
-          if (dayNum === 6) {
-            return this.transports.find(t => t.id === 't2' || (t.depCode === 'CNX' && t.arrCode === 'URT')) || null;
-          }
-          if (dayNum === 14) {
-            return this.transports.find(t => t.id === 't3' || t.id === 't10' || (t.arrCode === 'FCO' || t.arrCode === 'MXP')) || null;
-          }
-          return null;
-        },
-
-        getDynamicDayAdvice(dayWeather) {
-          if (!dayWeather) return '';
-          const num = dayWeather.dayNum;
-
-          // GIORNO 1: ARRIVO A BANGKOK (Adattato in tempo reale all'orario effettivo dell'atterraggio)
-          if (num === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : ((this.itinerary[0] && this.itinerary[0].stops && this.itinerary[0].stops[0]) ? this.itinerary[0].stops[0].time : '20:55');
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            const f = p ? p.formatted : arrStr;
-
-            if (h >= 20) {
-              return `Atterraggio a Suvarnabhumi aggiornato alle ${f}. A quest'ora della notte la temperatura è sui 25-26°C con piacevole brezza e zero afa opprimente. Disbrigo immigrazione serale rapido: taxi ufficiale o Airport Rail Link verso Yaowarat per il check-in notturno, prima doccia rinfrescante e delizioso spuntino con noodles caldi o spiedini tra i neon senza il caldo diurno!`;
-            } else if (h >= 18) {
-              return `Atterraggio a Suvarnabhumi programmato alle ${f}. Clima serale piacevole a circa 26-27°C con sole già tramontato. Trasferimento in hotel a Chinatown per il check-in, seguito da cena rilassata all'aperto tra le lanterne rosse con atmosfera vivace.`;
-            } else if (h >= 13) {
-              return `Atterraggio a Suvarnabhumi alle ${f}. Clima pomeridiano caldo (circa 31-32°C). Possibile traffico sostenuto nelle ore di punta verso il centro: doccia rigenerante in hotel e poi prima passeggiata serale tra lo street food e i rooftop di Yaowarat Road.`;
-            } else if (h >= 6) {
-              return `Atterraggio mattutino alle ${f}. Aria fresca a 24°C in aumento fino a 32°C durante le ore centrali. Poiché il check-in standard è alle 14:00, depositate comodamente gli zaini alla reception per iniziare subito a scoprire la città.`;
-            } else {
-              return `Atterraggio all'alba alle ${f}. Clima fresco a 23°C e città ancora quieta. Trasferimento verso l'hotel per deposito bagagli e prima colazione thai rilassante.`;
-            }
-          }
-
-          // GIORNO 2: MERCATO GALLEGGIANTE DAMNOEN SADUAK & MAEKLONG
-          if (num === 2) {
-            const d2Stop = (this.itinerary[1] && this.itinerary[1].stops && this.itinerary[1].stops[0]) ? this.itinerary[1].stops[0].time : '07:00';
-            return `Partenza programmata alle ${d2Stop} con aria fresca mattutina (22-23°C). Nelle ore centrali sui canali in barca il sole scalda forte fino a 33°C.`;
-          }
-
-          // GIORNO 3: GRAND PALACE & TRENO NOTTURNO
-          if (num === 3) {
-            const t2 = this.getDayPrimaryTransport(3);
-            const depStr = (t2 && t2.depTime) ? t2.depTime : '18:40';
-            return `Grand Palace e Wat Pho richiedono abbigliamento consono. Alle ${depStr} si sale sul treno notturno Special Express con aria condizionata polare: preparare la felpa!`;
-          }
-
-          // GIORNO 4: ARRIVO A CHIANG MAI
-          if (num === 4) {
-            const t2 = this.getDayPrimaryTransport(4);
-            const arrStr = (t2 && t2.arrTime) ? t2.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '07:15';
-            return `Arrivo alla stazione di Chiang Mai alle ${arrStr} tra l'aria frizzante e limpida del nord (18-20°C). Pomeriggio mite a 28°C tra i vicoli della Old City; dopo il tramonto al Night Bazaar la temperatura scende a 16-17°C.`;
-          }
-
-          // GIORNO 7: KHAO SOK LAKE
-          if (num === 7) {
-            const t3 = this.getDayPrimaryTransport(7);
-            const depStr = (t3 && t3.depTime) ? t3.depTime : '07:30';
-            return `Partenza volo alle ${depStr} verso Surat Thani. All'arrivo al Lago Cheow Lan clima tropicale incontaminato: acqua calda del lago a 28°C, zero onde e tuffi rigeneranti direttamente dal patio della casa galleggiante!`;
-          }
-
-          // GIORNO 9: KRABI RAILAY
-          if (num === 9) {
-            const t5 = this.getDayPrimaryTransport(9);
-            const arrStr = (t5 && t5.arrTime) ? t5.arrTime : '16:00';
-            return `Arrivo a Railay Beach previsto verso le ${arrStr}. Clima balneare superbo a 31°C e mare calmo a 29°C. Sbarco a piedi con l'acqua alle ginocchia sotto la luce dorata del tramonto.`;
-          }
-
-          // GIORNO 13: PHUKET ➔ BANGKOK
-          if (num === 13) {
-            const t9 = this.getDayPrimaryTransport(13);
-            const depStr = (t9 && t9.depTime) ? t9.depTime : '19:45';
-            const arrStr = (t9 && t9.arrTime) ? t9.arrTime : '21:15';
-            return `Safari in moto d'acqua con mare ideale di giorno. Alle ${depStr} decollo da Phuket con atterraggio serale a Bangkok alle ${arrStr} (26°C serali).`;
-          }
-
-          // GIORNO 14: VOLO RIENTRO ITALIA
-          if (num === 14) {
-            const t10 = this.getDayPrimaryTransport(14);
-            const depStr = (t10 && t10.depTime) ? t10.depTime : '08:05';
-            return `Volo intercontinentale di rientro in decollo alle ${depStr} da Suvarnabhumi: sveglia presto e transfer in aeroporto 3 ore prima. Vestiti comodi a strati per affrontare la climatizzazione a bordo.`;
-          }
-
-          return dayWeather.dayAdvice || '';
-        },
-
-        getDynamicOutfitTip(dayWeather) {
-          if (!dayWeather) return '';
-          if (dayWeather.dayNum === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-
-            if (h >= 19) {
-              return `Aria condizionata molto fredda (19°C) in aeroporto e nei taxi serali: tieni una felpa leggera nello zaino a mano; sotto t-shirt e scarpe comode per il giro serale a Yaowarat.`;
-            } else if (h >= 13) {
-              return `T-shirt traspirante di cotone o lino, occhiali da sole e scarpe comode per camminare tra i banchi di street food.`;
-            } else {
-              return `Abbigliamento leggero e traspirante, cappellino e occhiali da sole per affrontare le ore calde del primo giorno.`;
-            }
-          }
-          return dayWeather.outfitTip || '';
-        },
-
-        getDynamicDayCondition(dayWeather) {
-          if (!dayWeather) return 'Soleggiato';
-          if (dayWeather.dayNum === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            if (h >= 19) return 'Brezza Serale & Clima Notturno a 25°C';
-            if (h >= 13) return 'Soleggiato & Pomeriggio Caldo';
-            return 'Mattina Fresca in Aumento a 32°C';
-          }
-          return dayWeather.condition || 'Soleggiato';
-        },
-
-        getDynamicDayIcon(dayWeather) {
-          if (!dayWeather) return '☀️';
-          if (dayWeather.dayNum === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            if (h >= 19) return '🌙';
-          }
-          return dayWeather.weatherIcon || '☀️';
-        },
-
-        getDynamicDayMaxTemp(dayWeather) {
-          if (!dayWeather) return 32;
-          if (dayWeather.dayNum === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            if (h >= 20) return 26;
-            if (h >= 18) return 28;
-          }
-          return dayWeather.maxTemp || 32;
-        },
-
-        getDynamicDayMinTemp(dayWeather) {
-          if (!dayWeather) return 23;
-          return dayWeather.minTemp || 23;
-        },
-
-        getDynamicDayTag(dayWeather) {
-          if (!dayWeather) return '';
-          if (dayWeather.dayNum === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime : '20:55';
-            const p = this.parseTimeHour(arrStr);
-            const h = p ? p.hour : 20;
-            if (h >= 19) return '🏮 Arrivo Serale & Check-in';
-            if (h < 12) return '🛬 Arrivo Mattutino & Prime Esplorazioni';
-          }
-          return dayWeather.tag || '';
-        },
-
-        getDynamicDayTimingBadge(dayWeather) {
-          if (!dayWeather) return null;
-          const num = dayWeather.dayNum;
-          if (num === 1) {
-            const t = this.getDayPrimaryTransport(1);
-            const arrStr = (t && t.arrTime) ? t.arrTime.replace(/\s*\(\+\d+\)/, '').trim() : '20:55';
-            return 'Volo andata: atterraggio ore ' + arrStr + ' • 25°C serali';
-          }
-          if (num === 6) {
-            const t = this.getDayPrimaryTransport(6);
-            const depStr = (t && t.depTime) ? t.depTime.trim() : '08:10';
-            return 'Volo Thai AirAsia: decollo CNX ore ' + depStr + ' • Capodanno Khao Sok';
-          }
-          if (num === 14) {
-            const t = this.getDayPrimaryTransport(14);
-            const depStr = (t && t.depTime) ? t.depTime.trim() : '08:05';
-            return 'Volo rientro FCO: decollo BKK ore ' + depStr;
-          }
-          return null;
-        },
-
-        syncTransportsToItinerary(force = false) {
-          if (!this.transports || !Array.isArray(this.transports) || !this.itinerary || !Array.isArray(this.itinerary)) return;
-
-          // 1. Giorno 1 - Atterraggio a Bangkok (Volo t1)
-          const t1 = this.transports.find(t => t.id === 't1') || this.transports[0];
-          if (t1 && t1.arrTime && this.itinerary[0]) {
-            const cleanArr = t1.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
-            const d1 = this.itinerary[0];
-            if (d1 && d1.stops && d1.stops.length > 0) {
-              d1.stops[0].time = cleanArr;
-            }
-          }
-
-          // 2. Giorno 6 - Volo Thai AirAsia CNX -> URT (t2)
-          const t2 = this.transports.find(t => t.id === 't2' || (t.depCode === 'CNX' && t.arrCode === 'URT'));
-          if (t2) {
-            const d6 = this.itinerary.find(d => d.dayNum === 6);
-            if (d6 && d6.stops && d6.stops.length >= 2 && t2.depTime) {
-              d6.stops[1].time = t2.depTime.trim();
-            }
-          }
-
-          // 3. Giorno 14 - Volo di Rientro (t3)
-          const t3 = this.transports.find(t => t.id === 't3' || t.id === 't10' || (t.depCode === 'BKK' && t.arrCode === 'FCO'));
-          if (t3 && t3.depTime) {
-            const d14 = this.itinerary.find(d => d.dayNum === 14);
-            if (d14 && d14.stops && d14.stops.length > 0) {
-              d14.stops[0].time = t3.depTime.trim();
-            }
-          }
-
-          this.saveItinerary();
-        },
-
         getDayWeatherBadge(dayNum) {
           for (const reg of this.weatherRegions) {
             if (reg.tripDays) {
               const d = reg.tripDays.find(t => t.dayNum === dayNum);
               if (d) {
                 return {
-                  temp: `${this.getDynamicDayMinTemp(d)}°-${this.getDynamicDayMaxTemp(d)}°`,
-                  icon: this.getDynamicDayIcon(d),
-                  condition: this.getDynamicDayCondition(d),
+                  temp: `${d.minTemp}°-${d.maxTemp}°`,
+                  icon: d.weatherIcon,
+                  condition: d.condition,
                   regionId: reg.id
                 };
               }
@@ -5193,42 +5567,58 @@
           }
         },
 
+        
+        getDynamicDayMinTemp(d) { return d ? d.minTemp : 22; },
+        getDynamicDayMaxTemp(d) { return d ? d.maxTemp : 32; },
+        getDynamicDayIcon(d) { return d ? (d.weatherIcon || '☀️') : '☀️'; },
+        getDynamicDayCondition(d) { return d ? (d.condition || 'Soleggiato') : 'Soleggiato'; },
+        getDynamicDayAdvice(d) { return d ? (d.dayAdvice || '') : ''; },
+        getDynamicOutfitTip(d) { return d ? (d.outfitTip || '') : ''; },
+        getDynamicDayTag(d) { return d ? (d.tag || '') : ''; },
+
+        syncTransportsToItinerary(force = false) {
+          if (!this.transports || !Array.isArray(this.transports) || !this.itinerary || !Array.isArray(this.itinerary)) return;
+
+          const t1 = this.transports.find(t => t.id === 't1') || this.transports[0];
+          if (t1 && t1.arrTime && this.itinerary[0]) {
+            const cleanArr = t1.arrTime.replace(/\s*\(\+\d+\)/i, '').trim();
+            const d1 = this.itinerary[0];
+            if (d1 && d1.stops && d1.stops.length > 0) {
+              d1.stops[0].time = cleanArr;
+            }
+          }
+
+          const t2 = this.transports.find(t => t.id === 't2' || (t.depCode === 'CNX' && t.arrCode === 'URT'));
+          if (t2) {
+            const d6 = this.itinerary.find(d => d.dayNum === 6);
+            if (d6 && d6.stops && d6.stops.length >= 2 && t2.depTime) {
+              d6.stops[1].time = t2.depTime.trim();
+            }
+          }
+
+          const t3 = this.transports.find(t => t.id === 't3' || t.id === 't10' || (t.depCode === 'BKK' && t.arrCode === 'FCO'));
+          if (t3 && t3.depTime) {
+            const d14 = this.itinerary.find(d => d.dayNum === 14);
+            if (d14 && d14.stops && d14.stops.length > 0) {
+              d14.stops[0].time = t3.depTime.trim();
+            }
+          }
+
+          this.saveItinerary();
+        },
+
         refreshWeather() {
           this.fetchLiveWeather(this.selectedWeatherId);
           this.showToast('Meteo live aggiornato in tempo reale!');
         },
 
-        // Countdown Logic (allineato dinamicamente alla partenza del volo alle 21:00 con compensazione ora solare/legale)
+        // Countdown Logic
         initCountdown() {
-          let targetDateStr = '2026-12-25T21:00:00';
-          let subtitle = '25 Dic 2026 • 21:00 (Volo per Bangkok)';
-
-          const firstFlight = (this.transports && this.transports.length > 0)
-            ? this.transports.find(t => t.type === 'flight' || t.id === 't1')
-            : null;
-
-          if (firstFlight && firstFlight.depTime) {
-            const time = firstFlight.depTime.trim();
-            const timeParts = time.split(':');
-            if (timeParts.length >= 2) {
-              const hh = timeParts[0].padStart(2, '0');
-              const mm = timeParts[1].padStart(2, '0');
-              targetDateStr = `2026-12-25T${hh}:${mm}:00`;
-              subtitle = `25 Dic 2026 • ${hh}:${mm} (${firstFlight.flightNumber ? (firstFlight.depCode || 'FCO') + ' ➔ ' + (firstFlight.arrCode || 'BKK') : 'Volo per Bangkok'})`;
-            }
-          }
-
-          this.countdown.label = subtitle;
-          const targetObj = new Date(targetDateStr);
-          const departureDate = targetObj.getTime();
+          const departureDate = new Date('2026-12-25T21:00:00').getTime();
           
           const update = () => {
-            const nowObj = new Date();
-            const now = nowObj.getTime();
-            // Compensazione del cambio ora legale (estate) -> ora solare (inverno):
-            // In autunno le lancette si spostano indietro di 1h. Questo allinea i giorni e le ore esattamente all'orologio di partenza.
-            const dstOffset = (nowObj.getTimezoneOffset() - targetObj.getTimezoneOffset()) * 60 * 1000;
-            const diff = (departureDate - now) + dstOffset;
+            const now = new Date().getTime();
+            const diff = departureDate - now;
 
             if (diff <= 0) {
               this.countdown.days = '00';
@@ -5264,7 +5654,7 @@
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
                 this.travelers = parsed.map(t => ({
-                  fullName: t.fullName || t.name,
+                  fullName: t.fullName || '',
                   passportNo: t.passportNo || '',
                   passportExp: t.passportExp || '',
                   nationality: t.nationality || 'Italiana',
@@ -5301,7 +5691,7 @@
             t.role = this.travelerModal.role.trim() || t.role;
             t.avatarEmoji = this.travelerModal.avatarEmoji || t.avatarEmoji;
             this.saveTravelers();
-            this.uploadToCloud(true); // Sincronizza subito su Firebase
+            this.uploadToCloud(true);
             this.showToast('Profilo di ' + t.name + ' salvato e sincronizzato!');
           }
           this.travelerModal.show = false;
@@ -5315,68 +5705,160 @@
         },
 
         refreshIcons() {
-          if (this.$nextTick) {
-            this.$nextTick(() => {
-              if (window.lucide) {
-                window.lucide.createIcons();
-              }
-            });
-          } else if (window.lucide) {
-            window.lucide.createIcons();
-          }
+          this.$nextTick(() => {
+            if (window.lucide) {
+              lucide.createIcons();
+            }
+          });
         },
 
-        showToast(msg) {
-          this.toast.message = msg;
+        showToast(message) {
+          this.toast.message = message;
           this.toast.show = true;
-          this.refreshIcons();
           setTimeout(() => {
             this.toast.show = false;
-          }, 2400);
+          }, 3200);
         },
 
-        copyText(text, successMsg) {
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text);
-            this.showToast(successMsg || 'Copiato!');
-          } else {
-            // Fallback
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            this.showToast(successMsg || 'Copiato!');
+        // Cambio Valuta
+        convertFromThb() {
+          const val = parseFloat(this.currencyThb);
+          if (!isNaN(val)) {
+            this.currencyEur = (val * 0.0265).toFixed(2);
           }
         },
 
-        // ==========================================
-        // PWA & IOS STANDALONE SMART PROMPT
-        // ==========================================
+        convertFromEur() {
+          const val = parseFloat(this.currencyEur);
+          if (!isNaN(val)) {
+            this.currencyThb = Math.round(val * 37.74);
+          }
+        },
+
+        quickConvert(thb) {
+          return (thb * 0.0265).toFixed(1);
+        },
+
+        setQuickThb(val) {
+          this.currencyThb = val;
+          this.convertFromThb();
+        },
+
+        get splitPerPersonThb() {
+          const tot = parseFloat(this.splitTotalThb) || 0;
+          return Math.round(tot / (this.splitTravelers || 4));
+        },
+
+        get splitPerPersonEur() {
+          const thb = this.splitPerPersonThb;
+          return (thb * 0.0265).toFixed(2);
+        },
+
+        jumpToToday() {
+          const todayCard = document.getElementById('day-card-' + this.currentDayIndex);
+          if (todayCard) {
+            todayCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const day = this.itinerary.find(d => d.dayNum === this.currentDayIndex);
+            if (day) day.expanded = true;
+          }
+        },
+
+        setToday(dayNum) {
+          this.currentDayIndex = dayNum;
+          this.showToast('Impostato Giorno ' + dayNum + ' come Oggi!');
+        },
+
+        toggleAllDays() {
+          this.allExpanded = !this.allExpanded;
+          this.itinerary.forEach(d => d.expanded = this.allExpanded);
+          this.refreshIcons();
+        },
+
+        // Filtro Città Robusto per l'Itinerario (Bangkok, Chiang Mai, Khao Sok, Krabi, Phuket)
+        get filteredItinerary() {
+          if (!this.cityFilter || this.cityFilter === 'all') return this.itinerary;
+          const target = this.cityFilter.toLowerCase().trim();
+          
+          return this.itinerary.filter(d => {
+            const city = (d.city || '').toLowerCase();
+            const cityGroup = (d.cityGroup || '').toLowerCase();
+            const title = (d.title || '').toLowerCase();
+            const location = (d.mainLocation || '').toLowerCase();
+
+            if (target === 'bangkok') {
+              return city.includes('bangkok') || cityGroup.includes('bangkok') || title.includes('bangkok');
+            }
+            if (target === 'chiang mai') {
+              return city.includes('chiang') || cityGroup.includes('chiang') || title.includes('chiang');
+            }
+            if (target === 'khao sok') {
+              return city.includes('khao sok') || cityGroup.includes('khao sok') || title.includes('khao sok') || location.includes('khao sok');
+            }
+            if (target === 'krabi') {
+              return city.includes('krabi') || city.includes('ao nang') || city.includes('railay') ||
+                     cityGroup.includes('krabi') || (cityGroup === 'sud' && [8, 9, 10].includes(d.dayNum)) ||
+                     title.includes('krabi') || location.includes('krabi');
+            }
+            if (target === 'phuket') {
+              return city.includes('phuket') || city.includes('phi phi') ||
+                     cityGroup.includes('phuket') || (cityGroup === 'sud' && [11, 12, 13].includes(d.dayNum)) ||
+                     title.includes('phuket') || location.includes('phuket');
+            }
+
+            return city.includes(target) || cityGroup.includes(target) || title.includes(target);
+          });
+        },
+
+        getCityBadgeStyle(city) {
+          if (!city) return 'bg-slate-800 text-slate-300';
+          const c = city.toLowerCase();
+          if (c.includes('bangkok')) return 'bg-amber-400/20 text-amber-300 border border-amber-400/30';
+          if (c.includes('chiang')) return 'bg-teal-400/20 text-teal-300 border border-teal-400/30';
+          if (c.includes('khao') || c.includes('sok')) return 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30';
+          if (c.includes('krabi') || c.includes('railay')) return 'bg-indigo-400/20 text-indigo-300 border border-indigo-400/30';
+          if (c.includes('phuket')) return 'bg-sky-400/20 text-sky-300 border border-sky-400/30';
+          return 'bg-sky-400/20 text-sky-300 border border-sky-400/30';
+        },
+
+        getCashColor(city) {
+          if (!city) return 'bg-slate-800 text-slate-300';
+          const c = city.toLowerCase();
+          if (c.includes('bangkok')) return 'bg-amber-500/15 border-amber-500/30 text-amber-400';
+          if (c.includes('chiang')) return 'bg-teal-500/15 border-teal-500/30 text-teal-300';
+          if (c.includes('khao') || c.includes('sok')) return 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300';
+          if (c.includes('krabi') || c.includes('railay')) return 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300';
+          return 'bg-sky-500/15 border-sky-500/30 text-sky-300';
+        },
+
+        openTaxiModal(hotel) {
+          this.taxiModal = {
+            show: true,
+            hotelName: hotel.name,
+            thaiName: hotel.nameThai || hotel.name,
+            thaiAddress: hotel.addressThai || hotel.addressEn,
+            mapsQuery: hotel.mapsQuery || hotel.name
+          };
+          this.refreshIcons();
+        },
+
+        closeTaxiModal() {
+          this.taxiModal.show = false;
+        },
+
         isStandalone() {
           return (window.navigator.standalone === true) || 
                  (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
         },
 
         initPwaPrompt() {
-          // Se già avviato da Schermata Home (standalone iOS), non mostrare MAI nulla!
-          if (this.isStandalone()) {
-            return;
-          }
-          // Se l'utente ha già confermato l'aggiunta o ha chiuso il prompt per questa sessione
-          if (localStorage.getItem('thailand_pwa_installed') === 'true' || sessionStorage.getItem('thailand_pwa_dismissed') === 'true') {
-            return;
-          }
-          // Mostra con eleganza dopo 2.5 secondi
+          if (this.isStandalone()) return;
+          if (localStorage.getItem('thailand_pwa_installed') === 'true') return;
           setTimeout(() => {
-            if (!this.isStandalone() && 
-                localStorage.getItem('thailand_pwa_installed') !== 'true' && 
-                sessionStorage.getItem('thailand_pwa_dismissed') !== 'true') {
+            if (!this.isStandalone() && localStorage.getItem('thailand_pwa_installed') !== 'true') {
               this.showPwaPrompt = true;
               this.refreshIcons();
             }
-          }, 2500);
+          }, 1200);
         },
 
         confirmPwaInstalled() {
@@ -5386,7 +5868,6 @@
         },
 
         dismissPwaPrompt() {
-          sessionStorage.setItem('thailand_pwa_dismissed', 'true');
           this.showPwaPrompt = false;
         },
 
@@ -5396,7 +5877,7 @@
         },
 
         // ==========================================
-        // MODIFICA & PERSISTENZA ITINERARIO
+        // GESTIONE ITINERARIO (CRUD & STORICO UNDO)
         // ==========================================
         loadItinerary() {
           const saved = localStorage.getItem('thailand_itinerary_v2');
@@ -5404,7 +5885,13 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                this.itinerary = parsed.map(d => ({ ...d, expanded: false }));
+                this.itinerary = parsed.map(d => {
+                  if (d.cityGroup === 'Sud') {
+                    if ([8, 9, 10].includes(d.dayNum)) d.cityGroup = 'Krabi';
+                    if ([11, 12, 13].includes(d.dayNum)) d.cityGroup = 'Phuket';
+                  }
+                  return { ...d, expanded: false };
+                });
                 this.allExpanded = false;
                 return;
               }
@@ -5486,7 +5973,13 @@
             day.mainLocation = this.editDayModal.mainLocation.trim();
             day.stops = JSON.parse(JSON.stringify(this.editDayModal.stops));
             
-            // Sincronizzazione bidirezionale: se l'utente ha modificato l'orario della prima tappa del Giorno 1
+            const cl = (day.city || '').toLowerCase();
+            if (cl.includes('bangkok')) day.cityGroup = 'Bangkok';
+            else if (cl.includes('chiang')) day.cityGroup = 'Chiang Mai';
+            else if (cl.includes('khao sok')) day.cityGroup = 'Khao Sok';
+            else if (cl.includes('krabi') || cl.includes('ao nang') || cl.includes('railay')) day.cityGroup = 'Krabi';
+            else if (cl.includes('phuket') || cl.includes('phi phi')) day.cityGroup = 'Phuket';
+
             if (day.dayNum === 1 && day.stops && day.stops[0] && day.stops[0].time) {
               const t1 = this.transports.find(t => t.id === 't1');
               if (t1) {
@@ -5499,7 +5992,7 @@
             }
 
             this.saveItinerary();
-            this.uploadToCloud(true); // Sincronizza subito su Firebase in background
+            this.uploadToCloud(true);
             this.showToast('Giorno ' + day.dayNum + ' salvato e sincronizzato!');
           }
           this.editDayModal.show = false;
@@ -5515,7 +6008,15 @@
             try {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                this.hotels = parsed;
+                this.hotels = parsed.map(h => {
+                  if (h.id === 'h3' && (/U Chiang Mai/i.test(h.name) || /NYE-8821/i.test(h.bookingRef))) {
+                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h3')));
+                  }
+                  if (h.id === 'h4' && (!h.name.includes("Art's") || /Panvaree/i.test(h.name) || /500 Rai/i.test(h.name))) {
+                    return JSON.parse(JSON.stringify(this.defaultHotels.find(x => x.id === 'h4')));
+                  }
+                  return h;
+                });
                 return;
               }
             } catch (e) {
@@ -5660,130 +6161,75 @@
         },
 
         // ==========================================
-        // ORDINAMENTO CARD HOTEL & TRASPORTI
+        // ORDINAMENTO CARD HOTEL & TRASPORTI (DATA & ALFABETICO)
         // ==========================================
-        
-        // ==========================================
-        // DRAG & DROP CARD CON PUNTINI (SORTABLEJS)
-        // ==========================================
-        initSortable() {
-          if (typeof Sortable === 'undefined') return;
-
-          // 1. Alloggi / Hotels Sortable
-          const hotelsEl = document.getElementById('hotels-sortable-list');
-          if (hotelsEl && !hotelsEl._sortableInstance) {
-            hotelsEl._sortableInstance = new Sortable(hotelsEl, {
-              handle: '.hotel-drag-handle',
-              draggable: '.hotel-card-item',
-              animation: 250,
-              touchStartThreshold: 3,
-              ghostClass: 'sortable-card-ghost',
-              chosenClass: 'sortable-card-chosen',
-              dragClass: 'sortable-card-drag',
-              onEnd: (evt) => {
-                const { oldIndex, newIndex } = evt;
-                if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return;
-
-                // Revert Sortable DOM mutation before updating Alpine state
-                const parent = evt.from;
-                const itemEl = evt.item;
-                parent.removeChild(itemEl);
-                if (parent.children[oldIndex]) {
-                  parent.insertBefore(itemEl, parent.children[oldIndex]);
-                } else {
-                  parent.appendChild(itemEl);
-                }
-
-                // Update Alpine data model
-                const moved = this.hotels.splice(oldIndex, 1)[0];
-                this.hotels.splice(newIndex, 0, moved);
-                this.saveHotels();
-                this.uploadToCloud(true);
-                this.showToast('Alloggio "' + moved.name + '" riordinato!');
-                this.refreshIcons();
-              }
-            });
+        parseTravelDate(str) {
+          if (!str) return 0;
+          const s = String(str).toLowerCase();
+          let day = 1, month = 11, year = 2026;
+          const rangeMatch = s.match(/(\d{1,2})\s*(?:-|–)\s*(\d{1,2})\s*(dic|gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dec|jan)/i);
+          const directMatch = s.match(/(\d{1,2})\s*(dic|gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dec|jan)/i);
+          const monthMap = { gen:0, jan:0, feb:1, mar:2, apr:3, mag:4, may:4, giu:5, jun:5, lug:6, jul:6, ago:7, aug:7, set:8, sep:8, ott:9, oct:9, nov:10, dic:11, dec:11 };
+          if (rangeMatch) {
+            day = parseInt(rangeMatch[1], 10);
+            const mStr = rangeMatch[3].toLowerCase();
+            month = monthMap[mStr] !== undefined ? monthMap[mStr] : 11;
+          } else if (directMatch) {
+            day = parseInt(directMatch[1], 10);
+            const mStr = directMatch[2].toLowerCase();
+            month = monthMap[mStr] !== undefined ? monthMap[mStr] : 11;
+          } else {
+            const anyDay = s.match(/(\d{1,2})/);
+            if (anyDay) day = parseInt(anyDay[1], 10);
+            for (const [mKey, mVal] of Object.entries(monthMap)) {
+              if (new RegExp('\\b' + mKey, 'i').test(s)) { month = mVal; break; }
+            }
           }
-
-          // 2. Voli / Trasporti Sortable
-          const transportsEl = document.getElementById('transports-sortable-list');
-          if (transportsEl && !transportsEl._sortableInstance) {
-            transportsEl._sortableInstance = new Sortable(transportsEl, {
-              handle: '.transport-drag-handle',
-              draggable: '.transport-card-item',
-              animation: 250,
-              touchStartThreshold: 3,
-              ghostClass: 'sortable-card-ghost',
-              chosenClass: 'sortable-card-chosen',
-              dragClass: 'sortable-card-drag',
-              onEnd: (evt) => {
-                const { oldIndex, newIndex } = evt;
-                if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return;
-
-                // Revert Sortable DOM mutation before updating Alpine state
-                const parent = evt.from;
-                const itemEl = evt.item;
-                parent.removeChild(itemEl);
-                if (parent.children[oldIndex]) {
-                  parent.insertBefore(itemEl, parent.children[oldIndex]);
-                } else {
-                  parent.appendChild(itemEl);
-                }
-
-                // Update Alpine data model
-                const moved = this.transports.splice(oldIndex, 1)[0];
-                this.transports.splice(newIndex, 0, moved);
-                this.saveTransports();
-                this.uploadToCloud(true);
-                this.showToast('Tratta "' + moved.carrier + '" riordinata!');
-                this.refreshIcons();
-              }
-            });
-          }
+          if (month === 11) year = 2026;
+          else if (month < 6) year = 2027;
+          else if (s.includes('2026')) year = 2026;
+          else if (s.includes('2027')) year = 2027;
+          return new Date(year, month, day, 12, 0, 0).getTime();
         },
 
-        moveHotelUp(index) {
-          if (index <= 0 || index >= this.hotels.length) return;
-          const temp = this.hotels[index];
-          this.hotels.splice(index, 1);
-          this.hotels.splice(index - 1, 0, temp);
+        sortHotels(order) {
+          this.hotelSortOrder = order;
+          if (order === 'date-asc') {
+            this.hotels.sort((a, b) => this.parseTravelDate(a.checkIn || a.dates) - this.parseTravelDate(b.checkIn || b.dates));
+            this.showToast('Hotel ordinati per data (crescente)');
+          } else if (order === 'date-desc') {
+            this.hotels.sort((a, b) => this.parseTravelDate(b.checkIn || b.dates) - this.parseTravelDate(a.checkIn || a.dates));
+            this.showToast('Hotel ordinati per data (decrescente)');
+          } else if (order === 'name-asc') {
+            this.hotels.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'it', { sensitivity: 'base' }));
+            this.showToast('Hotel ordinati per nome (A → Z)');
+          } else if (order === 'name-desc') {
+            this.hotels.sort((a, b) => (b.name || '').localeCompare(a.name || '', 'it', { sensitivity: 'base' }));
+            this.showToast('Hotel ordinati per nome (Z → A)');
+          }
           this.saveHotels();
           this.uploadToCloud(true);
-          this.showToast('Alloggio "' + temp.name + '" spostato su');
-          this.refreshIcons();
+          this.$nextTick(() => { this.refreshIcons(); });
         },
 
-        moveHotelDown(index) {
-          if (index < 0 || index >= this.hotels.length - 1) return;
-          const temp = this.hotels[index];
-          this.hotels.splice(index, 1);
-          this.hotels.splice(index + 1, 0, temp);
-          this.saveHotels();
-          this.uploadToCloud(true);
-          this.showToast('Alloggio "' + temp.name + '" spostato giù');
-          this.refreshIcons();
-        },
-
-        moveTransportUp(index) {
-          if (index <= 0 || index >= this.transports.length) return;
-          const temp = this.transports[index];
-          this.transports.splice(index, 1);
-          this.transports.splice(index - 1, 0, temp);
+        sortTransports(order) {
+          this.transportSortOrder = order;
+          if (order === 'date-asc') {
+            this.transports.sort((a, b) => this.parseTravelDate(a.date || a.depTime) - this.parseTravelDate(b.date || b.depTime));
+            this.showToast('Trasporti ordinati per data (crescente)');
+          } else if (order === 'date-desc') {
+            this.transports.sort((a, b) => this.parseTravelDate(b.date || b.depTime) - this.parseTravelDate(a.date || a.depTime));
+            this.showToast('Trasporti ordinati per data (decrescente)');
+          } else if (order === 'carrier-asc') {
+            this.transports.sort((a, b) => (a.carrier || '').localeCompare(b.carrier || '', 'it', { sensitivity: 'base' }));
+            this.showToast('Trasporti ordinati per vettore (A → Z)');
+          } else if (order === 'carrier-desc') {
+            this.transports.sort((a, b) => (b.carrier || '').localeCompare(a.carrier || '', 'it', { sensitivity: 'base' }));
+            this.showToast('Trasporti ordinati per vettore (Z → A)');
+          }
           this.saveTransports();
           this.uploadToCloud(true);
-          this.showToast('Tratta "' + temp.carrier + '" spostata su');
-          this.refreshIcons();
-        },
-
-        moveTransportDown(index) {
-          if (index < 0 || index >= this.transports.length - 1) return;
-          const temp = this.transports[index];
-          this.transports.splice(index, 1);
-          this.transports.splice(index + 1, 0, temp);
-          this.saveTransports();
-          this.uploadToCloud(true);
-          this.showToast('Tratta "' + temp.carrier + '" spostata giù');
-          this.refreshIcons();
+          this.$nextTick(() => { this.refreshIcons(); });
         },
 
 
@@ -7526,8 +7972,37 @@ Tel: ${h.phone || ''}`
 
         // Filtri e stili
         get filteredItinerary() {
-          if (this.cityFilter === 'all') return this.itinerary;
-          return this.itinerary.filter(d => d.cityGroup === this.cityFilter);
+          if (!this.cityFilter || this.cityFilter === 'all') return this.itinerary;
+          const target = this.cityFilter.toLowerCase().trim();
+          
+          return this.itinerary.filter(d => {
+            const city = (d.city || '').toLowerCase();
+            const cityGroup = (d.cityGroup || '').toLowerCase();
+            const title = (d.title || '').toLowerCase();
+            const location = (d.mainLocation || '').toLowerCase();
+
+            if (target === 'bangkok') {
+              return city.includes('bangkok') || cityGroup.includes('bangkok') || title.includes('bangkok');
+            }
+            if (target === 'chiang mai') {
+              return city.includes('chiang') || cityGroup.includes('chiang') || title.includes('chiang');
+            }
+            if (target === 'khao sok') {
+              return city.includes('khao sok') || cityGroup.includes('khao sok') || title.includes('khao sok') || location.includes('khao sok');
+            }
+            if (target === 'krabi') {
+              return city.includes('krabi') || city.includes('ao nang') || city.includes('railay') ||
+                     cityGroup.includes('krabi') || (cityGroup === 'sud' && [8, 9, 10].includes(d.dayNum)) ||
+                     title.includes('krabi') || location.includes('krabi');
+            }
+            if (target === 'phuket') {
+              return city.includes('phuket') || city.includes('phi phi') ||
+                     cityGroup.includes('phuket') || (cityGroup === 'sud' && [11, 12, 13].includes(d.dayNum)) ||
+                     title.includes('phuket') || location.includes('phuket');
+            }
+
+            return city.includes(target) || cityGroup.includes(target) || title.includes(target);
+          });
         },
 
         getCityBadgeStyle(city) {
@@ -7594,6 +8069,139 @@ Tel: ${h.phone || ''}`
           } else {
             this.showToast('Audio non supportato dal browser');
           }
+        },
+
+        // Calcolatore Mance
+        getCalculatedTip() {
+          const bill = Math.max(0, parseFloat(this.tipBillThb) || 0);
+          let tipThb = 0;
+          let tipDesc = '';
+          
+          switch(this.tipCategory) {
+            case 'massage':
+              tipThb = bill > 0 ? (bill >= 500 ? Math.round(bill * 0.15) : (bill >= 300 ? 50 : 40)) : 50;
+              tipDesc = '50–100฿ per operatore (vitale: è la loro paga principale)';
+              break;
+            case 'restaurant':
+              tipThb = Math.round(bill * 0.10);
+              tipDesc = '10% sul totale (se non già presente Service Charge 10%)';
+              break;
+            case 'taxi':
+              if (bill > 0) {
+                const nextTwenty = Math.ceil(bill / 20) * 20;
+                tipThb = nextTwenty > bill ? nextTwenty - bill : 20;
+                if (tipThb < 10) tipThb += 20;
+              } else {
+                tipThb = 20;
+              }
+              tipDesc = 'Arrotondamento resto (10–20฿) per l\'autista';
+              break;
+            case 'boat':
+              tipThb = 200;
+              tipDesc = '100–300฿ complessivi a fine giornata dal gruppo';
+              break;
+            case 'porter':
+              tipThb = 40;
+              tipDesc = '20–40฿ per valigia portata in camera';
+              break;
+            case 'custom':
+              const pct = parseFloat(this.tipCustomPercent) || 10;
+              tipThb = Math.round(bill * (pct / 100));
+              tipDesc = pct + '% personalizzato';
+              break;
+            default:
+              tipThb = 50;
+              tipDesc = 'Mancia standard';
+          }
+          
+          const totalThb = bill + tipThb;
+          const rate = this.exchangeRate || 38.5;
+          const tipEur = (tipThb / rate).toFixed(2);
+          const totalEur = (totalThb / rate).toFixed(2);
+          const billEur = (bill / rate).toFixed(2);
+          
+          return {
+            billThb: bill,
+            billEur,
+            tipThb,
+            tipEur,
+            totalThb,
+            totalEur,
+            tipDesc
+          };
+        },
+
+        setTipCategory(cat) {
+          this.tipCategory = cat;
+          if (cat === 'massage' && (!this.tipBillThb || this.tipBillThb === 1000)) this.tipBillThb = 400;
+          if (cat === 'restaurant' && (!this.tipBillThb || this.tipBillThb === 400)) this.tipBillThb = 850;
+          if (cat === 'taxi' && (!this.tipBillThb || this.tipBillThb === 850)) this.tipBillThb = 130;
+          if (cat === 'boat') this.tipBillThb = 1500;
+          if (cat === 'porter') this.tipBillThb = 0;
+        },
+
+        // Contrattazione nei Mercati
+        getBargainingTargets() {
+          const ask = Math.max(0, parseFloat(this.bargainAskingThb) || 0);
+          const rate = this.exchangeRate || 38.5;
+          
+          const firstOffer = Math.max(20, Math.round((ask * 0.60) / 10) * 10);
+          const fairDeal = Math.max(firstOffer, Math.round((ask * 0.72) / 10) * 10);
+          const maxCeiling = Math.max(fairDeal, Math.round((ask * 0.85) / 10) * 10);
+          
+          return {
+            askingThb: ask,
+            askingEur: (ask / rate).toFixed(2),
+            firstOfferThb: firstOffer,
+            firstOfferEur: (firstOffer / rate).toFixed(2),
+            fairDealThb: fairDeal,
+            fairDealEur: (fairDeal / rate).toFixed(2),
+            maxCeilingThb: maxCeiling,
+            maxCeilingEur: (maxCeiling / rate).toFixed(2)
+          };
+        },
+
+        // Galateo & Dress Code Templi
+        loadTempleChecklist() {
+          const saved = localStorage.getItem('thailand_temple_checklist');
+          if (saved) {
+            try {
+              this.templeChecklist = Object.assign(this.templeChecklist, JSON.parse(saved));
+            } catch(e) {}
+          }
+        },
+
+        toggleTempleCheck(key) {
+          this.templeChecklist[key] = !this.templeChecklist[key];
+          localStorage.setItem('thailand_temple_checklist', JSON.stringify(this.templeChecklist));
+        },
+
+        resetTempleChecklist() {
+          this.templeChecklist = { shoulders: false, knees: false, notorn: false, socks: false, slipon: false };
+          localStorage.setItem('thailand_temple_checklist', JSON.stringify(this.templeChecklist));
+        },
+
+        get templeChecklistCount() {
+          return Object.values(this.templeChecklist).filter(Boolean).length;
+        },
+
+        isTempleDay(day) {
+          if (!day) return false;
+          const num = Number(day.dayNum);
+          if ([2, 3, 4, 5, 10].includes(num)) return true;
+          const text = ((day.title || '') + ' ' + (day.mainLocation || '') + ' ' + (day.stops ? day.stops.map(s => s.name + ' ' + s.description).join(' ') : '')).toLowerCase();
+          return /wat|tempi|palace|chedi|suthep|emerald|buddha|tiger cave/.test(text);
+        },
+
+        openTempleModal(day = null) {
+          this.templeModal.day = day;
+          this.templeModal.show = true;
+          this.refreshIcons();
+        },
+
+        closeTempleModal() {
+          this.templeModal.show = false;
+          this.refreshIcons();
         },
 
         // ==========================================
@@ -8107,12 +8715,12 @@ Tel: ${h.phone || ''}`
               }
             ]
           },
-          { id: 'd8', dayNum: 8, date: '02 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
-          { id: 'd9', dayNum: 9, date: '03 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
-          { id: 'd10', dayNum: 10, date: '04 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
-          { id: 'd11', dayNum: 11, date: '05 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
-          { id: 'd12', dayNum: 12, date: '06 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
-          { id: 'd13', dayNum: 13, date: '07 Gen', city: 'Da definire', cityGroup: 'Sud', title: 'Tappa da pianificare', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd8', dayNum: 8, date: '02 Gen', city: 'Krabi', cityGroup: 'Krabi', title: 'Arrivo a Krabi & Spiaggia di Ao Nang', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd9', dayNum: 9, date: '03 Gen', city: 'Krabi', cityGroup: 'Krabi', title: 'Krabi — Escursione 4 Isole & Railay', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd10', dayNum: 10, date: '04 Gen', city: 'Krabi', cityGroup: 'Krabi', title: 'Krabi — Relax, Tiger Cave & Tramonto', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd11', dayNum: 11, date: '05 Gen', city: 'Phuket', cityGroup: 'Phuket', title: 'Speedboat Krabi ➔ Phuket & Old Town', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd12', dayNum: 12, date: '06 Gen', city: 'Phuket', cityGroup: 'Phuket', title: 'Phuket — Tour Isole Phi Phi & Maya Bay', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
+          { id: 'd13', dayNum: 13, date: '07 Gen', city: 'Phuket', cityGroup: 'Phuket', title: 'Phuket — Spiagge del Sud & Volo Serale DMK', backpackNotes: '', isToday: false, expanded: false, mainLocation: '', stops: [] },
           {
             id: 'd14',
             dayNum: 14,
