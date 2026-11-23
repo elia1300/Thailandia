@@ -7,7 +7,7 @@
 
   <!-- PWA & iOS Standalone Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="ThaiTrip">
   <meta name="application-name" content="ThaiTrip">
   <meta name="theme-color" content="#090d16">
@@ -244,10 +244,21 @@
       animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
     }
 
-    /* Anti-overflow orizzontale globale */
+    /* Anti-overflow orizzontale globale compatibile con position: sticky su iOS */
     html, body {
-      overflow-x: hidden;
+      overflow-x: clip;
       max-width: 100vw;
+    }
+
+    /* Header nitido e compatto in cima, vetro solo allo scroll */
+    .app-main-header {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    /* Calendari nativi in tema scuro uniforme */
+    input[type="date"],
+    input[type="datetime-local"] {
+      color-scheme: dark;
     }
 
     /* Anti-FOUC per Alpine.js */
@@ -299,10 +310,11 @@
   </div>
 
   <!-- Main Container: Mobile-First Limit (max-w-md per simulare iPhone su desktop, fluido su smartphone) -->
-  <div class="w-full max-w-md min-h-screen flex flex-col relative pb-28 overflow-x-hidden">
+  <div class="w-full max-w-md min-h-screen flex flex-col relative pb-28">
 
-    <!-- Top Header Bar (iOS Style - Singola Riga Pulita) -->
-    <header class="sticky top-0 z-40 w-full glass-nav border-b border-slate-800/80">
+    <!-- Top Header Bar (Nitida in cima alla pagina, traslucida durante lo scroll) -->
+    <header class="sticky top-0 z-40 w-full border-b transition-colors duration-200 app-main-header"
+            :class="isScrolled ? 'glass-nav border-slate-800/90 shadow-lg' : 'bg-slate-950 border-slate-800/70'">
       <div class="px-3.5 py-2.5 flex items-center justify-between gap-2">
         <!-- Logo + Titolo -->
         <button type="button" 
@@ -536,6 +548,52 @@
             <i data-lucide="arrow-right" class="w-3 h-3"></i>
           </button>
         </div>
+
+        <!-- PUNTO 5: CRUSCOTTO RAPIDO "ADESSO / PROSSIMA TAPPA DI OGGI" -->
+        <template x-if="todayNextStopDashboard">
+          <div class="glass-card rounded-2xl border border-emerald-500/35 p-3 bg-gradient-to-r from-emerald-950/35 via-slate-900/95 to-slate-950 shadow-md space-y-2">
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-black uppercase tracking-wider flex items-center gap-1 flex-shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse"></span>
+                  <span x-text="'OGGI • G' + todayNextStopDashboard.dayNum"></span>
+                </span>
+                <span class="text-slate-300 font-semibold truncate" x-text="todayNextStopDashboard.city + (todayNextStopDashboard.date ? (' · ' + todayNextStopDashboard.date) : '')"></span>
+              </div>
+              <span class="text-amber-300 font-mono font-bold flex-shrink-0"
+                    x-text="'⏱️ ' + todayNextStopDashboard.stopTime + ' · ' + todayNextStopDashboard.statusLabel"></span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-bold text-white truncate" x-text="todayNextStopDashboard.stopName"></p>
+              </div>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button type="button"
+                        @click="jumpToDay(todayNextStopDashboard.dayNum)"
+                        class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold active:scale-95 transition-all">
+                  Vai
+                </button>
+                <template x-if="todayNextStopDashboard.mapsQuery">
+                  <button type="button"
+                          @click="openMapChooser(todayNextStopDashboard.stopName, todayNextStopDashboard.mapsQuery)"
+                          class="px-2 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/35 text-blue-300 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+                          title="Apri prossima tappa in Mappe">
+                    <span>📍</span><span>Mappa</span>
+                  </button>
+                </template>
+                <template x-if="todayNextStopDashboard.hotel">
+                  <button type="button"
+                          @click="openTaxiModal(todayNextStopDashboard.hotel)"
+                          class="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/35 text-amber-300 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+                          title="Mostra indirizzo hotel in Thai al tassista">
+                    <span>🚕</span><span>Hotel</span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
       </section>
 
       <!-- Header & Filtri Rapidi Città Dinamici (Ricerca + Salto Rapido apribili al bisogno) -->
@@ -3070,11 +3128,13 @@
                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data</label>
-            <input type="text" 
-                   x-model="editDayModal.date" 
-                   placeholder="Es. 31 Dic"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+              Data <span class="text-[10px] font-mono text-emerald-400" x-text="editDayModal.date ? '(' + editDayModal.date + ')' : ''"></span>
+            </label>
+            <input type="date" 
+                   x-model="editDayModal.dateISO" 
+                   @change="onEditDayDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500">
           </div>
         </div>
 
@@ -3273,18 +3333,28 @@
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Date Soggiorno</label>
-            <input type="text" 
-                   x-model="editHotelModal.dates" 
-                   placeholder="Es. 26 - 28 Dic (2 notti)"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Check-in</label>
+            <input type="date" 
+                   x-model="editHotelModal.dateStartISO" 
+                   @change="onEditHotelDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Codice Booking / PNR</label>
-            <input type="text" 
-                   x-model="editHotelModal.bookingRef" 
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Check-out</label>
+            <input type="date" 
+                   x-model="editHotelModal.dateEndISO" 
+                   @change="onEditHotelDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500">
           </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+            Codice Booking / PNR <span class="text-[10px] font-mono text-emerald-400" x-show="editHotelModal.dates" x-text="'• ' + editHotelModal.dates"></span>
+          </label>
+          <input type="text" 
+                 x-model="editHotelModal.bookingRef" 
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -3454,19 +3524,29 @@
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Spostamento</label>
-            <input type="text" 
-                   x-model="editTransportModal.date" 
-                   placeholder="Es. 25 - 26 Dic 2026"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Partenza</label>
+            <input type="date" 
+                   x-model="editTransportModal.dateStartISO" 
+                   @change="onEditTransportDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-sky-500">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Durata Complessiva</label>
-            <input type="text" 
-                   x-model="editTransportModal.duration" 
-                   placeholder="Es. 1h 55m, 18h 15m"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Arrivo (opz.)</label>
+            <input type="date" 
+                   x-model="editTransportModal.dateEndISO" 
+                   @change="onEditTransportDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-sky-500">
           </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+            Durata Complessiva <span class="text-[10px] font-mono text-sky-400" x-show="editTransportModal.date" x-text="'• ' + editTransportModal.date"></span>
+          </label>
+          <input type="text" 
+                 x-model="editTransportModal.duration" 
+                 placeholder="Es. 1h 55m, 18h 15m"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
         </div>
 
         <!-- Selettore Scali & Dettagli Scalo -->
@@ -3763,10 +3843,10 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Data Scadenza</label>
-            <input type="text" 
-                   x-model="editPassportModal.passportExp" 
-                   placeholder="Es. 15/06/2030"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500">
+            <input type="date" 
+                   x-model="editPassportModal.passportExpISO" 
+                   @change="onEditPassportDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500">
           </div>
           <div>
             <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Nazionalità</label>
@@ -4224,12 +4304,13 @@
               </span>
               <span x-text="(itinerary.length ? itinerary[itinerary.length - 1].date : 'END').toUpperCase()"></span>
             </div>
-            <input type="range" 
+            <input id="map-timeline-slider"
+                   type="range" 
                    min="1" 
                    :max="totalDaysCount + 1" 
-                   step="0.02" 
-                   x-model.number="timelineDay" 
-                   @input="onTimelineSliderInput()" 
+                   step="0.01" 
+                   :value="timelineDay" 
+                   @input="timelineDay = parseFloat($event.target.value) || 1; onTimelineSliderInput()" 
                    class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none">
           </div>
 
@@ -4852,12 +4933,15 @@
         </div>
         <div class="grid grid-cols-1 gap-2">
           <div>
-            <label class="block text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">Data/Ora Partenza Countdown (YYYY-MM-DDTHH:MM:SS)</label>
-            <input type="text" x-model="tripSettingsModal.departureISO" placeholder="2026-12-25T21:00:00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500">
+            <label class="block text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">Data e Ora Partenza (Calendario)</label>
+            <input type="datetime-local"
+                   x-model="tripSettingsModal.departureISO"
+                   @change="onTripSettingsDateChange()"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500">
           </div>
           <div>
             <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Etichetta Partenza</label>
-            <input type="text" x-model="tripSettingsModal.departureLabel" placeholder="25 Dic 2026 • 21:00 (Volo per Bangkok)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+            <input type="text" x-model="tripSettingsModal.departureLabel" placeholder="25/12/2026 • 21:00 (Volo per Bangkok)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
           </div>
         </div>
         <div>
@@ -5101,6 +5185,7 @@ _mapSegments: [],
 _playInterval: null,
 _iconRefreshScheduled: false,
 _toastTimer: null,
+_deletedIds: new Set(),
 cityFilter: 'all',
 allExpanded: false,
 currentDayIndex: 1,
@@ -5171,10 +5256,11 @@ countdownTimer: null,
           appTitle: 'THAI TRIP 2026–27',
           heroBadge: 'THAILANDIA 2026-27',
           heroTitle: '4 Amici nel Regno del Siam',
-          departureISO: '2026-12-25T21:00:00',
-          departureLabel: '25 Dic 2026 • 21:00 (Volo per Bangkok)',
+          departureISO: '2026-12-25T21:00',
+          departureLabel: '25/12/2026 • 21:00 (Volo per Bangkok)',
           defaultGuestsLabel: '4 Ospiti (2 Camere)'
         },
+        isScrolled: false,
         tripSettings: {},
         tripSettingsModal: {
           show: false,
@@ -5259,6 +5345,7 @@ dayId: '',
 dayNum: 1,
 city: '',
 date: '',
+dateISO: '',
 title: '',
 backpackNotes: '',
 mainLocation: '',
@@ -5275,14 +5362,16 @@ city: '',
 addressEn: '',
 addressThai: '',
 dates: '',
+dateStartISO: '',
+dateEndISO: '',
 nights: 1,
 checkIn: '',
 checkOut: '',
-          bookingRef: '',
-          phone: '',
-          guestsLabel: '',
-          mapsQuery: ''
-        },
+bookingRef: '',
+phone: '',
+guestsLabel: '',
+mapsQuery: ''
+},
 
 editTransportModal: {
 show: false,
@@ -5292,6 +5381,8 @@ type: 'flight',
 carrier: '',
 flightNumber: '',
 date: '',
+dateStartISO: '',
+dateEndISO: '',
 depCode: '',
 depCity: '',
 depTime: '',
@@ -5330,6 +5421,7 @@ name: '',
 fullName: '',
 passportNo: '',
 passportExp: '',
+passportExpISO: '',
 nationality: 'Italiana'
 },
 
@@ -5700,9 +5792,13 @@ weatherLoading: false,
           this.initSyncStatus();
           this.checkForUrlSync();
           if (typeof window !== 'undefined' && window.addEventListener) {
-            window.addEventListener('scroll', () => {
-              this.showScrollTop = (window.scrollY || window.pageYOffset || 0) > 400;
-            }, { passive: true });
+            const onScroll = () => {
+              const y = window.scrollY || window.pageYOffset || 0;
+              this.isScrolled = y > 12;
+              this.showScrollTop = y > 400;
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
           }
           // Allinea subito in background con Google Firebase all'avvio
           this.downloadFromCloud(true);
@@ -5726,24 +5822,37 @@ weatherLoading: false,
         },
 
         openTripSettingsModal() {
+          const rawIso = String(this.tripSettings.departureISO || this.defaultTripSettings.departureISO);
           this.tripSettingsModal = {
             show: true,
             appTitle: this.tripSettings.appTitle || this.defaultTripSettings.appTitle,
             heroBadge: this.tripSettings.heroBadge || this.defaultTripSettings.heroBadge,
             heroTitle: this.tripSettings.heroTitle || this.defaultTripSettings.heroTitle,
-            departureISO: this.tripSettings.departureISO || this.defaultTripSettings.departureISO,
+            departureISO: rawIso.slice(0, 16),
             departureLabel: this.tripSettings.departureLabel || this.defaultTripSettings.departureLabel,
             defaultGuestsLabel: this.tripSettings.defaultGuestsLabel || this.defaultTripSettings.defaultGuestsLabel
           };
           this.refreshIcons();
         },
 
+        onTripSettingsDateChange() {
+          const iso = this.tripSettingsModal.departureISO;
+          if (!iso) return;
+          const [dPart, tPart] = iso.split('T');
+          const dmy = this.isoToDMY(dPart);
+          if (dmy) {
+            this.tripSettingsModal.departureLabel = dmy + (tPart ? (' • ' + tPart.slice(0, 5)) : '');
+          }
+        },
+
         saveTripSettingsModal() {
+          let depIso = (this.tripSettingsModal.departureISO || '').trim() || this.defaultTripSettings.departureISO;
+          if (depIso.length === 16) depIso = depIso + ':00';
           this.tripSettings = {
             appTitle: (this.tripSettingsModal.appTitle || '').trim() || this.defaultTripSettings.appTitle,
             heroBadge: (this.tripSettingsModal.heroBadge || '').trim() || this.defaultTripSettings.heroBadge,
             heroTitle: (this.tripSettingsModal.heroTitle || '').trim() || this.defaultTripSettings.heroTitle,
-            departureISO: (this.tripSettingsModal.departureISO || '').trim() || this.defaultTripSettings.departureISO,
+            departureISO: depIso,
             departureLabel: (this.tripSettingsModal.departureLabel || '').trim() || this.defaultTripSettings.departureLabel,
             defaultGuestsLabel: (this.tripSettingsModal.defaultGuestsLabel || '').trim() || this.defaultTripSettings.defaultGuestsLabel
           };
@@ -6079,6 +6188,8 @@ weatherLoading: false,
           const t = this.travelers.find(x => x.id === travelerId);
           if (!t) return;
           if (!confirm('Vuoi rimuovere ' + t.name + ' dal gruppo?')) return;
+          if (!this._deletedIds) this._deletedIds = new Set();
+          this._deletedIds.add('trv_' + travelerId);
           this.travelers = this.travelers.filter(x => x.id !== travelerId);
           if (this.selectedChecklistTravelerId === travelerId && this.travelers[0]) {
             this.selectedChecklistTravelerId = this.travelers[0].id;
@@ -6286,24 +6397,64 @@ weatherLoading: false,
         // ==========================================
         // GESTIONE ITINERARIO (CRUD & STORICO UNDO)
         // ==========================================
-        syncCurrentTodayState() {
-          const maxDays = this.totalDaysCount;
-          const savedDay = parseInt(localStorage.getItem('thailand_current_day_index'), 10);
-          let targetDay = (!isNaN(savedDay) && savedDay >= 1 && savedDay <= maxDays) ? savedDay : null;
-          if (!targetDay) {
-            const firstSpan = this.itinerary[0] ? this.parseDateSpan(this.itinerary[0].date) : null;
-            const lastSpan = this.itinerary.length ? this.parseDateSpan(this.itinerary[this.itinerary.length - 1].date) : null;
-            const now = Date.now();
-            if (firstSpan && lastSpan && now >= firstSpan.startTs && now <= (lastSpan.endTs + 86399000)) {
-              const diffDays = Math.floor((now - firstSpan.startTs) / (1000 * 60 * 60 * 24)) + 1;
-              targetDay = Math.max(1, Math.min(maxDays, diffDays));
-            } else {
-              const existing = (this.itinerary || []).find(d => d.isToday);
-              targetDay = existing ? existing.dayNum : 1;
+        getBangkokTodayDMY(nowDate = new Date()) {
+          try {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+              timeZone: 'Asia/Bangkok',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }).formatToParts(nowDate);
+            const map = {};
+            parts.forEach(p => { map[p.type] = p.value; });
+            if (map.day && map.month && map.year) {
+              return map.day + '/' + map.month + '/' + map.year;
             }
+          } catch (e) {}
+          const d = nowDate;
+          return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+        },
+
+        detectAutoTodayDayNum(nowDate = new Date()) {
+          const bkkDMY = this.getBangkokTodayDMY(nowDate);
+          const exactMatch = (this.itinerary || []).find(d => this.normalizeDateToDMY(d.date, true) === bkkDMY);
+          if (exactMatch) return Number(exactMatch.dayNum);
+          const todaySpan = this.parseDateSpan(bkkDMY);
+          if (todaySpan) {
+            const rangeMatch = (this.itinerary || []).find(d => {
+              const sp = this.parseDateSpan(d.date);
+              return sp && todaySpan.startTs >= sp.startTs && todaySpan.startTs <= sp.endTs;
+            });
+            if (rangeMatch) return Number(rangeMatch.dayNum);
+          }
+          return null;
+        },
+
+        syncCurrentTodayState(nowDate = new Date()) {
+          const maxDays = this.totalDaysCount;
+          const bkkDMY = this.getBangkokTodayDMY(nowDate);
+          const manualOverrideDate = localStorage.getItem('thailand_manual_today_date');
+          const autoDay = this.detectAutoTodayDayNum(nowDate);
+          const savedDay = parseInt(localStorage.getItem('thailand_current_day_index'), 10);
+
+          let targetDay = null;
+          let expandedByAuto = false;
+          if (autoDay && manualOverrideDate !== bkkDMY) {
+            targetDay = Math.max(1, Math.min(maxDays, autoDay));
+            localStorage.setItem('thailand_current_day_index', String(targetDay));
+            expandedByAuto = true;
+          } else if (!isNaN(savedDay) && savedDay >= 1 && savedDay <= maxDays) {
+            targetDay = savedDay;
+          } else {
+            const existing = (this.itinerary || []).find(d => d.isToday);
+            targetDay = existing ? existing.dayNum : 1;
           }
           this.currentDayIndex = targetDay;
-          (this.itinerary || []).forEach(d => { d.isToday = (Number(d.dayNum) === targetDay); });
+          (this.itinerary || []).forEach(d => {
+            const isTarget = (Number(d.dayNum) === targetDay);
+            d.isToday = isTarget;
+            if (expandedByAuto && isTarget) d.expanded = true;
+          });
         },
 
         loadItinerary() {
@@ -6320,7 +6471,11 @@ weatherLoading: false,
                       if ([8, 9, 10].includes(d.dayNum)) d.cityGroup = 'Krabi';
                       if ([11, 12, 13].includes(d.dayNum)) d.cityGroup = 'Phuket';
                     }
-                    return { ...d, expanded: false };
+                    return {
+                      ...d,
+                      date: this.normalizeDateToDMY(d.date, true) || d.date,
+                      expanded: false
+                    };
                   });
                   this.allExpanded = false;
                   this.syncCurrentTodayState();
@@ -6331,7 +6486,11 @@ weatherLoading: false,
               console.error('Error loading saved itinerary', e);
             }
           }
-          this.itinerary = JSON.parse(JSON.stringify(this.defaultItinerary)).map(d => ({ ...d, expanded: false }));
+          this.itinerary = JSON.parse(JSON.stringify(this.defaultItinerary)).map(d => ({
+            ...d,
+            date: this.normalizeDateToDMY(d.date, true) || d.date,
+            expanded: false
+          }));
           this.allExpanded = false;
           this.saveItinerary(false);
           this.syncCurrentTodayState();
@@ -6370,6 +6529,8 @@ weatherLoading: false,
           if (idx === -1) return;
           const target = this.itinerary[idx];
           if (!confirm('Vuoi eliminare il Giorno ' + target.dayNum + ' (' + target.title + ')?')) return;
+          if (!this._deletedIds) this._deletedIds = new Set();
+          this._deletedIds.add('day_' + dayId);
           this.itinerary.splice(idx, 1);
           this.itinerary.forEach((d, i) => { d.dayNum = i + 1; });
           this.syncCurrentTodayState();
@@ -6423,18 +6584,26 @@ weatherLoading: false,
         },
 
         openEditDayModal(day) {
+          const isoRange = this.dmyToISO(day.date);
           this.editDayModal = {
             show: true,
             dayId: day.id,
             dayNum: day.dayNum,
             city: day.city,
-            date: day.date,
+            date: this.normalizeDateToDMY(day.date, true) || day.date || '',
+            dateISO: isoRange.startISO || '',
             title: day.title,
             backpackNotes: day.backpackNotes || '',
             mainLocation: day.mainLocation || '',
             stops: JSON.parse(JSON.stringify(day.stops || []))
           };
           this.refreshIcons();
+        },
+
+        onEditDayDateChange() {
+          if (this.editDayModal.dateISO) {
+            this.editDayModal.date = this.isoToDMY(this.editDayModal.dateISO);
+          }
         },
 
         addStopToEditDay() {
@@ -6508,7 +6677,10 @@ weatherLoading: false,
                       merged.push(JSON.parse(JSON.stringify(def)));
                     }
                   });
-                  this.hotels = merged;
+                  this.hotels = merged.map(h => ({
+                    ...h,
+                    dates: this.normalizeDateToDMY(h.dates, false) || h.dates
+                  }));
                   return;
                 }
               }
@@ -6516,7 +6688,10 @@ weatherLoading: false,
               console.error('Error loading saved hotels', e);
             }
           }
-          this.hotels = JSON.parse(JSON.stringify(this.defaultHotels));
+          this.hotels = JSON.parse(JSON.stringify(this.defaultHotels)).map(h => ({
+            ...h,
+            dates: this.normalizeDateToDMY(h.dates, false) || h.dates
+          }));
           this.saveHotels(false);
         },
 
@@ -6559,6 +6734,8 @@ weatherLoading: false,
             addressEn: '',
             addressThai: '',
             dates: '',
+            dateStartISO: '',
+            dateEndISO: '',
             nights: 1,
             checkIn: '14:00',
             checkOut: '11:00',
@@ -6571,6 +6748,7 @@ weatherLoading: false,
         },
 
         openEditHotelModal(hotel) {
+          const isoRange = this.dmyToISO(hotel.dates || hotel.checkIn);
           this.editHotelModal = {
             show: true,
             isNew: false,
@@ -6580,7 +6758,9 @@ weatherLoading: false,
             city: hotel.city || 'Bangkok',
             addressEn: hotel.addressEn || '',
             addressThai: hotel.addressThai || '',
-            dates: hotel.dates || '',
+            dates: this.normalizeDateToDMY(hotel.dates, false) || hotel.dates || '',
+            dateStartISO: isoRange.startISO || '',
+            dateEndISO: isoRange.endISO || isoRange.startISO || '',
             nights: hotel.nights || 1,
             checkIn: hotel.checkIn || '14:00',
             checkOut: hotel.checkOut || '11:00',
@@ -6590,6 +6770,21 @@ weatherLoading: false,
             mapsQuery: hotel.mapsQuery || ''
           };
           this.refreshIcons();
+        },
+
+        onEditHotelDateChange() {
+          const sIso = this.editHotelModal.dateStartISO;
+          const eIso = this.editHotelModal.dateEndISO || sIso;
+          if (!sIso) return;
+          const sDmy = this.isoToDMY(sIso);
+          const eDmy = this.isoToDMY(eIso);
+          if (eIso && eIso !== sIso) {
+            this.editHotelModal.dates = sDmy + ' - ' + eDmy;
+            const diffDays = Math.round((new Date(eIso) - new Date(sIso)) / 86400000);
+            if (diffDays > 0) this.editHotelModal.nights = diffDays;
+          } else {
+            this.editHotelModal.dates = sDmy;
+          }
         },
 
         saveEditHotel() {
@@ -6647,6 +6842,8 @@ weatherLoading: false,
           const h = this.hotels.find(x => x.id === hotelId);
           const name = h ? h.name : 'questo alloggio';
           if (confirm('Sei sicuro di voler eliminare ' + name + '?')) {
+            if (!this._deletedIds) this._deletedIds = new Set();
+            this._deletedIds.add('hotel_' + hotelId);
             this.hotels = this.hotels.filter(x => x.id !== hotelId);
             this.saveHotels();
             this.uploadToCloud(true);
@@ -6663,30 +6860,12 @@ weatherLoading: false,
         // ==========================================
         parseTravelDate(str) {
           if (!str) return 0;
+          const span = this.parseDateSpan(str);
+          if (span && span.startTs) return span.startTs + 43200000;
           const s = String(str).toLowerCase().replace(/\b\d{1,2}:\d{2}\b/g, ' ');
           let day = 1, month = 11, year = 2026;
-          const rangeMatch = s.match(/(\d{1,2})\s*(?:-|–)\s*(\d{1,2})\s*(dic|gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dec|jan)/i);
-          const directMatch = s.match(/(\d{1,2})\s*(dic|gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dec|jan)/i);
-          const monthMap = { gen:0, jan:0, feb:1, mar:2, apr:3, mag:4, may:4, giu:5, jun:5, lug:6, jul:6, ago:7, aug:7, set:8, sep:8, ott:9, oct:9, nov:10, dic:11, dec:11 };
-          if (rangeMatch) {
-            day = parseInt(rangeMatch[1], 10);
-            const mStr = rangeMatch[3].toLowerCase();
-            month = monthMap[mStr] !== undefined ? monthMap[mStr] : 11;
-          } else if (directMatch) {
-            day = parseInt(directMatch[1], 10);
-            const mStr = directMatch[2].toLowerCase();
-            month = monthMap[mStr] !== undefined ? monthMap[mStr] : 11;
-          } else {
-            const anyDay = s.match(/(\d{1,2})/);
-            if (anyDay) day = parseInt(anyDay[1], 10);
-            for (const [mKey, mVal] of Object.entries(monthMap)) {
-              if (new RegExp('\\b' + mKey, 'i').test(s)) { month = mVal; break; }
-            }
-          }
-          if (month === 11) year = 2026;
-          else if (month < 6) year = 2027;
-          else if (s.includes('2026')) year = 2026;
-          else if (s.includes('2027')) year = 2027;
+          const anyDay = s.match(/(\d{1,2})/);
+          if (anyDay) day = parseInt(anyDay[1], 10);
           return new Date(year, month, day, 12, 0, 0).getTime();
         },
 
@@ -6796,7 +6975,10 @@ weatherLoading: false,
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
                 if (parsed.length >= 5 || !parsed.every(t => ['t1','t2','t3'].includes(t.id))) {
-                  this.transports = parsed;
+                  this.transports = parsed.map(tr => ({
+                    ...tr,
+                    date: this.normalizeDateToDMY(tr.date, false) || tr.date
+                  }));
                   return;
                 }
               }
@@ -6804,7 +6986,10 @@ weatherLoading: false,
               console.error('Error loading saved transports', e);
             }
           }
-          this.transports = JSON.parse(JSON.stringify(this.defaultTransports));
+          this.transports = JSON.parse(JSON.stringify(this.defaultTransports)).map(tr => ({
+            ...tr,
+            date: this.normalizeDateToDMY(tr.date, false) || tr.date
+          }));
           this.saveTransports(false);
         },
 
@@ -6847,6 +7032,8 @@ weatherLoading: false,
             carrier: '',
             flightNumber: '',
             date: '',
+            dateStartISO: '',
+            dateEndISO: '',
             depCode: '',
             depCity: '',
             depTime: '',
@@ -6864,6 +7051,7 @@ weatherLoading: false,
 
         openEditTransportModal(item) {
           const rawStops = item.stops !== undefined ? parseInt(item.stops, 10) : (item.duration && /scalo/i.test(item.duration) ? 1 : 0);
+          const isoRange = this.dmyToISO(item.date);
           this.editTransportModal = {
             show: true,
             isNew: false,
@@ -6871,7 +7059,9 @@ weatherLoading: false,
             type: item.type || 'flight',
             carrier: item.carrier || '',
             flightNumber: item.flightNumber || '',
-            date: item.date || '',
+            date: this.normalizeDateToDMY(item.date, false) || item.date || '',
+            dateStartISO: isoRange.startISO || '',
+            dateEndISO: (isoRange.endISO && isoRange.endISO !== isoRange.startISO) ? isoRange.endISO : '',
             depCode: item.depCode || '',
             depCity: item.depCity || '',
             depTime: item.depTime || '',
@@ -6885,6 +7075,18 @@ weatherLoading: false,
             baggage: item.baggage || ''
           };
           this.refreshIcons();
+        },
+
+        onEditTransportDateChange() {
+          const sIso = this.editTransportModal.dateStartISO;
+          const eIso = this.editTransportModal.dateEndISO;
+          if (!sIso) return;
+          const sDmy = this.isoToDMY(sIso);
+          if (eIso && eIso !== sIso) {
+            this.editTransportModal.date = sDmy + ' - ' + this.isoToDMY(eIso);
+          } else {
+            this.editTransportModal.date = sDmy;
+          }
         },
 
         saveEditTransport() {
@@ -6950,6 +7152,8 @@ weatherLoading: false,
           const t = this.transports.find(x => x.id === transportId);
           const name = t ? (t.carrier + ' ' + (t.flightNumber || '')) : 'questo trasporto';
           if (confirm('Sei sicuro di voler eliminare ' + name + '?')) {
+            if (!this._deletedIds) this._deletedIds = new Set();
+            this._deletedIds.add('transport_' + transportId);
             this.transports = this.transports.filter(x => x.id !== transportId);
             this.saveTransports();
             this.uploadToCloud(true);
@@ -7104,16 +7308,24 @@ weatherLoading: false,
         // CASSAFORTE PASSAPORTI & CHECK-IN (TM6)
         // ==========================================
         openEditPassport(tr) {
+          const isoRange = this.dmyToISO(tr.passportExp);
           this.editPassportModal = {
             show: true,
             travelerId: tr.id,
             name: tr.name,
             fullName: tr.fullName || tr.name,
             passportNo: tr.passportNo || '',
-            passportExp: tr.passportExp || '',
+            passportExp: this.normalizeDateToDMY(tr.passportExp, true) || tr.passportExp || '',
+            passportExpISO: isoRange.startISO || '',
             nationality: tr.nationality || 'Italiana'
           };
           this.refreshIcons();
+        },
+
+        onEditPassportDateChange() {
+          if (this.editPassportModal.passportExpISO) {
+            this.editPassportModal.passportExp = this.isoToDMY(this.editPassportModal.passportExpISO);
+          }
         },
 
         saveEditPassport() {
@@ -7195,31 +7407,93 @@ Tel: ${h.phone || ''}`;
           }
         },
 
+        estimateDataUrlBytes(dataUrl) {
+          if (!dataUrl || typeof dataUrl !== 'string') return 0;
+          const idx = dataUrl.indexOf(',');
+          if (idx === -1) return 0;
+          const b64 = dataUrl.slice(idx + 1);
+          return Math.round((b64.length * 3) / 4);
+        },
+
+        async compressImageDataUrl(dataUrl, maxDim = 1600, quality = 0.84) {
+          const origBytes = this.estimateDataUrlBytes(dataUrl);
+          const fallback = { dataUrl, size: origBytes, compressed: false, type: null };
+          if (!dataUrl || typeof dataUrl !== 'string' || !/^data:image\/(jpeg|jpg|png|webp)/i.test(dataUrl)) {
+            return fallback;
+          }
+          if (typeof Image === 'undefined' || typeof document === 'undefined' || typeof document.createElement !== 'function') {
+            return fallback;
+          }
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              try {
+                let w = img.naturalWidth || img.width;
+                let h = img.naturalHeight || img.height;
+                if (!w || !h) return resolve(fallback);
+                if (w > maxDim || h > maxDim) {
+                  if (w >= h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                  } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                  }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext && canvas.getContext('2d');
+                if (!ctx) return resolve(fallback);
+                ctx.drawImage(img, 0, 0, w, h);
+                const outUrl = canvas.toDataURL('image/jpeg', quality);
+                const outBytes = this.estimateDataUrlBytes(outUrl);
+                if (outBytes > 0 && outBytes < origBytes) {
+                  resolve({ dataUrl: outUrl, size: outBytes, compressed: true, type: 'image/jpeg' });
+                } else {
+                  resolve(fallback);
+                }
+              } catch (err) {
+                resolve(fallback);
+              }
+            };
+            img.onerror = () => resolve(fallback);
+            img.src = dataUrl;
+          });
+        },
+
         handleFileUpload(event, targetId, targetType, targetTitle) {
           const file = event.target.files && event.target.files[0];
           if (!file) return;
 
           const reader = new FileReader();
           reader.onload = async (e) => {
-            const dataUrl = e.target.result;
+            const rawDataUrl = e.target.result;
+            const rawType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+            const opt = await this.compressImageDataUrl(rawDataUrl);
+            const finalDataUrl = opt.dataUrl;
+            const finalType = opt.type || rawType;
+            const finalSize = opt.compressed ? opt.size : (file.size || opt.size);
+
             const doc = {
               id: targetId,
               name: file.name,
-              type: file.type || 'application/pdf',
-              size: file.size,
+              type: finalType,
+              size: finalSize,
               targetType: targetType || 'other',
               category: (targetType === 'hotel' ? 'hotel' : (targetType === 'transport' ? 'transport' : 'other')),
               targetTitle: targetTitle || file.name || 'Documento',
               traveler: 'Tutto il gruppo',
               createdAt: Date.now(),
-              dataUrl: dataUrl
+              dataUrl: finalDataUrl
             };
 
             await pwaDocsDB.save(targetId, doc);
             this.docsState[targetId] = doc;
-            this.showToast('Documento "' + file.name + '" salvato offline e sul Cloud!');
+            this.showToast(opt.compressed
+              ? ('Foto ottimizzata (' + this.formatFileSize(finalSize) + ') e salvata su Cloud!')
+              : ('Documento "' + file.name + '" salvato offline e sul Cloud!'));
             this.refreshIcons();
-            // Salva nel cloud per tutti gli utenti
             this.uploadDocToCloud(doc);
           };
           reader.readAsDataURL(file);
@@ -7418,8 +7692,13 @@ Tel: ${h.phone || ''}`;
             this.uploadDocModal.title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
           }
           const reader = new FileReader();
-          reader.onload = (e) => {
-            this.uploadDocModal.dataUrl = e.target.result;
+          reader.onload = async (e) => {
+            const opt = await this.compressImageDataUrl(e.target.result);
+            this.uploadDocModal.dataUrl = opt.dataUrl;
+            if (opt.compressed) {
+              this.uploadDocModal.fileSize = opt.size;
+              this.uploadDocModal.fileType = opt.type || 'image/jpeg';
+            }
           };
           reader.readAsDataURL(file);
         },
@@ -7979,7 +8258,7 @@ Tel: ${h.phone || ''}`;
                 mode = 'local'; modeIcon = '🛵'; transportBadge = 'Giro città & Escursioni';
               }
 
-              const radius = 0.022;
+              const radius = 0.008;
               points = [];
               for (let p = 0; p <= 64; p++) {
                 const angle = (p / 64) * Math.PI * 2;
@@ -8112,48 +8391,48 @@ Tel: ${h.phone || ''}`;
             this._lastInfoDay = displayDay;
           }
 
-          // Camera tracking fluido senza reset continui di panTo
+          // Camera tracking continuo e fluidissimo sul puntatore (0 scatti, 0 reset CSS)
           if (this._leafletMap) {
             let targetZoom;
-            if (clampedDay < 1.35) {
-              targetZoom = 6.2;
-            } else if (clampedDay < 1.7) {
-              targetZoom = 5.0;
-            } else if (clampedDay < 1.95) {
-              targetZoom = 6.8;
-            } else if (clampedDay <= totalDays + 0.05) {
-              targetZoom = 7.5;
-            } else if (clampedDay < totalDays + 0.3) {
-              targetZoom = 6.8;
-            } else if (clampedDay < totalDays + 0.75) {
-              targetZoom = 5.0;
+            if (clampedDay < 1.25 || (clampedDay > totalDays + 0.15 && clampedDay < totalDays + 0.85)) {
+              targetZoom = 4.8; // Volo intercontinentale panoramico
+            } else if (seg.mode === 'flight') {
+              targetZoom = 6.2; // Volo interno
             } else {
-              targetZoom = 6.5;
+              targetZoom = 7.4; // Esplorazione locale / barca / treno
             }
 
             if (fitBounds) {
-              this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.75 });
+              this._camLat = currentPos[0];
+              this._camLon = currentPos[1];
+              this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.7 });
+              this._lastZoomDay = displayDay;
             } else if (!this.isPlaying) {
+              this._camLat = currentPos[0];
+              this._camLon = currentPos[1];
               const curZoom = this._leafletMap.getZoom();
               if (Math.abs(curZoom - targetZoom) >= 0.6) {
                 this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.45 });
               } else {
-                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.35 });
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.3 });
               }
             } else {
-              // Durante il playback: lascia scorrere libero il marker al 100% fluido e sposta la camera solo al cambio tappa o quando il mezzo esce dall'area centrale
-              const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
-              const curZoom = this._leafletMap.getZoom();
-              const outOfCenter = (typeof this._leafletMap.getBounds === 'function')
-                ? !this._leafletMap.getBounds().pad(-0.22).contains(currentPos)
-                : false;
+              // Playback attivo: segui il mezzo su OGNI frame senza animate CSS in conflitto
+              if (this._camLat === undefined || this._camLon === undefined) {
+                this._camLat = currentPos[0];
+                this._camLon = currentPos[1];
+              } else {
+                const blend = (seg.mode === 'flight') ? 0.35 : 0.22;
+                this._camLat += (currentPos[0] - this._camLat) * blend;
+                this._camLon += (currentPos[1] - this._camLon) * blend;
+              }
+              const camPos = [this._camLat, this._camLon];
 
-              if (Math.abs(curZoom - targetZoom) >= 0.85 && (!this._lastCameraMoveTs || (now - this._lastCameraMoveTs) > 900)) {
-                this._leafletMap.flyTo(currentPos, targetZoom, { animate: true, duration: 0.85, easeLinearity: 0.5 });
-                this._lastCameraMoveTs = now;
-              } else if ((outOfCenter || dayChanged) && (!this._lastCameraMoveTs || (now - this._lastCameraMoveTs) > 650)) {
-                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.65, easeLinearity: 0.4 });
-                this._lastCameraMoveTs = now;
+              const curZoom = this._leafletMap.getZoom();
+              if (dayChanged && Math.abs(curZoom - targetZoom) >= 0.9) {
+                this._leafletMap.setView(camPos, targetZoom, { animate: false });
+              } else {
+                this._leafletMap.panTo(camPos, { animate: false, noMoveStart: true });
               }
             }
           }
@@ -8192,14 +8471,17 @@ Tel: ${h.phone || ''}`;
           }
 
           this._playDayFloat = Number(this.timelineDay) || 1.0;
-          this._lastSliderSyncTs = 0;
+          this._camLat = undefined;
+          this._camLon = undefined;
+          let lastIntegerDay = Math.floor(this._playDayFloat);
 
           let lastTs = null;
           const loop = (ts) => {
             if (!this.isPlaying) return;
             if (lastTs !== null) {
-              const dt = Math.min(ts - lastTs, 50);
-              const daysPerSec = 0.33 * this.playSpeed;
+              const dt = Math.min(ts - lastTs, 40);
+              // Velocità rilassata e cinematografica: ~0.14 giorni/sec a 1x
+              const daysPerSec = 0.14 * (this.playSpeed || 1);
               this._playDayFloat += daysPerSec * (dt / 1000);
 
               if (this._playDayFloat >= maxDay) {
@@ -8212,6 +8494,8 @@ Tel: ${h.phone || ''}`;
                       this._playDayFloat = 1.0;
                       this.timelineDay = 1.0;
                       this._currentBearing = undefined;
+                      this._camLat = undefined;
+                      this._camLon = undefined;
                       this.updateVehiclePosition(1.0, true);
                       this.startPlayback();
                     }
@@ -8221,13 +8505,17 @@ Tel: ${h.phone || ''}`;
                 return;
               }
 
-              // Aggiorna la posizione del veicolo a 60fps reali
+              // Aggiorna la posizione del marker e camera a 60fps reali
               this.updateVehiclePosition(this._playDayFloat, false);
 
-              // Sincronizza slider e testi reattivi Alpine a ~20fps per zero scatti
-              if (!this._lastSliderSyncTs || (ts - this._lastSliderSyncTs) >= 50) {
+              // Aggiorna lo slider direttamente nel DOM senza attivare re-render Alpine ogni frame
+              const sliderEl = (typeof document !== 'undefined') ? document.getElementById('map-timeline-slider') : null;
+              if (sliderEl) sliderEl.value = String(this._playDayFloat);
+
+              const curIntDay = Math.floor(this._playDayFloat);
+              if (curIntDay !== lastIntegerDay) {
+                lastIntegerDay = curIntDay;
                 this.timelineDay = this._playDayFloat;
-                this._lastSliderSyncTs = ts;
               }
             }
             lastTs = ts;
@@ -8238,6 +8526,9 @@ Tel: ${h.phone || ''}`;
 
         pausePlayback() {
           this.isPlaying = false;
+          if (this._playDayFloat) {
+            this.timelineDay = this._playDayFloat;
+          }
           if (this._endPauseTimer) {
             clearTimeout(this._endPauseTimer);
             this._endPauseTimer = null;
@@ -8288,10 +8579,7 @@ Tel: ${h.phone || ''}`;
         },
 
         togglePlaySpeed() {
-          this.playSpeed = (this.playSpeed === 1) ? 2 : (this.playSpeed === 2 ? 3 : 1);
-          if (this.isPlaying) {
-            this.startPlayback();
-          }
+          this.playSpeed = (this.playSpeed === 1) ? 0.5 : (this.playSpeed === 0.5 ? 2 : 1);
         },
 
         recenterMap() {
@@ -8440,16 +8728,25 @@ Tel: ${h.phone || ''}`;
           const data = this._pendingCloudData;
           if (!data) return;
           if (data.itinerary && data.itinerary.length > 0) {
-            this.itinerary = data.itinerary.map(d => ({ ...d, expanded: false }));
+            this.itinerary = data.itinerary.map(d => ({
+              ...d,
+              date: this.normalizeDateToDMY(d.date, true) || d.date,
+              expanded: false
+            }));
             this.allExpanded = false;
             this.saveItinerary(false);
           }
           if (data.hotels && data.hotels.length > 0) {
-            this.hotels = data.hotels;
+            this.hotels = data.hotels
+              .filter(h => h && h.id !== 'h_test_jan')
+              .map(h => ({ ...h, dates: this.normalizeDateToDMY(h.dates, false) || h.dates }));
             this.saveHotels(false);
           }
           if (data.transports && Array.isArray(data.transports) && data.transports.length > 0) {
-            this.transports = data.transports;
+            this.transports = data.transports.map(tr => ({
+              ...tr,
+              date: this.normalizeDateToDMY(tr.date, false) || tr.date
+            }));
             this.saveTransports(false);
             this.syncTransportsToItinerary(false);
           }
@@ -8674,10 +8971,103 @@ Tel: ${h.phone || ''}`;
           }
         },
 
+        mergeCloudWithLocalBeforeUpload(cloudData) {
+          if (!cloudData || typeof cloudData !== 'object') return { merged: false };
+          const deleted = this._deletedIds || new Set();
+          let additions = 0;
+
+          if (Array.isArray(cloudData.hotels)) {
+            cloudData.hotels.forEach(ch => {
+              if (!ch || !ch.id || ch.id === 'h_test_jan' || deleted.has('hotel_' + ch.id)) return;
+              if (!this.hotels.some(lh => lh.id === ch.id)) {
+                this.hotels.push({ ...ch, dates: this.normalizeDateToDMY(ch.dates, false) || ch.dates });
+                additions++;
+              }
+            });
+            if (additions > 0) this.saveHotels(false);
+          }
+
+          let trAdded = 0;
+          if (Array.isArray(cloudData.transports)) {
+            cloudData.transports.forEach(ct => {
+              if (!ct || !ct.id || deleted.has('transport_' + ct.id)) return;
+              if (!this.transports.some(lt => lt.id === ct.id)) {
+                this.transports.push({ ...ct, date: this.normalizeDateToDMY(ct.date, false) || ct.date });
+                trAdded++;
+              }
+            });
+            if (trAdded > 0) this.saveTransports(false);
+          }
+
+          let trvChanged = 0;
+          if (Array.isArray(cloudData.travelers)) {
+            cloudData.travelers.forEach(ct => {
+              if (!ct || !ct.id || deleted.has('trv_' + ct.id)) return;
+              const localT = this.travelers.find(lt => lt.id === ct.id);
+              if (!localT) {
+                this.travelers.push(ct);
+                trvChanged++;
+              } else {
+                if (!localT.passportNo && ct.passportNo) { localT.passportNo = ct.passportNo; trvChanged++; }
+                if (!localT.passportExp && ct.passportExp) { localT.passportExp = ct.passportExp; trvChanged++; }
+                if (!localT.fullName && ct.fullName) { localT.fullName = ct.fullName; trvChanged++; }
+              }
+            });
+            if (trvChanged > 0) this.saveTravelers();
+          }
+
+          let dayChanged = 0;
+          if (Array.isArray(cloudData.itinerary)) {
+            cloudData.itinerary.forEach(cd => {
+              if (!cd || !cd.id || deleted.has('day_' + cd.id)) return;
+              const localD = this.itinerary.find(ld => ld.id === cd.id);
+              if (!localD) {
+                this.itinerary.push({ ...cd, date: this.normalizeDateToDMY(cd.date, true) || cd.date, expanded: false });
+                dayChanged++;
+              } else if ((!localD.stops || localD.stops.length === 0) && Array.isArray(cd.stops) && cd.stops.length > 0) {
+                localD.stops = cd.stops;
+                dayChanged++;
+              }
+            });
+            if (dayChanged > 0) this.saveItinerary(false);
+          }
+
+          if (cloudData.travelerChecklists && typeof cloudData.travelerChecklists === 'object') {
+            Object.entries(cloudData.travelerChecklists).forEach(([tId, list]) => {
+              if (Number(tId) !== Number(this.selectedChecklistTravelerId) && Array.isArray(list)) {
+                this.travelerChecklists[tId] = list;
+              }
+            });
+            localStorage.setItem('thailand_traveler_checklists_v3', JSON.stringify(this.travelerChecklists));
+          }
+
+          return {
+            merged: (additions + trAdded + trvChanged + dayChanged) > 0,
+            author: cloudData.updatedBy || 'Gruppo'
+          };
+        },
+
         async uploadToCloud(silent = false) {
           this.syncStatus = 'syncing';
           this.refreshIcons();
           try {
+            let mergeNote = '';
+            // Controllo anti-conflitto pre-upload: unisce eventuali modifiche più recenti sul Cloud
+            if (this.lastCloudTimestamp) {
+              try {
+                const preRes = await fetch(this.cloudEndpoint, { cache: 'no-store' });
+                if (preRes && preRes.ok) {
+                  const remote = await preRes.json();
+                  if (remote && remote.updatedAtISO && remote.updatedAtISO > this.lastCloudTimestamp) {
+                    const mergeRes = this.mergeCloudWithLocalBeforeUpload(remote);
+                    if (mergeRes.merged) {
+                      mergeNote = ' (unite modifiche di ' + mergeRes.author + ')';
+                    }
+                  }
+                }
+              } catch (preErr) {}
+            }
+
             const author = (this.travelers && this.travelers[0] && this.travelers[0].name) ? this.travelers[0].name : 'Steff';
             const nowISO = new Date().toISOString();
             const nowHuman = new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
@@ -8702,10 +9092,11 @@ Tel: ${h.phone || ''}`;
               this.syncStatus = 'synced';
               this.lastSyncTime = nowHuman;
               this.lastCloudTimestamp = nowISO;
+              if (this._deletedIds) this._deletedIds.clear();
               localStorage.setItem('thailand_last_sync_time', this.lastSyncTime);
               localStorage.setItem('thailand_last_cloud_ts', this.lastCloudTimestamp);
               if (!silent) {
-                this.showToast('☁️ Sincronizzato su Firebase! Dati, partecipanti e hotel aggiornati.');
+                this.showToast('☁️ Sincronizzato su Firebase!' + mergeNote);
               }
             } else {
               throw new Error('Status: ' + res.status);
@@ -8742,14 +9133,20 @@ Tel: ${h.phone || ''}`;
                   const cloudStops = cloudData.itinerary.reduce((s, d) => s + ((d.stops || []).length), 0);
                   const localStops = (this.itinerary || []).reduce((s, d) => s + ((d.stops || []).length), 0);
                   if (!silent || cloudStops >= localStops || cloudData.itinerary.length > this.itinerary.length) {
-                    this.itinerary = cloudData.itinerary.map(d => ({ ...d, expanded: false }));
+                    this.itinerary = cloudData.itinerary.map(d => ({
+                      ...d,
+                      date: this.normalizeDateToDMY(d.date, true) || d.date,
+                      expanded: false
+                    }));
                     this.allExpanded = false;
                     this.saveItinerary(false);
                     this.syncCurrentTodayState();
                   }
                 }
                 if (cloudData.hotels && Array.isArray(cloudData.hotels) && cloudData.hotels.length > 0) {
-                  const cleanCloudHotels = cloudData.hotels.filter(h => h && h.id !== 'h_test_jan');
+                  const cleanCloudHotels = cloudData.hotels
+                    .filter(h => h && h.id !== 'h_test_jan')
+                    .map(h => ({ ...h, dates: this.normalizeDateToDMY(h.dates, false) || h.dates }));
                   if (cleanCloudHotels.length > 0 && (!silent || cleanCloudHotels.length >= (this.hotels || []).length)) {
                     this.hotels = cleanCloudHotels;
                     this.saveHotels(false);
@@ -8757,7 +9154,10 @@ Tel: ${h.phone || ''}`;
                 }
                 if (cloudData.transports && Array.isArray(cloudData.transports) && cloudData.transports.length > 0) {
                   if (!silent || cloudData.transports.length >= (this.transports || []).length) {
-                    this.transports = cloudData.transports;
+                    this.transports = cloudData.transports.map(tr => ({
+                      ...tr,
+                      date: this.normalizeDateToDMY(tr.date, false) || tr.date
+                    }));
                     this.saveTransports(false);
                     this.syncTransportsToItinerary(false);
                   }
@@ -8870,19 +9270,54 @@ Tel: ${h.phone || ''}`;
           return (this.itinerary && this.itinerary.length > 0) ? this.itinerary.length : 14;
         },
 
+        formatTsToDMY(ts) {
+          const dt = new Date(ts);
+          return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + dt.getFullYear();
+        },
+
+        formatTsToISO(ts) {
+          const dt = new Date(ts);
+          return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+        },
+
+        isoToDMY(isoStr) {
+          if (!isoStr || typeof isoStr !== 'string') return '';
+          const m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (!m) return '';
+          return m[3] + '/' + m[2] + '/' + m[1];
+        },
+
+        dmyToISO(str) {
+          const span = this.parseDateSpan(str);
+          if (!span) return { startISO: '', endISO: '' };
+          return {
+            startISO: this.formatTsToISO(span.startTs),
+            endISO: this.formatTsToISO(span.endTs)
+          };
+        },
+
+        normalizeDateToDMY(str, forceSingle = false) {
+          const span = this.parseDateSpan(str);
+          if (!span) return '';
+          const s = this.formatTsToDMY(span.startTs);
+          const e = this.formatTsToDMY(span.endTs);
+          if (!forceSingle && e !== s) return s + ' - ' + e;
+          return s;
+        },
+
         get dynamicDateRangeLabel() {
-          if (!this.itinerary || this.itinerary.length === 0) return '25 Dic - 08 Gen';
-          let firstDate = this.itinerary[0].date || '';
+          if (!this.itinerary || this.itinerary.length === 0) return '25/12/2026 → 08/01/2027';
+          let firstSpan = this.parseDateSpan(this.itinerary[0].date);
+          let firstDate = firstSpan ? this.formatTsToDMY(firstSpan.startTs) : (this.itinerary[0].date || '');
           if (this.transports && this.transports.length > 0 && this.transports[0].date) {
             const firstTrSpan = this.parseDateSpan(this.transports[0].date);
-            const firstDaySpan = this.parseDateSpan(this.itinerary[0].date);
-            if (firstTrSpan && firstDaySpan && firstTrSpan.startTs < firstDaySpan.startTs) {
-              const dObj = new Date(firstTrSpan.startTs);
-              const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-              firstDate = String(dObj.getDate()).padStart(2, '0') + ' ' + months[dObj.getMonth()];
+            if (firstTrSpan && firstSpan && firstTrSpan.startTs < firstSpan.startTs) {
+              firstDate = this.formatTsToDMY(firstTrSpan.startTs);
             }
           }
-          const lastDate = this.itinerary[this.itinerary.length - 1].date || '';
+          const lastRaw = this.itinerary[this.itinerary.length - 1].date || '';
+          const lastSpan = this.parseDateSpan(lastRaw);
+          const lastDate = lastSpan ? this.formatTsToDMY(lastSpan.endTs) : lastRaw;
           if (firstDate && lastDate) return firstDate + ' → ' + lastDate;
           return firstDate || lastDate || '';
         },
@@ -8905,19 +9340,40 @@ Tel: ${h.phone || ''}`;
             dic: 11, dicembre: 11, dec: 11
           };
           const inferYear = (m, explicitY) => {
-            if (explicitY) return parseInt(explicitY, 10);
+            if (explicitY) {
+              let yr = parseInt(explicitY, 10);
+              return yr < 100 ? (2000 + yr) : yr;
+            }
             return m >= 9 ? 2026 : 2027;
           };
           const makeTs = (d, m, y) => new Date(y, m, d, 0, 0, 0, 0).getTime();
 
-          // 1. DD/MM/YYYY or DD/MM/YY
+          // 0. Range of two DD/MM/YYYY dates: "26/12/2026 - 28/12/2026"
+          const slashRange = s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:-|–|->|➔)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+          if (slashRange) {
+            const d1 = parseInt(slashRange[1], 10);
+            const m1 = parseInt(slashRange[2], 10) - 1;
+            const d2 = parseInt(slashRange[4], 10);
+            const m2 = parseInt(slashRange[5], 10) - 1;
+            const y2 = inferYear(m2, slashRange[6] || slashRange[3]);
+            const y1 = slashRange[3] ? inferYear(m1, slashRange[3]) : ((m1 > m2) ? (y2 - 1) : y2);
+            return { startTs: makeTs(d1, m1, y1), endTs: makeTs(d2, m2, y2) };
+          }
+
+          // 1. Single DD/MM/YYYY or DD/MM/YY
           const slashMatch = s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
           if (slashMatch) {
             const d = parseInt(slashMatch[1], 10);
             const m = parseInt(slashMatch[2], 10) - 1;
-            let y = slashMatch[3] ? parseInt(slashMatch[3], 10) : inferYear(m);
-            if (y < 100) y += 2000;
+            const y = inferYear(m, slashMatch[3]);
             const ts = makeTs(d, m, y);
+            return { startTs: ts, endTs: ts };
+          }
+
+          // 1b. ISO YYYY-MM-DD
+          const isoMatch = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+          if (isoMatch) {
+            const ts = makeTs(parseInt(isoMatch[3], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[1], 10));
             return { startTs: ts, endTs: ts };
           }
 
@@ -9053,6 +9509,55 @@ Tel: ${h.phone || ''}`;
           return chips.map(c => c.key).join(' · ');
         },
 
+        get todayNextStopDashboard() {
+          if (!this.itinerary || this.itinerary.length === 0) return null;
+          const todayDay = this.itinerary.find(d => d.isToday) ||
+                           this.itinerary.find(d => Number(d.dayNum) === Number(this.currentDayIndex)) ||
+                           this.itinerary[0];
+          if (!todayDay) return null;
+
+          const stops = todayDay.stops || [];
+          let curMinutes = 9 * 60;
+          try {
+            const bkkParts = (this.timeBangkok || '').match(/(\d{1,2})[:.](\d{2})/);
+            if (bkkParts) {
+              curMinutes = parseInt(bkkParts[1], 10) * 60 + parseInt(bkkParts[2], 10);
+            } else {
+              const str = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+              const m = str.match(/(\d{1,2}):(\d{2})/);
+              if (m) curMinutes = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+            }
+          } catch (e) {}
+
+          let chosenStop = null;
+          let isUpcoming = false;
+          for (const st of stops) {
+            const tm = (st.time || '').match(/(\d{1,2}):(\d{2})/);
+            const stMin = tm ? (parseInt(tm[1], 10) * 60 + parseInt(tm[2], 10)) : -1;
+            if (stMin >= curMinutes) {
+              chosenStop = st;
+              isUpcoming = true;
+              break;
+            }
+          }
+          if (!chosenStop && stops.length > 0) {
+            chosenStop = stops[0];
+          }
+
+          const dayHotels = this.getHotelsForDay(todayDay);
+          return {
+            dayNum: todayDay.dayNum,
+            date: todayDay.date || '',
+            city: todayDay.city || '',
+            dayTitle: todayDay.title || '',
+            statusLabel: isUpcoming ? 'Prossima tappa' : (chosenStop ? 'In programma' : 'Giornata libera'),
+            stopTime: (chosenStop && chosenStop.time) ? chosenStop.time : 'Oggi',
+            stopName: chosenStop ? chosenStop.name : todayDay.title,
+            mapsQuery: (chosenStop && chosenStop.mapsQuery) ? chosenStop.mapsQuery : (todayDay.mainLocation || todayDay.city || ''),
+            hotel: dayHotels[0] || null
+          };
+        },
+
         jumpToDay(dayNum) {
           const targetDayNum = Math.max(1, Math.min(this.totalDaysCount, parseInt(dayNum, 10) || 1));
           this.activeTab = 'itinerary';
@@ -9093,6 +9598,7 @@ Tel: ${h.phone || ''}`;
           this.itinerary.forEach(d => d.isToday = (Number(d.dayNum) === target));
           this.currentDayIndex = target;
           localStorage.setItem('thailand_current_day_index', String(target));
+          localStorage.setItem('thailand_manual_today_date', this.getBangkokTodayDMY());
           this.saveItinerary(false);
           this.showToast('Impostato Giorno ' + target + ' come Oggi!');
         },
@@ -9561,7 +10067,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "14:00 - 24:00 (sab 26 dic)",
             "checkOut": "Entro le 12:00 (lun 28 dic)",
             "city": "Bangkok",
-            "dates": "26 - 28 Dic (2 notti)",
+            "dates": "26/12/2026 - 28/12/2026",
             "id": "h1",
             "mapsQuery": "Sukhothai Residence Ruam Ruedi Bangkok",
             "name": "Sukhothai Residence Ruam Ruedi",
@@ -9577,7 +10083,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "14:00 - 23:30 (mar 29 dic)",
             "checkOut": "01:00 - 12:00 (gio 31 dic)",
             "city": "Chiang Mai",
-            "dates": "29 - 31 Dic (2 notti)",
+            "dates": "29/12/2026 - 31/12/2026",
             "id": "h2",
             "mapsQuery": "Kristi House Chiang Mai",
             "name": "Kristi House",
@@ -9593,7 +10099,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "Dalle 14:00 (gio 31 dic)",
             "checkOut": "11:00 - 12:00 (ven 1 gen)",
             "city": "Khao Sok",
-            "dates": "31 Dic - 01 Gen (1 notte - Capodanno)",
+            "dates": "31/12/2026 - 01/01/2027",
             "id": "h3",
             "mapsQuery": "Art's Riverview Lodge Khao Sok",
             "name": "Art's Riverview Lodge",
@@ -9609,7 +10115,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "14:00",
             "checkOut": "11:00",
             "city": "Krabi",
-            "dates": "02-05 gennaio",
+            "dates": "02/01/2027 - 05/01/2027",
             "id": "hotel_1789739547097",
             "mapsQuery": "Baan Asree บ้านอัสรี",
             "name": "Baan Asree บ้านอัสรี",
@@ -9625,7 +10131,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "14:00",
             "checkOut": "09:00",
             "city": "Phuket",
-            "dates": "05-07 gennaio",
+            "dates": "05/01/2027 - 07/01/2027",
             "id": "hotel_1790080336815",
             "mapsQuery": "BH Baan Paradise Hotel Patong",
             "name": "BH Baan Paradise Hotel Patong",
@@ -9641,7 +10147,7 @@ Tel: ${h.phone || ''}`;
             "checkIn": "11:00",
             "checkOut": "05:00",
             "city": "Bangkok",
-            "dates": "07-08 gennaio",
+            "dates": "07/01/2027 - 08/01/2027",
             "id": "hotel_1790079882439",
             "mapsQuery": "INNSiDE Bangkok Sukhumvit",
             "name": "INNSiDE Bangkok Sukhumvit",
@@ -9660,7 +10166,7 @@ Tel: ${h.phone || ''}`;
             "arrTime": "20:55 (+1)",
             "baggage": "Economy · Posti: 27C 27D 28C 28D (FCO→DEL) · 29F 29E 29D 29C (DEL→BKK)",
             "carrier": "Air India · PNR: BJRZOF",
-            "date": "25 - 26 Dic 2026",
+            "date": "25/12/2026 - 26/12/2026",
             "depCity": "Roma Fiumicino · 25 Dic 21:00",
             "depCode": "FCO",
             "depTime": "21:00",
@@ -9678,7 +10184,7 @@ Tel: ${h.phone || ''}`;
             "arrTime": "10:05",
             "baggage": "Economy · 4 passeggeri (586,99 €) · 4 bagagli a mano (max 5kg) + 4 oggetti personali",
             "carrier": "Thai AirAsia · FD 5420",
-            "date": "31 Dic 2026",
+            "date": "31/12/2026",
             "depCity": "Chiang Mai Airport (CNX)",
             "depCode": "CNX",
             "depTime": "08:10",
@@ -9732,7 +10238,7 @@ Tel: ${h.phone || ''}`;
             "arrTime": "18:55",
             "baggage": "Economy · Posti: 28A 28B 28D 27E (BKK→DEL) · 38C 38D 39D 40D (DEL→FCO)",
             "carrier": "Air India · PNR: BJRZOF",
-            "date": "8 Gen 2027",
+            "date": "08/01/2027",
             "depCity": "Bangkok Suvarnabhumi · 8 Gen 08:05",
             "depCode": "BKK",
             "depTime": "08:05",
@@ -9772,7 +10278,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "Passaporti, documenti di viaggio, contanti/carte, adattatori presa",
             "city": "Bangkok",
             "cityGroup": "Bangkok",
-            "date": "26 Dic",
+            "date": "26/12/2026",
             "dayNum": 1,
             "expanded": false,
             "id": "d1",
@@ -9800,7 +10306,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "• Scarpe comode\n• Cappello\n• Macchina fotografica\n• Protezione solare\n• Acqua",
             "city": "Bangkok",
             "cityGroup": "Bangkok",
-            "date": "27 Dic",
+            "date": "27/12/2026",
             "dayNum": 2,
             "expanded": false,
             "id": "d2",
@@ -9822,7 +10328,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Bangkok",
             "cityGroup": "Bangkok",
-            "date": "28 Dic",
+            "date": "28/12/2026",
             "dayNum": 3,
             "expanded": false,
             "id": "d3",
@@ -9851,7 +10357,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "• Dati del passaporto\n• Pantaloncini o abbigliamento da bagno e asciugamano\n• Crema di protezione solare\n• Repellente per zanzare",
             "city": "Chiang Mai",
             "cityGroup": "Chiang Mai",
-            "date": "29 Dic",
+            "date": "29/12/2026",
             "dayNum": 4,
             "expanded": false,
             "id": "d4",
@@ -9880,7 +10386,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Chiang Mai - Chiang Rai",
             "cityGroup": "Chiang Mai",
-            "date": "30 Dic",
+            "date": "30/12/2026",
             "dayNum": 5,
             "expanded": false,
             "id": "d5",
@@ -9902,7 +10408,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "Documenti volo AirAsia, zainetto con cambio per la giungla",
             "city": "Chiang Mai ➔ Khao Sok",
             "cityGroup": "Khao Sok",
-            "date": "31 Dic",
+            "date": "31/12/2026",
             "dayNum": 6,
             "expanded": false,
             "id": "d6",
@@ -9945,7 +10451,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Khao Sok",
             "cityGroup": "Khao Sok",
-            "date": "01 Gen",
+            "date": "01/01/2027",
             "dayNum": 7,
             "expanded": false,
             "id": "d7",
@@ -9982,7 +10488,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Khao Sok ➔ Krabi",
             "cityGroup": "Krabi",
-            "date": "02 Gen",
+            "date": "02/01/2027",
             "dayNum": 8,
             "expanded": false,
             "id": "d8",
@@ -10036,7 +10542,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "• Occhiali da sole • Cappello parasole • Costume da bagno • Asciugamano • Sandali • Macchina fotografica • Protezione solare • T-shirt • Scarpe da scoglio • Denaro contante • Borsa impermeabile",
             "city": "Krabi",
             "cityGroup": "Krabi",
-            "date": "03 Gen",
+            "date": "03/01/2027",
             "dayNum": 9,
             "expanded": false,
             "id": "d9",
@@ -10074,7 +10580,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Krabi",
             "cityGroup": "Krabi",
-            "date": "04 Gen",
+            "date": "04/01/2027",
             "dayNum": 10,
             "expanded": false,
             "id": "d10",
@@ -10086,7 +10592,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Krabi ➔ Phuket",
             "cityGroup": "Phuket",
-            "date": "05 Gen",
+            "date": "05/01/2027",
             "dayNum": 11,
             "expanded": false,
             "id": "d11",
@@ -10132,7 +10638,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Phuket",
             "cityGroup": "Phuket",
-            "date": "06 Gen",
+            "date": "06/01/2027",
             "dayNum": 12,
             "expanded": false,
             "id": "d12",
@@ -10154,7 +10660,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "",
             "city": "Phuket -> Bangkok",
             "cityGroup": "Phuket",
-            "date": "07 Gen",
+            "date": "07/01/2027",
             "dayNum": 13,
             "expanded": false,
             "id": "d13",
@@ -10166,7 +10672,7 @@ Tel: ${h.phone || ''}`;
             "backpackNotes": "Passaporti, boarding pass",
             "city": "Bangkok ➔ Roma",
             "cityGroup": "Rientro",
-            "date": "08 Gen",
+            "date": "08/01/2027",
             "dayNum": 14,
             "expanded": false,
             "id": "d14",
