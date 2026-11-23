@@ -71,6 +71,9 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- PDF.js (Visualizzazione multi-pagina PDF su iPhone/Mobile) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <!-- Alpine.js Plugins (Collapse) & Core CDN -->
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
@@ -139,7 +142,7 @@
       margin-left: -24px;
       margin-top: -24px;
       pointer-events: none;
-      transition: transform 0.18s ease-out;
+      will-change: transform;
     }
     .vehicle-marker-icon {
       font-size: 28px;
@@ -227,9 +230,8 @@
     }
 
     .glass-card {
-      background: rgba(14, 22, 38, 0.72);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(10, 15, 28, 0.98) 100%);
+      contain: layout style;
     }
 
     /* Pulse animation for 'Oggi' */
@@ -253,9 +255,13 @@
       display: none !important;
     }
 
-    /* Micro-polish transizioni card */
+    /* Micro-polish transizioni card e fisarmonica fluida */
     .glass-card {
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    [x-collapse] {
+      transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+      will-change: height;
     }
 
     /* Hide scrollbar for tabs navigation */
@@ -4137,35 +4143,36 @@
        class="fixed inset-0 z-[140] bg-slate-950 flex flex-col overflow-hidden"
        x-cloak>
     
-    <!-- Top Bar (Lowered & Protected for iPhone Dynamic Island / Notch) -->
-    <header class="flex-shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-4 pb-3 flex items-center justify-between z-10 modal-map-header">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
-          <i data-lucide="compass" class="w-4.5 h-4.5"></i>
+    <!-- Top Bar (Lowered & Protected for iPhone Dynamic Island / Notch, Zero Overflow) -->
+    <header class="flex-shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-3 sm:px-4 pb-3 flex items-center justify-between gap-2 z-20 modal-map-header">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+          <i data-lucide="compass" class="w-4 h-4"></i>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h2 class="font-display font-black text-sm text-white" x-text="tripSettings.appTitle || 'Rotta Viaggio'"></h2>
-            <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px] uppercase border border-emerald-500/30" x-text="totalDaysCount + ' Tappe'"></span>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <h2 class="font-display font-black text-xs sm:text-sm text-white truncate" x-text="tripSettings.appTitle || 'Rotta Viaggio'"></h2>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px] uppercase border border-emerald-500/30 flex-shrink-0" x-text="totalDaysCount + 'g'"></span>
           </div>
-          <p class="text-[10px] text-slate-400 leading-tight truncate" x-text="'Timeline animata • ' + dynamicRouteSubtitle"></p>
+          <p class="text-[10px] text-slate-400 leading-tight truncate" x-text="dynamicRouteSubtitle"></p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 flex-shrink-0">
         <button type="button" 
                 @click="recenterMap()"
-                title="Centra rotta completa"
-                class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 text-slate-200 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700 shadow-sm"
+                title="Centra tutta la rotta"
+                class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 text-emerald-300 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-700 shadow-sm"
                 aria-label="Centra rotta completa">
           <i data-lucide="crosshair" class="w-4 h-4"></i>
         </button>
         <button type="button" 
                 @click="closeInteractiveMap()" 
-                title="Chiudi mappa"
-                class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-rose-500/20 active:bg-rose-500/30 text-slate-200 hover:text-rose-400 active:scale-90 transition-all border border-slate-700 hover:border-rose-500/40 shadow-sm flex items-center justify-center"
+                title="Chiudi mappa e torna alla Home"
+                class="h-9 px-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 active:bg-rose-500/40 text-rose-200 hover:text-white active:scale-95 transition-all border border-rose-500/40 shadow-sm flex items-center gap-1 font-bold text-xs"
                 aria-label="Chiudi mappa">
-          <i data-lucide="x" class="w-5 h-5"></i>
+          <i data-lucide="x" class="w-4 h-4"></i>
+          <span>Chiudi</span>
         </button>
       </div>
     </header>
@@ -4724,12 +4731,27 @@
         </div>
 
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- Controlli Zoom PDF (visibili per PDF) -->
+          <template x-if="activeViewerDoc && activeViewerDoc.isPdf && !pdfViewerFallback">
+            <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-0.5">
+              <button type="button"
+                      @click="changePdfZoom(-0.25)"
+                      class="w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 flex items-center justify-center font-bold text-sm active:scale-90"
+                      title="Riduci zoom">−</button>
+              <span class="text-[10px] font-mono text-slate-300 px-1" x-text="Math.round((pdfViewerScale || 1) * 100) + '%'"></span>
+              <button type="button"
+                      @click="changePdfZoom(0.25)"
+                      class="w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 flex items-center justify-center font-bold text-sm active:scale-90"
+                      title="Aumenta zoom">+</button>
+            </div>
+          </template>
+
           <button type="button" 
                   @click="downloadCurrentDoc()" 
-                  title="Scarica file"
-                  class="py-1 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1 border border-slate-700 active:scale-95 transition-all">
+                  title="Salva o condividi file su iPhone/PC"
+                  class="py-1.5 px-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-500/40 active:scale-95 transition-all">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">Scarica</span>
+            <span class="hidden sm:inline">Salva / Invia</span>
           </button>
           <button type="button" 
                   @click="closeDocViewer()" 
@@ -4740,13 +4762,31 @@
         </div>
       </div>
 
-      <!-- Content Viewer (PDF or Image) -->
-      <div class="flex-1 w-full bg-slate-950 overflow-hidden relative flex items-center justify-center p-1 sm:p-2">
+      <!-- Content Viewer (Multi-page PDF Scrollable or Image) -->
+      <div class="flex-1 w-full bg-slate-950 overflow-hidden relative flex flex-col">
+        <!-- PDF Viewer con tutte le pagine scorrevoli (PDF.js) -->
         <template x-if="activeViewerDoc && activeViewerDoc.isPdf">
-          <iframe :src="activeViewerDoc.dataUrl" class="w-full h-full rounded-2xl bg-white border-0 shadow-inner"></iframe>
+          <div id="pdf-scroll-wrapper" class="flex-1 w-full h-full overflow-y-auto overflow-x-auto p-2 sm:p-4 space-y-3" style="-webkit-overflow-scrolling: touch;">
+            <div x-show="pdfViewerLoading" class="flex flex-col items-center justify-center py-12 text-slate-300 gap-2">
+              <i data-lucide="loader" class="w-6 h-6 animate-spin text-emerald-400"></i>
+              <span class="text-xs font-medium">Caricamento pagine PDF...</span>
+            </div>
+            <div x-show="!pdfViewerLoading && pdfPageCount > 0" class="text-center pb-1">
+              <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-emerald-400"
+                    x-text="'📄 ' + pdfPageCount + (pdfPageCount === 1 ? ' pagina' : ' pagine scorrevoli')"></span>
+            </div>
+            <div id="pdf-pages-container" class="flex flex-col items-center gap-3 pb-4"></div>
+            <template x-if="pdfViewerFallback">
+              <iframe :src="activeViewerDoc.blobUrl || activeViewerDoc.dataUrl" class="w-full h-[78vh] rounded-2xl bg-white border-0 shadow-inner"></iframe>
+            </template>
+          </div>
         </template>
+
+        <!-- Image Viewer -->
         <template x-if="activeViewerDoc && !activeViewerDoc.isPdf">
-          <img :src="activeViewerDoc.dataUrl" class="max-w-full max-h-full object-contain rounded-2xl shadow-lg" alt="Documento">
+          <div class="flex-1 w-full h-full overflow-auto flex items-center justify-center p-2" style="-webkit-overflow-scrolling: touch;">
+            <img :src="activeViewerDoc.dataUrl" class="max-w-full max-h-full object-contain rounded-2xl shadow-lg" alt="Documento">
+          </div>
         </template>
       </div>
 
@@ -5017,6 +5057,12 @@ docsState: {},
         hotelSortOrder: 'date-asc',
         transportSortOrder: 'date-asc',
 activeViewerDoc: null,
+pdfPageCount: 0,
+pdfViewerScale: 1,
+pdfViewerLoading: false,
+pdfViewerFallback: false,
+_pdfDocCache: null,
+_pdfRenderToken: 0,
 docsCategoryFilter: 'all',
 docsSearchQuery: '',
 uploadDocModal: {
@@ -6050,20 +6096,27 @@ weatherLoading: false,
           this.refreshIcons();
         },
 
-        refreshIcons() {
+        refreshIcons(forceAll = false) {
+          if (forceAll) this._forceIconRefresh = true;
           if (this._iconRefreshScheduled) return;
           this._iconRefreshScheduled = true;
           this.$nextTick(() => {
             const run = () => {
+              const force = !!this._forceIconRefresh;
               this._iconRefreshScheduled = false;
+              this._forceIconRefresh = false;
               if (window.lucide) {
-                lucide.createIcons();
+                const hasPendingIcons = force || typeof document === 'undefined' || typeof document.querySelector !== 'function' || !!document.querySelector('i[data-lucide]');
+                if (hasPendingIcons) {
+                  lucide.createIcons();
+                }
               }
             };
-            if (typeof requestAnimationFrame === 'function') {
-              requestAnimationFrame(run);
+            if (forceAll) {
+              if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+              else run();
             } else {
-              run();
+              setTimeout(run, 45);
             }
           });
         },
@@ -6640,7 +6693,7 @@ weatherLoading: false,
         toggleEditMode() {
           this.editMode = !this.editMode;
           this.showToast(this.editMode ? 'Modalità Modifica attiva ✏️' : 'Modalità Consultazione pulita ✓');
-          this.refreshIcons();
+          this.refreshIcons(true);
         },
 
         toggleToolboxCard(card) {
@@ -7182,6 +7235,117 @@ Tel: ${h.phone || ''}`;
           this.deleteDocFromCloud(targetId);
         },
 
+        dataUrlToBlob(dataUrl, fallbackMime = 'application/pdf') {
+          if (!dataUrl || typeof dataUrl !== 'string') return null;
+          if (!dataUrl.startsWith('data:')) return null;
+          const commaIdx = dataUrl.indexOf(',');
+          if (commaIdx === -1) return null;
+          const header = dataUrl.slice(0, commaIdx);
+          const payload = dataUrl.slice(commaIdx + 1);
+          const mimeMatch = header.match(/data:([^;]+)/i);
+          const mime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : fallbackMime;
+          const isBase64 = /;base64/i.test(header);
+          let bytes;
+          if (isBase64) {
+            const bin = atob(payload);
+            bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          } else {
+            const decoded = decodeURIComponent(payload);
+            bytes = new Uint8Array(decoded.length);
+            for (let i = 0; i < decoded.length; i++) bytes[i] = decoded.charCodeAt(i);
+          }
+          return new Blob([bytes], { type: mime });
+        },
+
+        async renderPdfInViewer() {
+          const doc = this.activeViewerDoc;
+          if (!doc || !doc.isPdf || !doc.dataUrl) return;
+          const renderToken = ++this._pdfRenderToken;
+          this.pdfViewerLoading = true;
+          this.pdfViewerFallback = false;
+          this.pdfPageCount = 0;
+
+          await new Promise(r => setTimeout(r, 40));
+          if (renderToken !== this._pdfRenderToken) return;
+
+          const container = typeof document !== 'undefined' ? document.getElementById('pdf-pages-container') : null;
+          if (container) container.innerHTML = '';
+
+          if (typeof window === 'undefined' || !window.pdfjsLib || !container) {
+            this.pdfViewerLoading = false;
+            this.pdfViewerFallback = true;
+            return;
+          }
+
+          try {
+            if (window.pdfjsLib.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+              window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+            const blob = this.dataUrlToBlob(doc.dataUrl, 'application/pdf');
+            if (!blob) throw new Error('Invalid PDF data');
+            const buffer = await blob.arrayBuffer();
+            const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+            if (renderToken !== this._pdfRenderToken) return;
+
+            this._pdfDocCache = pdf;
+            this.pdfPageCount = pdf.numPages;
+
+            const wrapper = document.getElementById('pdf-scroll-wrapper');
+            const availWidth = Math.max(280, ((wrapper && wrapper.clientWidth) ? wrapper.clientWidth - 24 : 360));
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+            for (let p = 1; p <= pdf.numPages; p++) {
+              if (renderToken !== this._pdfRenderToken) return;
+              const page = await pdf.getPage(p);
+              const baseViewport = page.getViewport({ scale: 1 });
+              const fitScale = availWidth / baseViewport.width;
+              const zoom = (this.pdfViewerScale || 1);
+              const renderViewport = page.getViewport({ scale: fitScale * zoom * dpr });
+              const cssWidth = Math.round(baseViewport.width * fitScale * zoom);
+              const cssHeight = Math.round(baseViewport.height * fitScale * zoom);
+
+              const card = document.createElement('div');
+              card.className = 'bg-white rounded-xl shadow-lg overflow-hidden border border-slate-700/60';
+              card.style.width = cssWidth + 'px';
+
+              const badge = document.createElement('div');
+              badge.className = 'bg-slate-900 text-slate-300 text-[10px] font-mono font-bold px-2.5 py-1 flex items-center justify-between border-b border-slate-800';
+              badge.textContent = 'Pagina ' + p + ' di ' + pdf.numPages;
+              card.appendChild(badge);
+
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.round(renderViewport.width);
+              canvas.height = Math.round(renderViewport.height);
+              canvas.style.width = cssWidth + 'px';
+              canvas.style.height = cssHeight + 'px';
+              canvas.style.display = 'block';
+              card.appendChild(canvas);
+              container.appendChild(card);
+
+              const ctx = canvas.getContext('2d');
+              await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+            }
+          } catch (err) {
+            console.error('PDF.js render error, fallback to iframe', err);
+            if (renderToken === this._pdfRenderToken) {
+              this.pdfViewerFallback = true;
+            }
+          } finally {
+            if (renderToken === this._pdfRenderToken) {
+              this.pdfViewerLoading = false;
+              this.refreshIcons();
+            }
+          }
+        },
+
+        changePdfZoom(delta) {
+          const next = Math.max(0.75, Math.min(2.5, (this.pdfViewerScale || 1) + delta));
+          if (Math.abs(next - (this.pdfViewerScale || 1)) < 0.05) return;
+          this.pdfViewerScale = next;
+          this.renderPdfInViewer();
+        },
+
         openDocViewer(targetId) {
           const doc = this.docsState[targetId];
           if (!doc) {
@@ -7189,22 +7353,34 @@ Tel: ${h.phone || ''}`;
             return;
           }
           const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
-          this.activeViewerDoc = { ...doc, id: doc.id || targetId, isPdf };
+          let blobUrl = null;
+          if (isPdf && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+            const b = this.dataUrlToBlob(doc.dataUrl, 'application/pdf');
+            if (b) blobUrl = URL.createObjectURL(b);
+          }
+          this.pdfViewerScale = 1;
+          this.pdfPageCount = 0;
+          this.pdfViewerFallback = false;
+          this.activeViewerDoc = { ...doc, id: doc.id || targetId, isPdf, blobUrl };
           this.refreshIcons();
+          if (isPdf) {
+            this.$nextTick(() => this.renderPdfInViewer());
+          }
         },
 
         closeDocViewer() {
+          this._pdfRenderToken++;
+          if (this.activeViewerDoc && this.activeViewerDoc.blobUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+            try { URL.revokeObjectURL(this.activeViewerDoc.blobUrl); } catch (e) {}
+          }
+          this._pdfDocCache = null;
+          this.pdfViewerLoading = false;
           this.activeViewerDoc = null;
         },
 
         downloadCurrentDoc() {
           if (!this.activeViewerDoc) return;
-          const a = document.createElement('a');
-          a.href = this.activeViewerDoc.dataUrl;
-          a.download = this.activeViewerDoc.name || 'documento.pdf';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          this.downloadDoc(this.activeViewerDoc);
         },
 
         formatFileSize(bytes) {
@@ -7277,11 +7453,58 @@ Tel: ${h.phone || ''}`;
           this.uploadDocToCloud(doc);
         },
 
-        downloadDoc(doc) {
-          if (!doc || !doc.dataUrl) return;
+        async downloadDoc(doc) {
+          if (!doc || !doc.dataUrl) {
+            this.showToast('File non disponibile');
+            return;
+          }
+          const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
+          const defaultName = isPdf ? 'documento.pdf' : 'documento';
+          const fileName = doc.name || defaultName;
+          const mime = doc.type || (isPdf ? 'application/pdf' : 'application/octet-stream');
+          const blob = this.dataUrlToBlob(doc.dataUrl, mime);
+          const isIOS = typeof navigator !== 'undefined' && (/iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+          try {
+            if (isIOS && blob && typeof File !== 'undefined' && navigator.share && navigator.canShare) {
+              const file = new File([blob], fileName, { type: blob.type || mime });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  files: [file],
+                  title: doc.targetTitle || fileName
+                });
+                return;
+              }
+            }
+          } catch (err) {
+            if (err && err.name === 'AbortError') return;
+            console.warn('Web Share fallback to blob link', err);
+          }
+
+          if (blob && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+            const blobUrl = URL.createObjectURL(blob);
+            if (isIOS && typeof window.open === 'function') {
+              window.open(blobUrl, '_blank');
+              this.showToast('File aperto: tocca Condividi → Salva su File');
+            } else {
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = fileName;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              this.showToast('Download avviato: ' + fileName);
+            }
+            setTimeout(() => {
+              try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+            }, 20000);
+            return;
+          }
+
           const a = document.createElement('a');
           a.href = doc.dataUrl;
-          a.download = doc.name || 'documento';
+          a.download = fileName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -7711,15 +7934,15 @@ Tel: ${h.phone || ''}`;
 
               const hasDelStop = (primaryTr.stopsInfo && /del|delhi/i.test(primaryTr.stopsInfo)) || (primaryTr.flightNumber && /del/i.test(primaryTr.flightNumber));
               if (mode === 'flight' && hasDelStop) {
-                const leg1 = createBezierArc(startPt, ALL_COORDS['delhi'], 25, 0.09);
-                const leg2 = createBezierArc(ALL_COORDS['delhi'], endPt, 25, 0.09);
+                const leg1 = createBezierArc(startPt, ALL_COORDS['delhi'], 65, 0.09);
+                const leg2 = createBezierArc(ALL_COORDS['delhi'], endPt, 65, 0.09);
                 points = leg1.concat(leg2.slice(1));
                 distanceLabel = '~9.100 km (Volo con scalo)';
               } else {
                 const dist = Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]);
                 const km = Math.round(dist * 111);
                 distanceLabel = km > 0 ? ('~' + km + ' km') : 'Trasferimento';
-                points = createBezierArc(startPt, endPt, mode === 'flight' ? 30 : 20, mode === 'flight' ? 0.12 : 0.05);
+                points = createBezierArc(startPt, endPt, mode === 'flight' ? 110 : 75, mode === 'flight' ? 0.12 : 0.05);
               }
             } else if (hasArrow) {
               const sep = rawCity.includes('➔') ? '➔' : (rawCity.includes('->') ? '->' : ' - ');
@@ -7742,7 +7965,7 @@ Tel: ${h.phone || ''}`;
               const dist = Math.hypot(endPt[0] - startPt[0], endPt[1] - startPt[1]);
               const km = Math.round(dist * 111);
               distanceLabel = '~' + km + ' km';
-              points = createBezierArc(startPt, endPt, mode === 'flight' ? 30 : 20, mode === 'flight' ? 0.12 : 0.04);
+              points = createBezierArc(startPt, endPt, mode === 'flight' ? 110 : 75, mode === 'flight' ? 0.12 : 0.04);
             } else {
               // Giornata in loco (controlla anche eventuale treno notturno nelle tappe serali come Day 3)
               toCity = rawCity || currentCityName;
@@ -7756,10 +7979,10 @@ Tel: ${h.phone || ''}`;
                 mode = 'local'; modeIcon = '🛵'; transportBadge = 'Giro città & Escursioni';
               }
 
-              const radius = 0.032;
+              const radius = 0.022;
               points = [];
-              for (let p = 0; p <= 16; p++) {
-                const angle = (p / 16) * Math.PI * 2;
+              for (let p = 0; p <= 64; p++) {
+                const angle = (p / 64) * Math.PI * 2;
                 const lat = startPt[0] + Math.sin(angle) * radius * 0.7;
                 const lon = startPt[1] + Math.cos(angle) * radius;
                 points.push([lat, lon]);
@@ -7854,26 +8077,34 @@ Tel: ${h.phone || ''}`;
           let targetBearing = Math.atan2(y, x) * 180 / Math.PI;
           targetBearing = (targetBearing + 360) % 360;
 
-          // Interpolazione angolare fluida
+          // Interpolazione angolare fluida frame-by-frame
           if (this._currentBearing === undefined) this._currentBearing = targetBearing;
           let delta = ((targetBearing - this._currentBearing + 540) % 360) - 180;
-          this._currentBearing = (this._currentBearing + delta * 0.18 + 360) % 360;
+          this._currentBearing = (this._currentBearing + delta * 0.14 + 360) % 360;
 
-          // Aggiorna marker sulla mappa
+          // Aggiorna marker direttamente (60fps senza layout thrashing)
           if (this._vehicleMarker) {
             this._vehicleMarker.setLatLng(currentPos);
-            const el = document.getElementById('animated-vehicle-element');
+            const el = (typeof document !== 'undefined') ? document.getElementById('animated-vehicle-element') : null;
             if (el) {
-              el.style.transform = 'rotate(' + (this._currentBearing - 45) + 'deg)';
-              const iconEl = el.querySelector('.vehicle-marker-icon');
-              if (iconEl) iconEl.textContent = seg.modeIcon;
+              if (seg.mode === 'flight') {
+                el.style.transform = 'rotate(' + (this._currentBearing - 45) + 'deg)';
+              } else {
+                el.style.transform = 'rotate(0deg)';
+              }
+              if (this._lastModeIcon !== seg.modeIcon) {
+                const iconEl = el.querySelector && el.querySelector('.vehicle-marker-icon');
+                if (iconEl) iconEl.textContent = seg.modeIcon;
+                this._lastModeIcon = seg.modeIcon;
+              }
             }
           }
 
-          // Aggiorna card informativa in sovrimpressione
+          // Aggiorna card informativa in sovrimpressione solo al cambio tappa
           const totalDays = this.totalDaysCount;
           const displayDay = Math.min(totalDays, Math.floor(clampedDay));
-          if (!this._lastInfoDay || this._lastInfoDay !== displayDay || clampedDay >= (totalDays + 0.95)) {
+          const dayChanged = (!this._lastInfoDay || this._lastInfoDay !== displayDay);
+          if (dayChanged || clampedDay >= (totalDays + 0.95)) {
             this.currentStageInfo = { ...this._mapSegments[Math.min(displayDay - 1, this._mapSegments.length - 1)] };
             if (clampedDay >= (totalDays + 0.95)) {
               this.currentStageInfo.title = 'Tappa Finale Completata • Viaggio Concluso! 🏁';
@@ -7881,7 +8112,7 @@ Tel: ${h.phone || ''}`;
             this._lastInfoDay = displayDay;
           }
 
-          // LIVELLO DI ZOOM OTTIMIZZATO SUL VEICOLO (ADATTIVO A QUALSIASI DURATA)
+          // Camera tracking fluido senza reset continui di panTo
           if (this._leafletMap) {
             let targetZoom;
             if (clampedDay < 1.35) {
@@ -7901,25 +8132,28 @@ Tel: ${h.phone || ''}`;
             }
 
             if (fitBounds) {
-              this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.8 });
+              this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.75 });
             } else if (!this.isPlaying) {
               const curZoom = this._leafletMap.getZoom();
               if (Math.abs(curZoom - targetZoom) >= 0.6) {
-                this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.5 });
+                this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.45 });
               } else {
                 this._leafletMap.panTo(currentPos, { animate: true, duration: 0.35 });
               }
             } else {
-              // Durante il playback: segue continuamente il veicolo
-              const now = performance.now();
-              if (!this._lastPanTs || (now - this._lastPanTs) > 120) {
-                const curZoom = this._leafletMap.getZoom();
-                if (Math.abs(curZoom - targetZoom) >= 0.8) {
-                  this._leafletMap.setView(currentPos, targetZoom, { animate: true, duration: 0.6 });
-                } else {
-                  this._leafletMap.panTo(currentPos, { animate: true, duration: 0.15, easeLinearity: 0.8 });
-                }
-                this._lastPanTs = now;
+              // Durante il playback: lascia scorrere libero il marker al 100% fluido e sposta la camera solo al cambio tappa o quando il mezzo esce dall'area centrale
+              const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+              const curZoom = this._leafletMap.getZoom();
+              const outOfCenter = (typeof this._leafletMap.getBounds === 'function')
+                ? !this._leafletMap.getBounds().pad(-0.22).contains(currentPos)
+                : false;
+
+              if (Math.abs(curZoom - targetZoom) >= 0.85 && (!this._lastCameraMoveTs || (now - this._lastCameraMoveTs) > 900)) {
+                this._leafletMap.flyTo(currentPos, targetZoom, { animate: true, duration: 0.85, easeLinearity: 0.5 });
+                this._lastCameraMoveTs = now;
+              } else if ((outOfCenter || dayChanged) && (!this._lastCameraMoveTs || (now - this._lastCameraMoveTs) > 650)) {
+                this._leafletMap.panTo(currentPos, { animate: true, duration: 0.65, easeLinearity: 0.4 });
+                this._lastCameraMoveTs = now;
               }
             }
           }
@@ -7931,6 +8165,7 @@ Tel: ${h.phone || ''}`;
             clearTimeout(this._endPauseTimer);
             this._endPauseTimer = null;
           }
+          this._playDayFloat = this.timelineDay;
           this.updateVehiclePosition(this.timelineDay, false);
         },
 
@@ -7956,31 +8191,44 @@ Tel: ${h.phone || ''}`;
             this._currentBearing = undefined;
           }
 
+          this._playDayFloat = Number(this.timelineDay) || 1.0;
+          this._lastSliderSyncTs = 0;
+
           let lastTs = null;
           const loop = (ts) => {
             if (!this.isPlaying) return;
             if (lastTs !== null) {
-              const dt = Math.min(ts - lastTs, 100);
+              const dt = Math.min(ts - lastTs, 50);
               const daysPerSec = 0.33 * this.playSpeed;
-              this.timelineDay += daysPerSec * (dt / 1000);
+              this._playDayFloat += daysPerSec * (dt / 1000);
 
-              if (this.timelineDay >= maxDay) {
+              if (this._playDayFloat >= maxDay) {
+                this._playDayFloat = maxDay;
                 this.timelineDay = maxDay;
-                this.updateVehiclePosition(this.timelineDay, false);
-                // Pausa celebrativa di 1.8 secondi a Roma prima del loop
+                this.updateVehiclePosition(this._playDayFloat, false);
                 if (!this._endPauseTimer) {
                   this._endPauseTimer = setTimeout(() => {
                     if (this.isPlaying) {
+                      this._playDayFloat = 1.0;
                       this.timelineDay = 1.0;
                       this._currentBearing = undefined;
-                      this.updateVehiclePosition(this.timelineDay, true);
+                      this.updateVehiclePosition(1.0, true);
+                      this.startPlayback();
                     }
                     this._endPauseTimer = null;
                   }, 1800);
                 }
                 return;
               }
-              this.updateVehiclePosition(this.timelineDay, false);
+
+              // Aggiorna la posizione del veicolo a 60fps reali
+              this.updateVehiclePosition(this._playDayFloat, false);
+
+              // Sincronizza slider e testi reattivi Alpine a ~20fps per zero scatti
+              if (!this._lastSliderSyncTs || (ts - this._lastSliderSyncTs) >= 50) {
+                this.timelineDay = this._playDayFloat;
+                this._lastSliderSyncTs = ts;
+              }
             }
             lastTs = ts;
             this._rafId = requestAnimationFrame(loop);
